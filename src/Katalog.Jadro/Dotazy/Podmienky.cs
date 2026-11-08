@@ -32,6 +32,9 @@ public enum PoleDotazu
     Kniznica = 25,
     Mam = 26,
     Zelane = 27,
+    Verzie = 28,
+    Zalohovane = 29,
+    Duplikat = 30,
 }
 
 /// <summary>Where a file or title stands in the library of titles (kniznica:film, kniznica:potvrdit…).</summary>
@@ -150,6 +153,18 @@ public sealed record Mam(bool Hodnota) : TitulovaPodmienka(false);
 
 /// <summary>zelane:ano – titles on the wish list.</summary>
 public sealed record Zelane(bool Hodnota) : TitulovaPodmienka(false);
+
+/// <summary>verzie:&gt;1 – titles with more present versions (duplicates; a series: of one of its episodes).</summary>
+public sealed record PocetVerzii(int? Od, int? Do, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>
+/// zalohovane:nie – titles that lie on one disk only (N1): a film whose present versions are all on one disk, a series
+/// with an episode on one disk only.
+/// </summary>
+public sealed record Zalohovane(bool Hodnota) : TitulovaPodmienka(false);
+
+/// <summary>duplikat:ano – files with an exact copy elsewhere (the same fingerprint: size, first and last megabyte).</summary>
+public sealed record Duplikat(bool Hodnota) : Podmienka(false);
 
 /// <summary>A bound of a time interval: an absolute local time, or a number of days, weeks, months or years before now.</summary>
 public readonly record struct Hranica(DateTime? Absolutna, int Pocet, JednotkaCasu Jednotka)

@@ -18,7 +18,7 @@ public sealed record VysledokCitania(StavUlohy Stav, int Precitane, int Necitate
 
 /// <summary>
 /// Reads the technical data of the videos of a disk (stage E3): ffprobe for each video without them, external subtitles
-/// next to it, and a preview made by ffmpeg. One video at a time per disk; what is read is written at once, so a run
+/// next to it, and a preview made by ffmpeg; and the fingerprint of each video for finding exact copies (stage E5). One video at a time per disk; what is read is written at once, so a run
 /// interrupted at any moment goes on where it stopped.
 /// </summary>
 public static class CitanieMedii
@@ -83,6 +83,19 @@ public static class CitanieMedii
                         continue;
                     }
 
+                    var odtlacok = OdtlacokSuboru.Vypocitaj(cesta, video.Velkost);
+                    if (video.MaUdaje)
+                    {
+                        // read in an earlier version: only the fingerprint is missing
+                        if (odtlacok is not null && await kniznica.Zapis.ZapisAsync(s => TechnickeUdaje.ZapisOdtlacok(s, video, odtlacok)).ConfigureAwait(false))
+                        {
+                            hotove++;
+                        }
+
+                        priebeh?.Report(new PriebehCitania(hotove, spolu));
+                        continue;
+                    }
+
                     var (udaje, stopy) = await ffmpeg.CitajAsync(cesta, zrusenie).ConfigureAwait(false);
                     var vsetkyStopy = stopy.Concat(ExterneTitulky(video, subory)).ToList();
                     var nahlad = obrazky is not null && udaje is { Chyby: null, VideoKodek: not null, DlzkaMs: > 0 }
@@ -92,7 +105,13 @@ public static class CitanieMedii
                     {
                         var teraz = Cas.Teraz();
                         IReadOnlyList<(long, long)> nahlady = nahlad is { } n ? [(UlozisteObrazkov.Zaregistruj(s, n.Obrazok, teraz), n.CasMs)] : [];
-                        return TechnickeUdaje.Zapis(s, video, udaje, vsetkyStopy, nahlady, teraz);
+                        var zapisane = TechnickeUdaje.Zapis(s, video, udaje, vsetkyStopy, nahlady, teraz);
+                        if (zapisane && odtlacok is not null)
+                        {
+                            TechnickeUdaje.ZapisOdtlacok(s, video, odtlacok);
+                        }
+
+                        return zapisane;
                     }).ConfigureAwait(false);
                     if (zapisane)
                     {

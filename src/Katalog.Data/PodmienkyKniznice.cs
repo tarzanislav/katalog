@@ -43,8 +43,37 @@ internal static class PodmienkyKniznice
         VKniznici => "0",
         Mam m => (m.Hodnota ? "" : "NOT ") + MaPritomnu(t + ".id"),
         Zelane z => z.Hodnota ? $"{t}.zelany = 1" : $"{t}.zelany = 0",
+        PocetVerzii p => RozsahCisla($"max(coalesce({PocetFilmu(t)}, 0), coalesce({PocetEpizody(t)}, 0))", p.Od, p.Do, parameter),
+        Zalohovane z => $"{MaPritomnu(t + ".id")} AND " + (z.Hodnota ? "" : "NOT ") + $"""
+            (CASE {t}.druh WHEN 1 THEN (SELECT count(DISTINCT sp.disk_id) FROM verzia v JOIN verzia_subor vs ON vs.verzia_id = v.id
+                                         JOIN subor sp ON sp.id = vs.subor_id WHERE v.titul_id = {t}.id AND sp.stav = 0) >= 2
+             ELSE NOT EXISTS (SELECT 1 FROM epizoda e WHERE e.titul_id = {t}.id
+                              AND (SELECT count(DISTINCT sp.disk_id) FROM verzia v JOIN verzia_subor vs ON vs.verzia_id = v.id
+                                   JOIN subor sp ON sp.id = vs.subor_id WHERE v.epizoda_id = e.id AND sp.stav = 0) = 1) END)
+            """,
         _ => "1",
     };
+
+    /// <summary>A present version: one of its files is on its disk (the version is <c>v</c>).</summary>
+    private const string Pritomna = "EXISTS (SELECT 1 FROM verzia_subor vp JOIN subor sv ON sv.id = vp.subor_id WHERE vp.verzia_id = v.id AND sv.stav = 0)";
+
+    private static string PocetFilmu(string t) => $"(SELECT count(*) FROM verzia v WHERE v.titul_id = {t}.id AND {Pritomna})";
+
+    private static string PocetEpizody(string t) =>
+        $"(SELECT count(*) FROM epizoda e JOIN verzia v ON v.epizoda_id = e.id WHERE e.titul_id = {t}.id AND {Pritomna} GROUP BY e.id ORDER BY 1 DESC LIMIT 1)";
+
+    private static string RozsahCisla(string vyraz, int? od, int? doo, Func<object, string> parameter) => (od, doo) switch
+    {
+        ({ } a, { } b) => $"{vyraz} BETWEEN {parameter(a)} AND {parameter(b)}",
+        ({ } a, null) => $"{vyraz} >= {parameter(a)}",
+        (null, { } b) => $"{vyraz} <= {parameter(b)}",
+        _ => "1",
+    };
+
+    /// <summary>A file with an exact copy elsewhere (the same fingerprint), or without one (only files with a fingerprint).</summary>
+    public static string Duplikat(Duplikat d) => d.Hodnota
+        ? "s.odtlacok IS NOT NULL AND EXISTS (SELECT 1 FROM subor d WHERE d.odtlacok = s.odtlacok AND d.id <> s.id AND d.stav = 0)"
+        : "s.odtlacok IS NOT NULL AND NOT EXISTS (SELECT 1 FROM subor d WHERE d.odtlacok = s.odtlacok AND d.id <> s.id AND d.stav = 0)";
 
     /// <summary>
     /// A condition on file <c>s</c> through the title of its version. A negated one ("not a comedy") speaks of versions:

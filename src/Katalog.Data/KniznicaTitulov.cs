@@ -76,7 +76,14 @@ public sealed record DetailTitulu(
     IReadOnlyList<(ZdrojUdajov Zdroj, string Hodnota)> Identifikatory,
     IReadOnlyDictionary<string, PovodPola> Povod,
     IReadOnlyList<Kandidat> Kandidati,
-    long? NaposledyVidene);
+    long? NaposledyVidene)
+{
+    /// <summary>The best present version of the film, or of each episode, when there are more (duplicates, E5).</summary>
+    public IReadOnlySet<long> NajlepsieVerzie { get; init; } = new HashSet<long>();
+
+    /// <summary>What is known about each version for comparing them.</summary>
+    public IReadOnlyList<VlastnostiVerzie> Vlastnosti { get; init; } = [];
+}
 
 /// <summary>
 /// Reading the library of titles for the window (stage E4): the poster wall of a view filtered by the one query language
@@ -220,7 +227,8 @@ public static class KniznicaTitulov
     }
 
     /// <summary>Everything about one title for its detail; null when it is gone.</summary>
-    public static DetailTitulu? Detail(SqliteConnection spojenie, long titulId)
+    /// <param name="poradie">The order of criteria for the best version (default: <see cref="PorovnanieVerzii.Predvolene"/>).</param>
+    public static DetailTitulu? Detail(SqliteConnection spojenie, long titulId, IReadOnlyList<KriteriumVerzie>? poradie = null)
     {
         PolozkaKniznice polozka;
         string? dej, poznamka;
@@ -317,8 +325,51 @@ public static class KniznicaTitulov
             videne = prikaz.ExecuteScalar() is long kedy ? kedy : null;
         }
 
+        var vlastnosti = VlastnostiVerzii(spojenie, titulId);
+        var najlepsie = verzie
+            .GroupBy(v => v.EpizodaId ?? 0)
+            .Select(g => PorovnanieVerzii.Najlepsia(vlastnosti.Where(x => g.Any(v => v.Id == x.VerziaId)), poradie ?? PorovnanieVerzii.Predvolene))
+            .OfType<long>()
+            .ToHashSet();
         return new DetailTitulu(polozka, dej, dlzka, poznamka, zanre, osoby, verzie, epizody, kolekcie, zoznamy, identifikatory, povod,
-            Tituly.Kandidati(spojenie, titulId), videne);
+            Tituly.Kandidati(spojenie, titulId), videne)
+        {
+            NajlepsieVerzie = najlepsie,
+            Vlastnosti = vlastnosti,
+        };
+    }
+
+    /// <summary>
+    /// The versions of a title as their present files make them: the best quality class and picture height, the codec of
+    /// that picture, the languages of sound and subtitles, the size and HDR.
+    /// </summary>
+    public static IReadOnlyList<VlastnostiVerzie> VlastnostiVerzii(SqliteConnection spojenie, long titulId)
+    {
+        using var prikaz = Kniznica.Prikaz(spojenie, $"""
+            WITH vt AS ({PodmienkyKniznice.VerzieTitulu("$t")})
+            SELECT vt.id, max(coalesce(m.trieda_kvality, 0)), max(m.vyska),
+                   (SELECT m2.video_kodek FROM verzia_subor vs2 JOIN medialne_udaje m2 ON m2.subor_id = vs2.subor_id JOIN subor s2 ON s2.id = vs2.subor_id
+                    WHERE vs2.verzia_id = vt.id AND s2.stav = 0 ORDER BY m2.vyska DESC LIMIT 1),
+                   (SELECT group_concat(DISTINCT st.jazyk) FROM verzia_subor vs3 JOIN subor s3 ON s3.id = vs3.subor_id JOIN stopa st ON st.subor_id = s3.id
+                    WHERE vs3.verzia_id = vt.id AND s3.stav = 0 AND st.druh = 2 AND st.jazyk IS NOT NULL),
+                   (SELECT group_concat(DISTINCT st.jazyk) FROM verzia_subor vs3 JOIN subor s3 ON s3.id = vs3.subor_id JOIN stopa st ON st.subor_id = s3.id
+                    WHERE vs3.verzia_id = vt.id AND s3.stav = 0 AND st.druh = 3 AND st.jazyk IS NOT NULL),
+                   coalesce(sum(s.velkost) FILTER (WHERE s.stav = 0), 0), max(coalesce(m.hdr, 0)) > 0, count(*) FILTER (WHERE s.stav = 0) > 0
+            FROM vt JOIN verzia_subor vs ON vs.verzia_id = vt.id JOIN subor s ON s.id = vs.subor_id
+            LEFT JOIN medialne_udaje m ON m.subor_id = s.id AND s.stav = 0
+            GROUP BY vt.id
+            """);
+        prikaz.Parameters.AddWithValue("$t", titulId);
+        using var c = prikaz.ExecuteReader();
+        var vysledok = new List<VlastnostiVerzie>();
+        while (c.Read())
+        {
+            IReadOnlyCollection<string> Jazyky(int i) => c.IsDBNull(i) ? [] : c.GetString(i).Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+            vysledok.Add(new VlastnostiVerzie(c.GetInt64(0), (TriedaKvality)c.GetInt32(1), c.IsDBNull(2) ? null : c.GetInt32(2), c.IsDBNull(3) ? null : c.GetString(3),
+                Jazyky(4), Jazyky(5), c.GetInt64(6), c.GetInt32(7) == 1, c.GetInt32(8) == 1));
+        }
+
+        return vysledok;
     }
 
     /// <summary>The versions of a title (a film's own, a series' by episode), present ones first.</summary>

@@ -52,6 +52,9 @@ public sealed class Dotaz
         ["kniznica"] = PoleDotazu.Kniznica, ["titul"] = PoleDotazu.Kniznica,
         ["mam"] = PoleDotazu.Mam,
         ["zelane"] = PoleDotazu.Zelane, ["zelany"] = PoleDotazu.Zelane, ["chcem"] = PoleDotazu.Zelane,
+        ["verzie"] = PoleDotazu.Verzie, ["verzii"] = PoleDotazu.Verzie,
+        ["zalohovane"] = PoleDotazu.Zalohovane, ["zalohovany"] = PoleDotazu.Zalohovane, ["zaloha"] = PoleDotazu.Zalohovane,
+        ["duplikat"] = PoleDotazu.Duplikat, ["duplikaty"] = PoleDotazu.Duplikat, ["kopia"] = PoleDotazu.Duplikat,
     };
 
     private Dotaz(string text, IReadOnlyList<Podmienka> podmienky, IReadOnlyList<string> upozornenia)
@@ -77,7 +80,7 @@ public sealed class Dotaz
     /// <summary>Whether folders can match (no condition that only files have).</summary>
     public bool HladaPriecinky => Podmienky.All(p => p switch
     {
-        Pripony { Zaporna: false } or Velkost { Zaporna: false } or MedialnaPodmienka or TitulovaPodmienka => false,
+        Pripony { Zaporna: false } or Velkost { Zaporna: false } or MedialnaPodmienka or TitulovaPodmienka or Duplikat => false,
         Obdobie { Pole: PoleDotazu.Pridane, Zaporna: false } => false,
         Typy { Zaporna: false } t => t.Priecinky,
         Typy { Zaporna: true } t => !t.Priecinky,
@@ -159,6 +162,9 @@ public sealed class Dotaz
         PoleDotazu.Kniznica => "kniznica",
         PoleDotazu.Mam => "mam",
         PoleDotazu.Zelane => "zelane",
+        PoleDotazu.Verzie => "verzie",
+        PoleDotazu.Zalohovane => "zalohovane",
+        PoleDotazu.Duplikat => "duplikat",
         _ => "zmazane",
     };
 
@@ -357,6 +363,17 @@ public sealed class Dotaz
             case PoleDotazu.Zelane:
                 return AnoNie(h) is { } zelane ? new Zelane(zelane != zaporny) : null;
 
+            case PoleDotazu.Verzie:
+                // "verzie:2" are titles with two versions exactly; ">1" more than one
+                var pocetRozsah = int.TryParse(h, NumberStyles.None, Invariant, out var presne) ? ((long?)presne, (long?)presne, true) : Rozsah(h, CitajPocet);
+                return pocetRozsah is var (pOd, pDo, platnyPocet) && platnyPocet ? new PocetVerzii((int?)pOd, (int?)pDo, zaporny) : null;
+
+            case PoleDotazu.Zalohovane:
+                return AnoNie(h) is { } zalohovane ? new Zalohovane(zalohovane != zaporny) : null;
+
+            case PoleDotazu.Duplikat:
+                return AnoNie(h) is { } duplikat ? new Duplikat(duplikat != zaporny) : null;
+
             default:
                 return BezDiakritiky(h) switch
                 {
@@ -398,6 +415,9 @@ public sealed class Dotaz
         PoleDotazu.Kniznica => "kniznica:film (alebo serial, ano, nie, potvrdit)",
         PoleDotazu.Mam => "mam:nie (tituly, ktoré nemáš)",
         PoleDotazu.Zelane => "zelane:ano",
+        PoleDotazu.Verzie => "verzie:>1 (duplicity)",
+        PoleDotazu.Zalohovane => "zalohovane:nie (tituly len na jednom disku)",
+        PoleDotazu.Duplikat => "duplikat:ano (presné kópie súborov)",
         _ => "zmazane:aj alebo zmazane:len",
     };
 
@@ -451,6 +471,9 @@ public sealed class Dotaz
 
         return ("", h);
     }
+
+    private static long? CitajPocet(string text) =>
+        int.TryParse(text.Trim(), NumberStyles.None, Invariant, out var pocet) && pocet is >= 0 and <= 1000 ? pocet : null;
 
     private static long? CitajRok(string text) =>
         int.TryParse(text.Trim(), NumberStyles.None, Invariant, out var rok) && rok is >= 1800 and <= 2300 ? rok : null;

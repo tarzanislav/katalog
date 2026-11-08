@@ -903,7 +903,32 @@ public static class Tituly
         prikaz.Parameters.AddWithValue("$k", Normalizacia.Kluc(navrh.Druh, navrh.Nazov, navrh.Rok));
         prikaz.Parameters.AddWithValue("$d", (int)navrh.Druh);
         prikaz.Parameters.AddWithValue("$tmdb", (object?)tmdb ?? DBNull.Value);
-        return prikaz.ExecuteScalar() is long najdeny ? najdeny : null;
+        if (prikaz.ExecuteScalar() is long najdeny)
+        {
+            return najdeny;
+        }
+
+        if (navrh.Rok is not null)
+        {
+            return null;
+        }
+
+        // a name without a year ("Seriál S01E01.mkv" among backups) belongs to the only title of that name with a year
+        using var bezRoka = Kniznica.Prikaz(spojenie, """
+            SELECT DISTINCT k.titul_id FROM titul_kluc k JOIN titul t ON t.id = k.titul_id
+            WHERE k.kluc BETWEEN $k AND $k || '9999' AND t.druh = $d
+            LIMIT 2
+            """);
+        bezRoka.Parameters.AddWithValue("$k", Normalizacia.Kluc(navrh.Druh, navrh.Nazov, null));
+        bezRoka.Parameters.AddWithValue("$d", (int)navrh.Druh);
+        using var c = bezRoka.ExecuteReader();
+        var najdene = new List<long>();
+        while (c.Read())
+        {
+            najdene.Add(c.GetInt64(0));
+        }
+
+        return najdene.Count == 1 ? najdene[0] : null;
     }
 
     private static long VytvorTitul(SqliteConnection spojenie, NavrhTitulu navrh, long teraz)

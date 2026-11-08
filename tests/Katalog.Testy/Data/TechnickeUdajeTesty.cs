@@ -44,6 +44,14 @@ public sealed class TechnickeUdajeTesty
             Over.Rovne(stopy.Count, precitane.Stopy.Count, "stopy sa vrátia");
             Over.Rovne(stopy[0], precitane.Stopy[0], "stopa sa vráti celá");
             Over.Rovne(new NahladVidea(obrazok.Meno, 2_465_041, 320, 133), precitane.Nahlady.Single(), "náhľad");
+            Over.Rovne((1, 1), TechnickeUdaje.Pocty(c, diskId), "čaká ešte odtlačok");
+            Over.Pravda(TechnickeUdaje.NaCitanie(c, diskId, 10).Single().MaUdaje, "len odtlačok");
+        }
+
+        Over.Pravda(await kniznica.Zapis.ZapisAsync(s => TechnickeUdaje.ZapisOdtlacok(s, video, new byte[16])), "odtlačok zapísaný");
+        Over.Pravda(!await kniznica.Zapis.ZapisAsync(s => TechnickeUdaje.ZapisOdtlacok(s, video with { Velkost = 1 }, new byte[16])), "iný súbor sa nezapíše");
+        using (var c = kniznica.OtvorCitanie())
+        {
             Over.Rovne((1, 0), TechnickeUdaje.Pocty(c, diskId), "nič nečaká");
 
             var nikto = new KontextHladania([], DateTime.Now);

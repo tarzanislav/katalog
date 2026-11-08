@@ -4,7 +4,8 @@ using Microsoft.Data.Sqlite;
 namespace Katalog.Data;
 
 /// <summary>A video whose technical data are still to be read, with what the scan saw (to know it did not change since).</summary>
-public sealed record VideoNaCitanie(long SuborId, long PriecinokId, string Nazov, long Velkost, long Zmeneny);
+/// <param name="MaUdaje">Its technical data are read already; only its fingerprint is missing (stage E5).</param>
+public sealed record VideoNaCitanie(long SuborId, long PriecinokId, string Nazov, long Velkost, long Zmeneny, bool MaUdaje = false);
 
 /// <summary>A preview of a video: the name of its picture file and the time in the video.</summary>
 public sealed record NahladVidea(string Meno, long CasMs, int Sirka, int Vyska);
@@ -18,14 +19,17 @@ public static class TechnickeUdaje
     /// <summary>The extensions of videos as an SQL list (constants of the program, nothing the user wrote).</summary>
     private static readonly string Videa = string.Join(", ", DruhySuborov.Pripony(DruhSuboru.Video).Select(p => "'" + p + "'"));
 
-    /// <summary>Videos of a disk without technical data (present ones only), in the order of the scan, after <paramref name="poId"/>.</summary>
+    /// <summary>
+    /// Videos of a disk without technical data or without a fingerprint (present ones only), in the order of the scan,
+    /// after <paramref name="poId"/>.
+    /// </summary>
     public static IReadOnlyList<VideoNaCitanie> NaCitanie(SqliteConnection spojenie, long diskId, int najviac, long poId = 0)
     {
         using var prikaz = spojenie.CreateCommand();
         prikaz.CommandText = $"""
-            SELECT s.id, s.priecinok_id, s.nazov, s.velkost, s.zmeneny FROM subor s
+            SELECT s.id, s.priecinok_id, s.nazov, s.velkost, s.zmeneny, EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id) FROM subor s
             WHERE s.disk_id = $disk AND s.stav = 0 AND s.pripona IN ({Videa}) AND s.id > $po
-              AND NOT EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id)
+              AND (s.odtlacok IS NULL OR NOT EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id))
             ORDER BY s.id LIMIT $najviac
             """;
         prikaz.Parameters.AddWithValue("$disk", diskId);
@@ -35,18 +39,18 @@ public static class TechnickeUdaje
         var vysledok = new List<VideoNaCitanie>();
         while (citac.Read())
         {
-            vysledok.Add(new VideoNaCitanie(citac.GetInt64(0), citac.GetInt64(1), citac.GetString(2), citac.GetInt64(3), citac.GetInt64(4)));
+            vysledok.Add(new VideoNaCitanie(citac.GetInt64(0), citac.GetInt64(1), citac.GetString(2), citac.GetInt64(3), citac.GetInt64(4), citac.GetInt32(5) == 1));
         }
 
         return vysledok;
     }
 
-    /// <summary>How many present videos a disk has, and how many of them still wait for their technical data.</summary>
+    /// <summary>How many present videos a disk has, and how many of them still wait for their technical data or fingerprint.</summary>
     public static (int Videa, int Zostava) Pocty(SqliteConnection spojenie, long diskId)
     {
         using var prikaz = spojenie.CreateCommand();
         prikaz.CommandText = $"""
-            SELECT count(*), count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id))
+            SELECT count(*), count(*) FILTER (WHERE s.odtlacok IS NULL OR NOT EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id))
             FROM subor s WHERE s.disk_id = $disk AND s.stav = 0 AND s.pripona IN ({Videa})
             """;
         prikaz.Parameters.AddWithValue("$disk", diskId);
@@ -59,6 +63,21 @@ public static class TechnickeUdaje
     /// Writes what was read about a video – only when the file is still the one that was read (same size and time, still
     /// present); returns whether it was written. Tracks and previews are replaced as a whole.
     /// </summary>
+    /// <summary>
+    /// Writes the fingerprint of a video (exact copies, stage E5) – only when the file is still the one that was read;
+    /// returns whether it was written.
+    /// </summary>
+    public static bool ZapisOdtlacok(SqliteConnection spojenie, VideoNaCitanie video, byte[] odtlacok)
+    {
+        using var prikaz = spojenie.CreateCommand();
+        prikaz.CommandText = "UPDATE subor SET odtlacok = $o WHERE id = $id AND velkost = $v AND zmeneny = $z AND stav = 0";
+        prikaz.Parameters.AddWithValue("$o", odtlacok);
+        prikaz.Parameters.AddWithValue("$id", video.SuborId);
+        prikaz.Parameters.AddWithValue("$v", video.Velkost);
+        prikaz.Parameters.AddWithValue("$z", video.Zmeneny);
+        return prikaz.ExecuteNonQuery() > 0;
+    }
+
     public static bool Zapis(
         SqliteConnection spojenie, VideoNaCitanie video, MedialneUdaje udaje, IReadOnlyList<Stopa> stopy, IReadOnlyList<(long ObrazokId, long CasMs)> nahlady, long teraz)
     {

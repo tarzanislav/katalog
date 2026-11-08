@@ -241,6 +241,7 @@ public static class Hladanie
                           string.Join(" OR ", k.Nazvy.Select(n => $"k.nazov LIKE {parameter("%" + Escape(n) + "%")} ESCAPE '\\'")) + ")",
             Pripojene p => $"{x}.disk_id {(p.Hodnota ? "IN" : "NOT IN")} (SELECT value FROM json_each({parameter(Json(kontext.PripojeneDisky))}))",
             MedialnaPodmienka m when !priecinky => PodmienkaMedii(m, parameter),
+            Duplikat d => priecinky ? "0" : PodmienkyKniznice.Duplikat(d),
             _ => null,
         };
         if (sql is null)
