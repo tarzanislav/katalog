@@ -1,4 +1,5 @@
 using Katalog.Data;
+using Katalog.Jadro.Dotazy;
 using Katalog.Jadro.Model;
 using Katalog.Jadro.Rozhrania;
 using Katalog.Skenovanie;
@@ -270,6 +271,90 @@ public sealed class TitulyTesty
         using (var c = kniznica.OtvorCitanie())
         {
             Over.Rovne("0|0", Skalar(c, "SELECT (SELECT count(*) FROM verzia WHERE potvrdena = 0) || '|' || (SELECT count(*) FROM kandidat)"), "potvrdené");
+        }
+    }
+
+    [Test]
+    public async Task HladanieVKniznici()
+    {
+        using var priecinok = new DocasnyPriecinok();
+        await using var kniznica = await Kniznica.OtvorAsync(priecinok.Subor("Kniznica.katalog"));
+        var diskId = await PripravAsync(kniznica, priecinok.Cesta, new[]
+        {
+            @"MOVIES\Vymyslená komédia (1999) [tmdbid-1]\Vymyslená komédia (1999) - CZ HD H264 SMALL.mkv",
+            @"MOVIES\Vymyslený horor (2021) [tmdbid-2]\Vymyslený horor (2021) - EN FHD H264 SMALL.mkv",
+            @"TVSHOWS\Vymyslený seriál (2025) [tmdbid-3]\Season 01\Vymyslený seriál S01E01 - CZ FHD H265 SMALL.mkv",
+            @"TVSHOWS\Vymyslený seriál (2025) [tmdbid-3]\Season 01\Vymyslený seriál S01E02 - CZ FHD H265 SMALL.mkv",
+            @"Filmy\Neistý film.avi",
+        });
+        await RozpoznanieDisku.SpustiAsync(kniznica, diskId, "", CancellationToken.None);
+        var poradie = PoradieZdrojov.Predvolene;
+        long komedia = 0, horor = 0, serial = 0;
+        using (var c = kniznica.OtvorCitanie())
+        {
+            foreach (var t in Tituly.NaDoplnenie(c, 10, 1, 1))
+            {
+                switch (t.Tmdb)
+                {
+                    case "movie/1": komedia = t.Id; break;
+                    case "movie/2": horor = t.Id; break;
+                    case "tv/3": serial = t.Id; break;
+                }
+            }
+        }
+
+        await kniznica.Zapis.ZapisAsync(s =>
+        {
+            Tituly.ZapisUdaje(s, komedia, Udaje(ZdrojUdajov.Tmdb, "movie/1", "Vymyslená komédia", "The Invented Comedy", 1999, null,
+                zanre: ["Komédia"], osoby: [new UdajeOsoby("person/7", "Vymyslená Herečka", RolaOsoby.Herec, null, 0)]) with { Hodnotenie = 6.5 }, null, poradie, 10);
+            Tituly.ZapisUdaje(s, horor, Udaje(ZdrojUdajov.Tmdb, "movie/2", "Vymyslený horor", null, 2021, null,
+                zanre: ["Horor"], osoby: [new UdajeOsoby("person/8", "Vymyslený Režisér", RolaOsoby.Rezia, null, 0)]) with { Hodnotenie = 8.1 }, null, poradie, 10);
+            Tituly.ZapisKolekciu(s, new UdajeKolekcie(ZdrojUdajov.Tmdb, "collection/1", "Vymyslená zbierka hororov", null,
+                [new Kandidat(ZdrojUdajov.Tmdb, "movie/2", DruhTitulu.Film, "Vymyslený horor", null, 2021, 1),
+                 new Kandidat(ZdrojUdajov.Tmdb, "movie/4", DruhTitulu.Film, "Vymyslený horor 2", null, 2024, 1)]), null, poradie, 10);
+            Tituly.NastavVlastne(s, komedia, 9, null, false, 11);
+            Tituly.NastavVidene(s, komedia, null, true, 12);
+        });
+
+        var nikto = new KontextHladania([], DateTime.Now);
+        using (var c = kniznica.OtvorCitanie())
+        {
+            IEnumerable<string> Tituly_(string text, PohladKniznice pohlad = PohladKniznice.Vsetko) =>
+                KniznicaTitulov.Najdi(c, Dotaz.Citaj(text), nikto, pohlad).Select(t => t.Nazov);
+
+            Over.Postupnost(["Neistý film", "Vymyslená komédia", "Vymyslený horor"], Tituly_("", PohladKniznice.Filmy), "filmy, ktoré mám");
+            Over.Postupnost(["Vymyslený seriál"], Tituly_("", PohladKniznice.Serialy), "seriály");
+            Over.Postupnost(["Neistý film"], Tituly_("", PohladKniznice.NaPotvrdenie), "na potvrdenie");
+            Over.Postupnost(["Vymyslený horor 2"], Tituly_("mam:nie"), "chýbajúci diel kolekcie");
+            Over.Postupnost(["Vymyslená komédia"], Tituly_("zaner:komedia"), "žáner bez diakritiky");
+            Over.Postupnost(["Vymyslená komédia"], Tituly_("komedia"), "slovo v názve bez diakritiky");
+            Over.Postupnost(["Vymyslená komédia"], Tituly_("komedia", PohladKniznice.Filmy).Where(_ => KniznicaTitulov.Detail(c, komedia)!.Povod["original"].Zdroj == ZdrojUdajov.NazovSuboru),
+                "originál z knižnice UNIVERSUM ostal (TMDB je až za názvom súboru)");
+            Over.Postupnost(["Vymyslený horor"], Tituly_("hodnotenie:>=8"), "hodnotenie zdroja");
+            Over.Postupnost(["Vymyslená komédia"], Tituly_("moje:9 videne:ano"), "moje hodnotenie a pozreté");
+            Over.Postupnost(["Vymyslená komédia"], Tituly_("herec:herečka"), "herec");
+            Over.Postupnost(["Vymyslený horor"], Tituly_("rezia:\"vymyslený režisér\""), "réžia");
+            Over.Postupnost(["Vymyslený horor", "Vymyslený horor 2"], Tituly_("kolekcia:hororov"), "kolekcia podľa mena");
+            Over.Postupnost(["Vymyslený horor"], Tituly_("rok:2015..2022 kniznica:film"), "rok");
+            Over.Postupnost(["Vymyslená komédia", "Vymyslený seriál"], Tituly_("-zaner:horor mam:ano rok:>1990"), "bez hororov");
+            Over.Postupnost(["Vymyslený seriál"], Tituly_("pripona:mkv disk:1 kniznica:serial"), "podmienky súborov");
+
+            // the same conditions find the files of the versions
+            Over.Rovne(2, Hladanie.Najdi(c, Dotaz.Citaj("kniznica:serial"), nikto).Polozky.Count, "súbory seriálu");
+            Over.Rovne("Vymyslená komédia (1999) - CZ HD H264 SMALL.mkv", Hladanie.Najdi(c, Dotaz.Citaj("zaner:komedia"), nikto).Polozky.Single().Nazov, "súbor komédie");
+            Over.Rovne(4, Hladanie.Najdi(c, Dotaz.Citaj("videne:nie"), nikto).Polozky.Count, "nepozreté súbory");
+            Over.Rovne(1, Hladanie.Najdi(c, Dotaz.Citaj("kniznica:potvrdit"), nikto).Polozky.Count, "súbor na potvrdenie");
+            Over.Rovne(0, Hladanie.Najdi(c, Dotaz.Citaj("zaner:komedia typ:priecinok"), nikto).Polozky.Count, "priečinok nemá žáner");
+
+            var detail = KniznicaTitulov.Detail(c, serial)!;
+            Over.Pravda(detail.Polozka is { Druh: DruhTitulu.Serial, Mam: true, Epizody: 2, Verzie: 2 }, "detail seriálu");
+            Over.Postupnost(["1:1 áno", "1:2 áno"], detail.Epizody.Select(e => $"{e.Seria}:{e.Cislo} {(e.Mam ? "áno" : "nie")}"), "epizódy");
+            Over.Pravda(detail.Verzie.All(v => v.Pritomna && v.Subory.Single().DiskCislo == "D001"), "verzie na disku D001");
+            var detailHororu = KniznicaTitulov.Detail(c, horor)!;
+            Over.Pravda(detailHororu.Kolekcie.Single() is { Diely: 2, Mam: 1 }, "kolekcia: 2 diely, mám 1");
+            Over.Pravda(detailHororu.Povod["nazov"].Zdroj == ZdrojUdajov.Tmdb && detailHororu.Zanre.SequenceEqual(["Horor"]), "pôvod a žáner");
+            Over.Pravda(KniznicaTitulov.ZoznamKolekcii(c).Single() is { Nazov: "Vymyslená zbierka hororov", Diely: 2, Mam: 1 }, "zoznam kolekcií");
+            Over.Rovne((3, 1, 1, 0), KniznicaTitulov.Pocty(c), "počty pohľadov");
         }
     }
 

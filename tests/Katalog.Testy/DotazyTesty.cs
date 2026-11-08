@@ -28,6 +28,39 @@ public sealed class DotazyTesty
     }
 
     [Test]
+    public void PoliaKniznice()
+    {
+        var dotaz = Dotaz.Citaj("rok:1990..1999 zaner:Komédia,horor videne:nie hodnotenie:>=7,5 moje:9 herec:\"Vymyslený Herec\" rezia:Režisér " +
+                                "kolekcia:ano kniznica:serial mam:nie zelane:ano -rok:1995");
+        Over.Rovne(0, dotaz.Upozornenia.Count, string.Join(" ", dotaz.Upozornenia));
+        Over.Postupnost(
+            [
+                "Roky { Zaporna = False, Od = 1990, Do = 1999 }", "Zanre komedia,horor", "Videne { Zaporna = False, Hodnota = False }",
+                "Hodnotenia { Zaporna = False, Od = 7.5, Do = , Moje = False }", "Hodnotenia { Zaporna = False, Od = 9, Do = , Moje = True }",
+                "Osoby Herec Vymyslený Herec", "Osoby Rezia Režisér", "Kolekcie ", "VKniznici { Zaporna = False, Stav = Serial }",
+                "Mam { Zaporna = False, Hodnota = False }", "Zelane { Zaporna = False, Hodnota = True }", "Roky { Zaporna = True, Od = 1995, Do = 1995 }",
+            ],
+            dotaz.Podmienky.Select(p => p switch
+            {
+                Zanre z => "Zanre " + string.Join(",", z.Nazvy),
+                Osoby o => $"Osoby {o.Rola} {string.Join(",", o.Mena)}",
+                Kolekcie k => "Kolekcie " + string.Join(",", k.Nazvy),
+                _ => p.ToString(),
+            }),
+            "podmienky");
+        Over.Pravda(!dotaz.HladaPriecinky && dotaz.HladaSubory, "polia knižnice hľadajú len súbory");
+        Over.Rovne(new Roky(2001, null, false), Dotaz.Citaj("rok:>2000").Podmienky.Single(), "rok:>2000");
+        Over.Pravda(Dotaz.Citaj("kolekcia:nie").Podmienky.Single() is Kolekcie { Zaporna: true, Nazvy.Count: 0 }, "kolekcia:nie");
+        Over.Rovne(new VKniznici(StavVKniznici.NaPotvrdenie, false), Dotaz.Citaj("kniznica:potvrdit").Podmienky.Single(), "na potvrdenie");
+        foreach (var zle in new[] { "rok:minuly", "herec:ab", "hodnotenie:11", "kniznica:mozno" })
+        {
+            Over.Rovne(1, Dotaz.Citaj(zle).Upozornenia.Count, zle);
+        }
+
+        Over.Rovne("vymyslený rok:2001", Dotaz.NastavPole("vymyslený rok:1999", PoleDotazu.Rok, "2001"), "filter roka");
+    }
+
+    [Test]
     public void PoliaAIchHodnoty()
     {
         var dotaz = Dotaz.Citaj("Pripona:.MKV,mp4 typ:video,titulky disk:D003,\"Záloha 2\" katalog:Videotéka Pripojené:áno Zmazané:aj -pripona:srt");
@@ -113,8 +146,8 @@ public sealed class DotazyTesty
     [Test]
     public void NeznamePoleSaHladaAkoText()
     {
-        var dotaz = Dotaz.Citaj("re:zero herec:vymyslený C:\\Filmy");
-        Over.Postupnost(["re:zero", "herec:vymyslený", "C:\\Filmy"], dotaz.Podmienky.Cast<Slovo>().Select(s => s.Text), "ako text");
+        var dotaz = Dotaz.Citaj("re:zero stitok:vymyslený C:\\Filmy");
+        Over.Postupnost(["re:zero", "stitok:vymyslený", "C:\\Filmy"], dotaz.Podmienky.Cast<Slovo>().Select(s => s.Text), "ako text");
         Over.Rovne(2, dotaz.Upozornenia.Count, "neznáme polia sa ohlásia, cesta nie");
     }
 

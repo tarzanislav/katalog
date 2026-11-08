@@ -6,10 +6,14 @@
 --   shows them offline.
 -- * Files that are no titles: extras and samples the recognition found, and those the user said (home videos, trailers
 --   kept on purpose); recognition leaves them alone.
+-- * Genres keep their name without diacritics (the query language searches by it).
 -- * A file with several episodes ("S01E01E02"): its version belongs to the first, the others are listed here.
 
 ALTER TABLE titul ADD COLUMN hladany INTEGER;
 ALTER TABLE titul ADD COLUMN nacitany INTEGER;
+
+-- a genre's name without diacritics and letter case ("komedia"), for zaner:komedia
+ALTER TABLE zaner ADD COLUMN kluc TEXT;
 
 -- "1:pan prstenov navrat krala:2003" (Katalog.Jadro.Model.Normalizacia.Kluc)
 CREATE TABLE titul_kluc (

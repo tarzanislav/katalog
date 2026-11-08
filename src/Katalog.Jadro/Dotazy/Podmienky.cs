@@ -2,7 +2,7 @@ using Katalog.Jadro.Model;
 
 namespace Katalog.Jadro.Dotazy;
 
-/// <summary>The fields of the query language (pole:hodnota). Titles, audio, quality and the rest come with their stages.</summary>
+/// <summary>The fields of the query language (pole:hodnota). Duplicates, tags and the rest come with their stages.</summary>
 public enum PoleDotazu
 {
     Pripona = 1,
@@ -21,6 +21,30 @@ public enum PoleDotazu
     Hdr = 14,
     Dlzka = 15,
     Poskodene = 16,
+    Rok = 17,
+    Zaner = 18,
+    Videne = 19,
+    Hodnotenie = 20,
+    MojeHodnotenie = 21,
+    Herec = 22,
+    Rezia = 23,
+    Kolekcia = 24,
+    Kniznica = 25,
+    Mam = 26,
+    Zelane = 27,
+}
+
+/// <summary>Where a file or title stands in the library of titles (kniznica:film, kniznica:potvrdit…).</summary>
+public enum StavVKniznici
+{
+    Film = 1,
+    Serial = 2,
+    /// <summary>A file that is a version of a title (kniznica:ano).</summary>
+    VKniznici = 3,
+    /// <summary>A video set aside as no title (kniznica:nie).</summary>
+    MimoKniznice = 4,
+    /// <summary>A version waiting for confirmation (kniznica:potvrdit).</summary>
+    NaPotvrdenie = 5,
 }
 
 /// <summary>Whether entries deleted from their disk (kept in the history) are searched.</summary>
@@ -93,6 +117,39 @@ public sealed record Dlzka(long? OdMs, long? DoMs, bool Zaporna) : MedialnaPodmi
 
 /// <summary>poskodene:ano – files ffprobe could not read (N3).</summary>
 public sealed record Poskodene(bool Hodnota) : MedialnaPodmienka(false);
+
+/// <summary>
+/// A condition on the library of titles (stage E4): a title matches it, a file when it is a version of a matching title
+/// (folders never).
+/// </summary>
+public abstract record TitulovaPodmienka(bool Zaporna) : Podmienka(Zaporna);
+
+/// <summary>rok:2001, rok:1990..1999, rok:&gt;=2020 – the year of the title, both bounds included.</summary>
+public sealed record Roky(int? Od, int? Do, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>zaner:komedia,horor – genres by a part of their name (without diacritics).</summary>
+public sealed record Zanre(IReadOnlyList<string> Nazvy, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>videne:ano – a watched film, or a series with a watched episode (a file: its own film or episode).</summary>
+public sealed record Videne(bool Hodnota) : TitulovaPodmienka(false);
+
+/// <summary>hodnotenie:&gt;=7.5 (the source's rating) or moje:&gt;=8 (the user's own), both bounds included.</summary>
+public sealed record Hodnotenia(double? Od, double? Do, bool Moje, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>herec:"Meno Priezvisko", rezia:Meno – people of the title by a part of their name.</summary>
+public sealed record Osoby(RolaOsoby Rola, IReadOnlyList<string> Mena, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>kolekcia:ano, or kolekcia:"Vymyslená sága" – in any collection, or in one by a part of its name.</summary>
+public sealed record Kolekcie(IReadOnlyList<string> Nazvy, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>kniznica:film, kniznica:serial, kniznica:ano, kniznica:nie, kniznica:potvrdit.</summary>
+public sealed record VKniznici(StavVKniznici Stav, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>mam:nie – titles the user does not have (missing parts of collections, HISTRA lists, wishes).</summary>
+public sealed record Mam(bool Hodnota) : TitulovaPodmienka(false);
+
+/// <summary>zelane:ano – titles on the wish list.</summary>
+public sealed record Zelane(bool Hodnota) : TitulovaPodmienka(false);
 
 /// <summary>A bound of a time interval: an absolute local time, or a number of days, weeks, months or years before now.</summary>
 public readonly record struct Hranica(DateTime? Absolutna, int Pocet, JednotkaCasu Jednotka)

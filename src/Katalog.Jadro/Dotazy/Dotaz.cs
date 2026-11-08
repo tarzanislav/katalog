@@ -41,6 +41,17 @@ public sealed class Dotaz
         ["hdr"] = PoleDotazu.Hdr,
         ["dlzka"] = PoleDotazu.Dlzka, ["cas"] = PoleDotazu.Dlzka,
         ["poskodene"] = PoleDotazu.Poskodene, ["poskodeny"] = PoleDotazu.Poskodene, ["chyby"] = PoleDotazu.Poskodene,
+        ["rok"] = PoleDotazu.Rok, ["year"] = PoleDotazu.Rok,
+        ["zaner"] = PoleDotazu.Zaner, ["zanre"] = PoleDotazu.Zaner, ["genre"] = PoleDotazu.Zaner,
+        ["videne"] = PoleDotazu.Videne, ["videny"] = PoleDotazu.Videne, ["pozrete"] = PoleDotazu.Videne,
+        ["hodnotenie"] = PoleDotazu.Hodnotenie, ["rating"] = PoleDotazu.Hodnotenie,
+        ["moje"] = PoleDotazu.MojeHodnotenie, ["mojehodnotenie"] = PoleDotazu.MojeHodnotenie,
+        ["herec"] = PoleDotazu.Herec, ["herci"] = PoleDotazu.Herec, ["hra"] = PoleDotazu.Herec,
+        ["rezia"] = PoleDotazu.Rezia, ["reziser"] = PoleDotazu.Rezia,
+        ["kolekcia"] = PoleDotazu.Kolekcia, ["kolekcie"] = PoleDotazu.Kolekcia,
+        ["kniznica"] = PoleDotazu.Kniznica, ["titul"] = PoleDotazu.Kniznica,
+        ["mam"] = PoleDotazu.Mam,
+        ["zelane"] = PoleDotazu.Zelane, ["zelany"] = PoleDotazu.Zelane, ["chcem"] = PoleDotazu.Zelane,
     };
 
     private Dotaz(string text, IReadOnlyList<Podmienka> podmienky, IReadOnlyList<string> upozornenia)
@@ -66,7 +77,7 @@ public sealed class Dotaz
     /// <summary>Whether folders can match (no condition that only files have).</summary>
     public bool HladaPriecinky => Podmienky.All(p => p switch
     {
-        Pripony { Zaporna: false } or Velkost { Zaporna: false } or MedialnaPodmienka => false,
+        Pripony { Zaporna: false } or Velkost { Zaporna: false } or MedialnaPodmienka or TitulovaPodmienka => false,
         Obdobie { Pole: PoleDotazu.Pridane, Zaporna: false } => false,
         Typy { Zaporna: false } t => t.Priecinky,
         Typy { Zaporna: true } t => !t.Priecinky,
@@ -137,6 +148,17 @@ public sealed class Dotaz
         PoleDotazu.Hdr => "hdr",
         PoleDotazu.Dlzka => "dlzka",
         PoleDotazu.Poskodene => "poskodene",
+        PoleDotazu.Rok => "rok",
+        PoleDotazu.Zaner => "zaner",
+        PoleDotazu.Videne => "videne",
+        PoleDotazu.Hodnotenie => "hodnotenie",
+        PoleDotazu.MojeHodnotenie => "moje",
+        PoleDotazu.Herec => "herec",
+        PoleDotazu.Rezia => "rezia",
+        PoleDotazu.Kolekcia => "kolekcia",
+        PoleDotazu.Kniznica => "kniznica",
+        PoleDotazu.Mam => "mam",
+        PoleDotazu.Zelane => "zelane",
         _ => "zmazane",
     };
 
@@ -286,6 +308,55 @@ public sealed class Dotaz
             case PoleDotazu.Poskodene:
                 return AnoNie(h) is { } poskodene ? new Poskodene(poskodene != zaporny) : null;
 
+            case PoleDotazu.Rok:
+                // a plain year is that year (not "at least" as with sizes)
+                var rokRozsah = int.TryParse(h, NumberStyles.None, Invariant, out var jedenRok) ? ((long?)jedenRok, (long?)jedenRok, true) : Rozsah(h, CitajRok);
+                return rokRozsah is var (rokOd, rokDo, platnyRok) && platnyRok && rokOd is null or >= 1800 && rokDo is null or <= 2300
+                    ? new Roky((int?)rokOd, (int?)rokDo, zaporny)
+                    : null;
+
+            case PoleDotazu.Zaner:
+                var zanre = Zoznam(h).Select(Normalizacia.Nazov).Where(z => z.Length > 0).Distinct().ToList();
+                return zanre.Count == 0 ? null : new Zanre(zanre, zaporny);
+
+            case PoleDotazu.Videne:
+                return AnoNie(h) is { } videne ? new Videne(videne != zaporny) : null;
+
+            case PoleDotazu.Hodnotenie or PoleDotazu.MojeHodnotenie:
+                return Rozsah(h, CitajDesatiny) is var (hOd, hDo, platneH) && platneH
+                    ? new Hodnotenia(hOd / 10.0, hDo / 10.0, pole == PoleDotazu.MojeHodnotenie, zaporny)
+                    : null;
+
+            case PoleDotazu.Herec or PoleDotazu.Rezia:
+                var mena = Zoznam(h).Where(m => m.Length >= 3).ToList();
+                return mena.Count == 0 ? null : new Osoby(pole == PoleDotazu.Herec ? RolaOsoby.Herec : RolaOsoby.Rezia, mena, zaporny);
+
+            case PoleDotazu.Kolekcia:
+                if (AnoNie(h) is { } vKolekcii)
+                {
+                    return new Kolekcie([], zaporny == vKolekcii);
+                }
+
+                var kolekcie = Zoznam(h).Where(k => k.Length >= 3).ToList();
+                return kolekcie.Count == 0 ? null : new Kolekcie(kolekcie, zaporny);
+
+            case PoleDotazu.Kniznica:
+                return BezDiakritiky(h) switch
+                {
+                    "film" or "filmy" or "movie" => new VKniznici(StavVKniznici.Film, zaporny),
+                    "serial" or "serialy" or "tv" => new VKniznici(StavVKniznici.Serial, zaporny),
+                    "ano" or "a" or "yes" or "1" => new VKniznici(StavVKniznici.VKniznici, zaporny),
+                    "nie" or "n" or "no" or "0" or "mimo" => new VKniznici(StavVKniznici.MimoKniznice, zaporny),
+                    "potvrdit" or "napotvrdenie" or "nepotvrdene" => new VKniznici(StavVKniznici.NaPotvrdenie, zaporny),
+                    _ => null,
+                };
+
+            case PoleDotazu.Mam:
+                return AnoNie(h) is { } mam ? new Mam(mam != zaporny) : null;
+
+            case PoleDotazu.Zelane:
+                return AnoNie(h) is { } zelane ? new Zelane(zelane != zaporny) : null;
+
             default:
                 return BezDiakritiky(h) switch
                 {
@@ -316,6 +387,17 @@ public sealed class Dotaz
         PoleDotazu.Hdr => "hdr:ano (alebo hdr10, dv, hlg, nie)",
         PoleDotazu.Dlzka => "dlzka:>2h, dlzka:<30min alebo dlzka:80min..100min",
         PoleDotazu.Poskodene => "poskodene:ano",
+        PoleDotazu.Rok => "rok:2001, rok:1990..1999 alebo rok:>=2020",
+        PoleDotazu.Zaner => "zaner:komedia,horor",
+        PoleDotazu.Videne => "videne:ano alebo videne:nie",
+        PoleDotazu.Hodnotenie => "hodnotenie:>=7.5",
+        PoleDotazu.MojeHodnotenie => "moje:>=8",
+        PoleDotazu.Herec => "herec:\"Meno Priezvisko\" (aspoň 3 písmená)",
+        PoleDotazu.Rezia => "rezia:Priezvisko (aspoň 3 písmená)",
+        PoleDotazu.Kolekcia => "kolekcia:ano alebo kolekcia:\"Názov kolekcie\"",
+        PoleDotazu.Kniznica => "kniznica:film (alebo serial, ano, nie, potvrdit)",
+        PoleDotazu.Mam => "mam:nie (tituly, ktoré nemáš)",
+        PoleDotazu.Zelane => "zelane:ano",
         _ => "zmazane:aj alebo zmazane:len",
     };
 
@@ -369,6 +451,15 @@ public sealed class Dotaz
 
         return ("", h);
     }
+
+    private static long? CitajRok(string text) =>
+        int.TryParse(text.Trim(), NumberStyles.None, Invariant, out var rok) && rok is >= 1800 and <= 2300 ? rok : null;
+
+    /// <summary>"7.5" or "7,5" as tenths (75): ratings go from 0 to 10.</summary>
+    private static long? CitajDesatiny(string text) =>
+        double.TryParse(text.Trim().Replace(',', '.'), NumberStyles.AllowDecimalPoint, Invariant, out var x) && x is >= 0 and <= 10
+            ? (long)Math.Round(x * 10)
+            : null;
 
     /// <summary>"4GB", "700 MB", "1,5T", "4" (GB) – in bytes, by 1024 as Windows counts sizes.</summary>
     private static long? CitajVelkost(string text)

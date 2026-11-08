@@ -976,9 +976,10 @@ public static class Tituly
         foreach (var zaner in zanre.Select(z => z.Trim()).Where(z => z.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Take(12))
         {
             using var prikaz = Kniznica.Prikaz(spojenie, """
-                INSERT INTO zaner(nazov) VALUES ($n) ON CONFLICT(nazov) DO UPDATE SET nazov = nazov RETURNING id
+                INSERT INTO zaner(nazov, kluc) VALUES ($n, $k) ON CONFLICT(nazov) DO UPDATE SET kluc = excluded.kluc RETURNING id
                 """);
             prikaz.Parameters.AddWithValue("$n", zaner);
+            prikaz.Parameters.AddWithValue("$k", Normalizacia.Nazov(zaner));
             var zanerId = (long)prikaz.ExecuteScalar()!;
             using var spoj = Kniznica.Prikaz(spojenie, "INSERT OR IGNORE INTO titul_zaner(titul_id, zaner_id) VALUES ($t, $z)");
             spoj.Parameters.AddWithValue("$t", titulId);

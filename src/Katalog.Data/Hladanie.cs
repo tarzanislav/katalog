@@ -177,28 +177,9 @@ public static class Hladanie
 
         foreach (var podmienka in dotaz.Podmienky)
         {
-            var sql = podmienka switch
+            if (PodmienkaPolozky(podmienka, priecinky, kontext, Parameter) is { } sql)
             {
-                Pripony p when !priecinky => $"{x}.pripona IN ({Zoznam(p.Zoznam, Parameter)})",
-                Typy t when !priecinky => t.VsetkySubory ? "1" : t.Druhy.Count == 0 ? "0"
-                    : $"{x}.pripona IN ({Zoznam(t.Druhy.SelectMany(DruhySuborov.Pripony).Distinct(), Parameter)})",
-                Typy t => t.Priecinky ? "1" : "0",
-                Velkost v when !priecinky => Rozsah($"{x}.velkost", v.Od, v.Do, Parameter),
-                Obdobie o when o.Pole == PoleDotazu.Zmenene => PodmienkaObdobia($"{x}.zmeneny", o, kontext, Parameter),
-                Obdobie o when !priecinky => PodmienkaObdobia($"{x}.prvy_raz", o, kontext, Parameter),
-                Disky d => $"{x}.disk_id IN (SELECT id FROM disk WHERE {PodmienkaDiskov(d, Parameter)})",
-                Katalogy k => $"{x}.disk_id IN (SELECT d.id FROM disk d JOIN katalog k ON k.id = d.katalog_id WHERE " +
-                              string.Join(" OR ", k.Nazvy.Select(n => $"k.nazov LIKE {Parameter("%" + Escape(n) + "%")} ESCAPE '\\'")) + ")",
-                Pripojene p => $"{x}.disk_id {(p.Hodnota ? "IN" : "NOT IN")} (SELECT value FROM json_each({Parameter(Json(kontext.PripojeneDisky))}))",
-                MedialnaPodmienka m when !priecinky => PodmienkaMedii(m, Parameter),
-                _ => null,
-            };
-            if (sql is not null)
-            {
-                // "without Czech sound" or "without subtitles" speaks of videos: files without technical data are no match
-                podmienky.Add(!podmienka.Zaporna ? sql
-                    : podmienka is MedialnaPodmienka ? $"NOT ({sql}) AND s.id IN (SELECT subor_id FROM medialne_udaje)"
-                    : "NOT (" + sql + ")");
+                podmienky.Add(sql);
             }
         }
 
@@ -232,6 +213,45 @@ public static class Hladanie
         sqlText.Append(" WHERE ").Append(string.Join(" AND ", podmienky)).Append(" LIMIT $najviac");
         prikaz.CommandText = sqlText.ToString();
         return prikaz;
+    }
+
+    /// <summary>
+    /// One condition (not a word) on a file <c>s</c> or folder <c>p</c>, negation included; null when it says nothing about
+    /// this kind of entry. The library of titles uses it for the files of its versions.
+    /// </summary>
+    internal static string? PodmienkaPolozky(Podmienka podmienka, bool priecinky, KontextHladania kontext, Func<object, string> parameter)
+    {
+        var x = priecinky ? "p" : "s";
+        if (podmienka is TitulovaPodmienka titulova)
+        {
+            return priecinky ? null : PodmienkyKniznice.PreSubor(titulova, parameter);
+        }
+
+        var sql = podmienka switch
+        {
+            Pripony p when !priecinky => $"{x}.pripona IN ({Zoznam(p.Zoznam, parameter)})",
+            Typy t when !priecinky => t.VsetkySubory ? "1" : t.Druhy.Count == 0 ? "0"
+                : $"{x}.pripona IN ({Zoznam(t.Druhy.SelectMany(DruhySuborov.Pripony).Distinct(), parameter)})",
+            Typy t => t.Priecinky ? "1" : "0",
+            Velkost v when !priecinky => Rozsah($"{x}.velkost", v.Od, v.Do, parameter),
+            Obdobie o when o.Pole == PoleDotazu.Zmenene => PodmienkaObdobia($"{x}.zmeneny", o, kontext, parameter),
+            Obdobie o when !priecinky => PodmienkaObdobia($"{x}.prvy_raz", o, kontext, parameter),
+            Disky d => $"{x}.disk_id IN (SELECT id FROM disk WHERE {PodmienkaDiskov(d, parameter)})",
+            Katalogy k => $"{x}.disk_id IN (SELECT d.id FROM disk d JOIN katalog k ON k.id = d.katalog_id WHERE " +
+                          string.Join(" OR ", k.Nazvy.Select(n => $"k.nazov LIKE {parameter("%" + Escape(n) + "%")} ESCAPE '\\'")) + ")",
+            Pripojene p => $"{x}.disk_id {(p.Hodnota ? "IN" : "NOT IN")} (SELECT value FROM json_each({parameter(Json(kontext.PripojeneDisky))}))",
+            MedialnaPodmienka m when !priecinky => PodmienkaMedii(m, parameter),
+            _ => null,
+        };
+        if (sql is null)
+        {
+            return null;
+        }
+
+        // "without Czech sound" or "without subtitles" speaks of videos: files without technical data are no match
+        return !podmienka.Zaporna ? sql
+            : podmienka is MedialnaPodmienka ? $"NOT ({sql}) AND s.id IN (SELECT subor_id FROM medialne_udaje)"
+            : "NOT (" + sql + ")";
     }
 
     /// <summary>
