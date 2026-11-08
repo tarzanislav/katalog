@@ -22,10 +22,10 @@ internal sealed record RiadokPrehladuOkna(RiadokPrehladu Riadok, bool Pripojeny,
     public string Katalog => Riadok.Katalog;
 
     /// <summary>Used share of the disk (0 – 1) at its last scan; 0 when its size is not known.</summary>
-    public double Obsadene => Riadok.Disk.Identita.Velkost is > 0 and var v && Riadok.Disk.Volne is { } volne ? Math.Clamp(1 - ((double)volne / v.Value), 0, 1) : 0;
+    public double Obsadene => Riadok.Disk.Identita.Velkost is > 0 and var v && Riadok.Disk.Volne is { } volne ? Math.Clamp(1 - ((double)volne / v), 0, 1) : 0;
 
     public string MiestoText => Riadok.Disk.Identita.Velkost is > 0 and var v
-        ? $"voľné {Format.Velkost(Riadok.Disk.Volne ?? 0)} z {Format.Velkost(v.Value)}"
+        ? $"voľné {Format.Velkost(Riadok.Disk.Volne ?? 0)} z {Format.Velkost(v)}"
         : Riadok.Disk.Volne is { } volne ? $"voľné {Format.Velkost(volne)}" : "neznáme";
 
     public string SuboryText => Format.Pocet(Riadok.Suborov);
