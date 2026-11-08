@@ -98,15 +98,15 @@ public partial class FiltreOkno : Window
         };
 
         var text = _povodny;
-        text = Dotaz.NastavPole(text, PoleDotazu.Typ, Tag(VolbaTypu));
+        text = Dotaz.NastavPole(text, PoleDotazu.Typ, Hodnota(VolbaTypu));
         text = Dotaz.NastavPole(text, PoleDotazu.Pripona, PolePripony.Text.Replace(" ", "", StringComparison.Ordinal));
         text = Dotaz.NastavPole(text, PoleDotazu.Velkost, velkost);
         text = Dotaz.NastavPole(text, PoleDotazu.Zmenene, PoleZmenene.Text.Replace(" ", "", StringComparison.Ordinal));
-        text = Dotaz.NastavPole(text, PoleDotazu.Pridane, Tag(VolbaPridania));
+        text = Dotaz.NastavPole(text, PoleDotazu.Pridane, Hodnota(VolbaPridania));
         text = Dotaz.NastavPole(text, PoleDotazu.Disk, (ZoznamDiskov.SelectedItem as Volba)?.Hodnota);
         text = Dotaz.NastavPole(text, PoleDotazu.Katalog, (ZoznamKatalogov.SelectedItem as Volba)?.Hodnota);
         text = Dotaz.NastavPole(text, PoleDotazu.Pripojene, LenPripojene.IsChecked == true ? "ano" : null);
-        text = Dotaz.NastavPole(text, PoleDotazu.Zmazane, Tag(VolbaZmazanych));
+        text = Dotaz.NastavPole(text, PoleDotazu.Zmazane, Hodnota(VolbaZmazanych));
 
         // a value the query language does not understand is shown here, before it leaves the window
         var upozornenia = Dotaz.Citaj(text).Upozornenia;
@@ -120,7 +120,7 @@ public partial class FiltreOkno : Window
         DialogResult = true;
     }
 
-    private static string? Tag(ComboBox zoznam) => (zoznam.SelectedItem as ComboBoxItem)?.Tag as string;
+    private static string? Hodnota(ComboBox zoznam) => (zoznam.SelectedItem as ComboBoxItem)?.Tag as string;
 
     private sealed record Volba(string Popis, string Hodnota);
 }

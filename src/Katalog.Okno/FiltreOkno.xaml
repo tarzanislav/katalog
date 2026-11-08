@@ -26,7 +26,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.Resources>
-                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Style x:Key="Popis" TargetType="TextBlock">
                     <Setter Property="VerticalAlignment" Value="Center" />
                     <Setter Property="Margin" Value="0,8,8,0" />
                 </Style>
@@ -39,7 +39,7 @@
                 </Style>
             </Grid.Resources>
 
-            <TextBlock Text="Čo hľadať" />
+            <TextBlock Style="{StaticResource Popis}" Text="Čo hľadať" />
             <ComboBox Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaTypu">
                 <ComboBoxItem Content="Všetko (súbory aj priečinky)" Tag="" />
                 <ComboBoxItem Content="Videá" Tag="video" />
@@ -52,19 +52,19 @@
                 <ComboBoxItem Content="Len priečinky" Tag="priecinok" />
             </ComboBox>
 
-            <TextBlock Grid.Row="1" Text="Prípona" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="1" Text="Prípona" />
             <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" x:Name="PolePripony" ToolTip="Napríklad mkv alebo mkv,mp4" />
 
-            <TextBlock Grid.Row="2" Text="Veľkosť od" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="2" Text="Veľkosť od" />
             <TextBox Grid.Row="2" Grid.Column="1" x:Name="VelkostOd" ToolTip="Napríklad 700MB alebo 4GB" />
-            <TextBlock Grid.Row="2" Grid.Column="2" Text="do" Margin="8,8,8,0" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="2" Grid.Column="2" Text="do" Margin="8,8,8,0" />
             <TextBox Grid.Row="2" Grid.Column="3" x:Name="VelkostDo" ToolTip="Napríklad 20GB" />
 
-            <TextBlock Grid.Row="3" Text="Zmenené" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="3" Text="Zmenené" />
             <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" x:Name="PoleZmenene"
                      ToolTip="Rok (2024), mesiac (2024-05), deň (1.3.2025), od (>=2024), rozsah (2023..2024) alebo posledné dni (30d)" />
 
-            <TextBlock Grid.Row="4" Text="Pridané do katalógu" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="4" Text="Pridané do katalógu" />
             <ComboBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaPridania">
                 <ComboBoxItem Content="Kedykoľvek" Tag="" />
                 <ComboBoxItem Content="Dnes" Tag="dnes" />
@@ -73,13 +73,13 @@
                 <ComboBoxItem Content="Za posledný rok" Tag="1r" />
             </ComboBox>
 
-            <TextBlock Grid.Row="5" Text="Disk" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="5" Text="Disk" />
             <ComboBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3" x:Name="ZoznamDiskov" DisplayMemberPath="Popis" />
 
-            <TextBlock Grid.Row="6" Text="Katalóg" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="6" Text="Katalóg" />
             <ComboBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3" x:Name="ZoznamKatalogov" DisplayMemberPath="Popis" />
 
-            <TextBlock Grid.Row="7" Text="Zmazané" />
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="7" Text="Zmazané" />
             <ComboBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaZmazanych">
                 <ComboBoxItem Content="Len to, čo na diskoch je" Tag="" />
                 <ComboBoxItem Content="Aj to, čo z diskov zmizlo (história)" Tag="aj" />
