@@ -8,6 +8,18 @@ KATALOG je vlastný kód (licencia Apache 2.0). Používa tieto diela tretích s
 | [Microsoft.Data.Sqlite](https://github.com/dotnet/efcore) | prístup k SQLite z .NET | MIT |
 | [SQLitePCLRaw](https://github.com/ericsink/SQLitePCL.raw) | natívna knižnica SQLite pre .NET (súčasť Microsoft.Data.Sqlite) | Apache 2.0 |
 | [.NET](https://github.com/dotnet/runtime) | runtime programu | MIT |
+| [FFmpeg](https://ffmpeg.org) 9.0.2 (priečinok `ffmpeg`) | technické údaje videí (ffprobe) a náhľady (ffmpeg) | GNU LGPL 2.1 alebo novšia |
+| [zlib](https://zlib.net) (súčasť zostavy FFmpeg) | rozbaľovanie údajov niektorých formátov | zlib |
+
+## FFmpeg (LGPL 2.1 alebo novšia)
+
+KATALOG prednostne použije FFmpeg z UNIVERSUM alebo z priečinka zvoleného v Nastaveniach; vlastná kópia v priečinku
+`ffmpeg` je záloha pre počítač bez nich. Je to samostatný program (KATALOG ho len spúšťa), zostavený z oficiálneho
+zdrojového kódu FFmpeg (značka `n9.0.2`, commit `946fcce07b6dcd0331c8cc609192aeff5e1924f8`) skriptami
+`tools/ffmpeg/build-ffmpeg.sh` a `tools/ffmpeg/prepare.sh` – bez súčastí pod GPL, okresaný na čítanie formátov a výrobu
+náhľadov JPEG. Text licencie (`COPYING.LGPLv2.1`) a popis zostavy (`SOURCE.txt`) sa inštalujú s ním.
+**Úplný zdrojový kód tejto zostavy** (FFmpeg a skripty zostavenia) je priložený ku každému vydaniu KATALOGU na GitHube
+ako `ffmpeg-9.0.2-source.tar.xz` (https://github.com/tarzanislav/katalog/releases).
 
 ## MIT (Microsoft.Data.Sqlite, .NET)
 

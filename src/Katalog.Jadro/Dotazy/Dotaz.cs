@@ -34,6 +34,13 @@ public sealed class Dotaz
         ["katalog"] = PoleDotazu.Katalog,
         ["pripojene"] = PoleDotazu.Pripojene, ["pripojeny"] = PoleDotazu.Pripojene,
         ["zmazane"] = PoleDotazu.Zmazane, ["zmazany"] = PoleDotazu.Zmazane,
+        ["kvalita"] = PoleDotazu.Kvalita, ["rozlisenie"] = PoleDotazu.Kvalita,
+        ["kodek"] = PoleDotazu.Kodek, ["codec"] = PoleDotazu.Kodek,
+        ["zvuk"] = PoleDotazu.Zvuk, ["audio"] = PoleDotazu.Zvuk, ["dabing"] = PoleDotazu.Zvuk,
+        ["titulky"] = PoleDotazu.Titulky, ["sub"] = PoleDotazu.Titulky,
+        ["hdr"] = PoleDotazu.Hdr,
+        ["dlzka"] = PoleDotazu.Dlzka, ["cas"] = PoleDotazu.Dlzka,
+        ["poskodene"] = PoleDotazu.Poskodene, ["poskodeny"] = PoleDotazu.Poskodene, ["chyby"] = PoleDotazu.Poskodene,
     };
 
     private Dotaz(string text, IReadOnlyList<Podmienka> podmienky, IReadOnlyList<string> upozornenia)
@@ -59,7 +66,7 @@ public sealed class Dotaz
     /// <summary>Whether folders can match (no condition that only files have).</summary>
     public bool HladaPriecinky => Podmienky.All(p => p switch
     {
-        Pripony { Zaporna: false } or Velkost { Zaporna: false } => false,
+        Pripony { Zaporna: false } or Velkost { Zaporna: false } or MedialnaPodmienka => false,
         Obdobie { Pole: PoleDotazu.Pridane, Zaporna: false } => false,
         Typy { Zaporna: false } t => t.Priecinky,
         Typy { Zaporna: true } t => !t.Priecinky,
@@ -123,6 +130,13 @@ public sealed class Dotaz
         PoleDotazu.Disk => "disk",
         PoleDotazu.Katalog => "katalog",
         PoleDotazu.Pripojene => "pripojene",
+        PoleDotazu.Kvalita => "kvalita",
+        PoleDotazu.Kodek => "kodek",
+        PoleDotazu.Zvuk => "zvuk",
+        PoleDotazu.Titulky => "titulky",
+        PoleDotazu.Hdr => "hdr",
+        PoleDotazu.Dlzka => "dlzka",
+        PoleDotazu.Poskodene => "poskodene",
         _ => "zmazane",
     };
 
@@ -229,6 +243,49 @@ public sealed class Dotaz
             case PoleDotazu.Pripojene:
                 return AnoNie(h) is { } ano ? new Pripojene(ano != zaporny) : null;
 
+            case PoleDotazu.Kvalita:
+                return CitajKvality(h) is { Count: > 0 } triedy ? new Kvality(triedy, zaporny) : null;
+
+            case PoleDotazu.Kodek:
+                var kodeky = Zoznam(h).Select(KodekVidea).ToList();
+                return kodeky.Count == 0 || kodeky.Any(k => k is null) ? null : new Kodeky(kodeky.Select(k => k!).Distinct().ToList(), zaporny);
+
+            case PoleDotazu.Zvuk or PoleDotazu.Titulky:
+                var druhStopy = pole == PoleDotazu.Zvuk ? DruhStopy.Zvuk : DruhStopy.Titulky;
+                if (AnoNie(h) is { } maju)
+                {
+                    return new JazykyStop(druhStopy, [], true, zaporny == maju);
+                }
+
+                var jazyky = Zoznam(h).Select(Jazyky.Normalizuj).ToList();
+                return jazyky.Count == 0 || jazyky.Any(j => j is null) ? null : new JazykyStop(druhStopy, jazyky.Select(j => j!).Distinct().ToList(), false, zaporny);
+
+            case PoleDotazu.Hdr:
+                var druhyHdr = new List<Hdr>();
+                foreach (var slovo in Zoznam(h).Select(BezDiakritiky))
+                {
+                    switch (slovo)
+                    {
+                        case "ano" or "yes" or "1": druhyHdr.AddRange([Hdr.Hdr10, Hdr.Hdr10Plus, Hdr.DolbyVision, Hdr.Hlg]); break;
+                        case "nie" or "no" or "0" or "sdr": druhyHdr.Add(Hdr.Ziadne); break;
+                        case "hdr10" or "hdr": druhyHdr.Add(Hdr.Hdr10); break;
+                        case "hdr10+" or "hdr10plus": druhyHdr.Add(Hdr.Hdr10Plus); break;
+                        case "dv" or "dolbyvision" or "dovi": druhyHdr.Add(Hdr.DolbyVision); break;
+                        case "hlg": druhyHdr.Add(Hdr.Hlg); break;
+                        default: return null;
+                    }
+                }
+
+                return new HdrDruhy(druhyHdr.Distinct().ToList(), zaporny);
+
+            case PoleDotazu.Dlzka:
+                return Rozsah(h, CitajDlzku) is var (odMs, doMs, platnaDlzka) && platnaDlzka && (odMs is not null || doMs is not null)
+                    ? new Dlzka(odMs, doMs, zaporny)
+                    : null;
+
+            case PoleDotazu.Poskodene:
+                return AnoNie(h) is { } poskodene ? new Poskodene(poskodene != zaporny) : null;
+
             default:
                 return BezDiakritiky(h) switch
                 {
@@ -252,6 +309,13 @@ public sealed class Dotaz
         PoleDotazu.Disk => "disk:3 alebo disk:\"Filmy 1\"",
         PoleDotazu.Katalog => "katalog:Videotéka",
         PoleDotazu.Pripojene => "pripojene:ano",
+        PoleDotazu.Kvalita => "kvalita:4k,fhd alebo kvalita:>=fhd (sd, hd, fhd, 4k)",
+        PoleDotazu.Kodek => "kodek:hevc (h265, h264, av1, vp9, mpeg2, mpeg4, vc1)",
+        PoleDotazu.Zvuk => "zvuk:cs, zvuk:sk,cs alebo zvuk:nie",
+        PoleDotazu.Titulky => "titulky:sk, titulky:ano alebo titulky:nie",
+        PoleDotazu.Hdr => "hdr:ano (alebo hdr10, dv, hlg, nie)",
+        PoleDotazu.Dlzka => "dlzka:>2h, dlzka:<30min alebo dlzka:80min..100min",
+        PoleDotazu.Poskodene => "poskodene:ano",
         _ => "zmazane:aj alebo zmazane:len",
     };
 
@@ -337,6 +401,88 @@ public sealed class Dotaz
 
         var bajty = cislo * nasobok;
         return bajty > long.MaxValue ? null : (long)decimal.Round(bajty);
+    }
+
+    /// <summary>"4k,fhd", "&gt;=fhd", "&lt;hd" – classes of resolution.</summary>
+    private static List<TriedaKvality>? CitajKvality(string h)
+    {
+        static TriedaKvality? Trieda(string t) => BezDiakritiky(t) switch
+        {
+            "sd" or "480p" or "576p" => TriedaKvality.SD,
+            "hd" or "720p" => TriedaKvality.HD,
+            "fhd" or "fullhd" or "1080p" or "1080" => TriedaKvality.FHD,
+            "4k" or "uhd" or "2160p" or "2160" => TriedaKvality.UHD4K,
+            _ => null,
+        };
+
+        var (op, zvysok) = Operator(h);
+        if (op.Length > 0 && op != "=")
+        {
+            if (Trieda(zvysok) is not { } hranica)
+            {
+                return null;
+            }
+
+            var vsetky = new[] { TriedaKvality.SD, TriedaKvality.HD, TriedaKvality.FHD, TriedaKvality.UHD4K };
+            return vsetky.Where(t => op switch
+            {
+                ">" => t > hranica,
+                ">=" => t >= hranica,
+                "<" => t < hranica,
+                _ => t <= hranica,
+            }).ToList();
+        }
+
+        var triedy = Zoznam(zvysok).Select(Trieda).ToList();
+        return triedy.Any(t => t is null) ? null : triedy.Select(t => t!.Value).Distinct().ToList();
+    }
+
+    /// <summary>The codec of the picture as ffprobe names it: "h265", "x265" and "hevc" are one codec.</summary>
+    private static string? KodekVidea(string text) => BezDiakritiky(text).Replace(".", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal) switch
+    {
+        "hevc" or "h265" or "x265" => "hevc",
+        "h264" or "x264" or "avc" => "h264",
+        "av1" => "av1",
+        "vp9" => "vp9",
+        "vp8" => "vp8",
+        "mpeg2" or "mpeg2video" => "mpeg2video",
+        "mpeg4" or "xvid" or "divx" => "mpeg4",
+        "vc1" => "vc1",
+        _ => null,
+    };
+
+    /// <summary>"2h", "1,5h", "90min", "45m", "30s", "1:30" (h:mm), a bare number = minutes – in milliseconds.</summary>
+    private static long? CitajDlzku(string text)
+    {
+        var t = text.Trim().ToLowerInvariant().Replace(',', '.');
+        if (t.Contains(':', StringComparison.Ordinal))
+        {
+            var casti = t.Split(':');
+            return casti.Length == 2 && int.TryParse(casti[0], NumberStyles.None, Invariant, out var hodiny) &&
+                   int.TryParse(casti[1], NumberStyles.None, Invariant, out var minuty) && minuty < 60
+                ? (hodiny * 60L + minuty) * 60_000
+                : null;
+        }
+
+        var koniec = 0;
+        while (koniec < t.Length && (char.IsAsciiDigit(t[koniec]) || t[koniec] == '.'))
+        {
+            koniec++;
+        }
+
+        if (koniec == 0 || !double.TryParse(t[..koniec], NumberStyles.AllowDecimalPoint, Invariant, out var cislo))
+        {
+            return null;
+        }
+
+        double? nasobok = t[koniec..] switch
+        {
+            "h" or "hod" => 3_600_000,
+            "" or "m" or "min" => 60_000,
+            "s" or "sek" => 1_000,
+            _ => null,
+        };
+        return nasobok is { } n ? (long)Math.Round(cislo * n) : null;
     }
 
     // ------------------------------------------------------------------ time

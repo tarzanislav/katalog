@@ -34,8 +34,15 @@ jobs:
           for p in Jadro Data Skenovanie Media Zdroje Ulohy Vystupy; do
             dotnet build "src/Katalog.$p/Katalog.$p.csproj" -c Release || exit 1
           done
+      # ffprobe and ffmpeg of Ubuntu: the tests read an invented video they make with it
+      - name: FFmpeg for the tests
+        run: sudo apt-get install -y -q --no-install-recommends ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg)
       - name: Tests
         run: dotnet run --project tests/Katalog.Testy -c Release
+
+  # FFmpeg installed with KATALOG (LGPL, built from source once, then from the cache)
+  ffmpeg:
+    uses: ./.github/workflows/ffmpeg.yml
 
   # speed targets of the design on an invented library of 1 million files (section "Výkonové ciele")
   vykon:
@@ -53,9 +60,21 @@ jobs:
 
   windows:
     name: Zostavenie, samotest a inštalátor (Windows)
+    needs: ffmpeg
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # KATALOG's own FFmpeg: the tests and the self-test use it, the installer carries it
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ffmpeg
+          path: ffmpeg-build
+      - name: FFmpeg
+        shell: pwsh
+        run: |
+          & "ffmpeg-build\ffmpeg\ffmpeg.exe" -hide_banner -version | Select-Object -First 1
+          "KATALOG_FFMPEG_DIR=$PWD\ffmpeg-build\ffmpeg" >> $env:GITHUB_ENV
 
       # the runner image's .NET 10 SDK, else the official install script
       - name: .NET 10 SDK
@@ -94,6 +113,7 @@ jobs:
               "-p:Version=${{ steps.version.outputs.number }}" -o publish 2>&1
             $code = $LASTEXITCODE
           }
+          if ($code -eq 0) { Copy-Item -Recurse -Force ffmpeg-build\ffmpeg publish\ffmpeg }
           $output | ForEach-Object { Write-Host $_ }
           $output | Where-Object { $_ -match ': (error|warning) [A-Z]+\d+' } | Select-Object -Unique -First 30 | ForEach-Object {
             $line = "$_" -replace '%', '%25'

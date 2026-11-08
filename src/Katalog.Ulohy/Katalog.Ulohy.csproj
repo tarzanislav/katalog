@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Jobs: scanning a disk into the library; the persistent job queue with lanes per disk and priorities. -->
+  <!-- Jobs: scanning a disk into the library, reading technical data of videos; the persistent job queue with lanes per disk. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Katalog.Ulohy</RootNamespace>
@@ -11,5 +11,6 @@
     <ProjectReference Include="..\Katalog.Jadro\Katalog.Jadro.csproj" />
     <ProjectReference Include="..\Katalog.Data\Katalog.Data.csproj" />
     <ProjectReference Include="..\Katalog.Skenovanie\Katalog.Skenovanie.csproj" />
+    <ProjectReference Include="..\Katalog.Media\Katalog.Media.csproj" />
   </ItemGroup>
 </Project>

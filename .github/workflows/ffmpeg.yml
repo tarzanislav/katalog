@@ -1,0 +1,56 @@
+name: FFmpeg
+
+# The "ffmpeg" folder installed with KATALOG: FFmpeg built from its official source at a fixed commit, trimmed and LGPL
+# (tools/ffmpeg/prepare.sh). Built once and kept in the cache until tools/ffmpeg changes; used by CI and by the release
+# (artifact "ffmpeg": ffmpeg/ for the program, source/ with the FFmpeg source for the release).
+on:
+  workflow_call:
+    inputs:
+      cache-only:
+        description: 'Use only the build CI already prepared (the release builds nothing itself)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ffmpeg:
+    name: FFmpeg (LGPL, zo zdrojového kódu)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Cache
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ffmpeg-build
+          key: ffmpeg-${{ hashFiles('tools/ffmpeg/**', '.github/workflows/ffmpeg.yml') }}
+
+      - name: Prepared by CI
+        if: steps.cache.outputs.cache-hit != 'true' && inputs.cache-only
+        run: |
+          echo "::error::FFmpeg for this commit is not in the cache (kept 7 days after last use) – run CI on main first (Actions → CI → Run workflow on main), then release."
+          exit 1
+
+      - name: Build and check
+        if: steps.cache.outputs.cache-hit != 'true' && !inputs.cache-only
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends mingw-w64 nasm libz-mingw-w64-dev xz-utils
+          tools/ffmpeg/prepare.sh ffmpeg-build/ffmpeg ffmpeg-build/source
+
+      - name: Contents
+        run: |
+          find ffmpeg-build -type f -printf '%10s  %p\n' | sort -k2
+          python3 -c "import json; m = json.load(open('ffmpeg-build/ffmpeg/manifest.json')); print(len(m['files']), 'files in the manifest')"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ffmpeg
+          path: ffmpeg-build
+          if-no-files-found: error
+          retention-days: 3

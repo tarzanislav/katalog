@@ -49,6 +49,10 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
+[InstallDelete]
+; KATALOG's FFmpeg is replaced whole: no file of an older build stays (its manifest would not list it)
+Type: filesandordirs; Name: "{app}\ffmpeg"
+
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 

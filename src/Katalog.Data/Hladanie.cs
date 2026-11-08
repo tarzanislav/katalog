@@ -190,6 +190,7 @@ public static class Hladanie
                 Katalogy k => $"{x}.disk_id IN (SELECT d.id FROM disk d JOIN katalog k ON k.id = d.katalog_id WHERE " +
                               string.Join(" OR ", k.Nazvy.Select(n => $"k.nazov LIKE {Parameter("%" + Escape(n) + "%")} ESCAPE '\\'")) + ")",
                 Pripojene p => $"{x}.disk_id {(p.Hodnota ? "IN" : "NOT IN")} (SELECT value FROM json_each({Parameter(Json(kontext.PripojeneDisky))}))",
+                MedialnaPodmienka m when !priecinky => PodmienkaMedii(m, Parameter),
                 _ => null,
             };
             if (sql is not null)
@@ -228,6 +229,27 @@ public static class Hladanie
         sqlText.Append(" WHERE ").Append(string.Join(" AND ", podmienky)).Append(" LIMIT $najviac");
         prikaz.CommandText = sqlText.ToString();
         return prikaz;
+    }
+
+    /// <summary>
+    /// Technical data (stage E3) as a set of files: <c>s.id IN (…)</c> lets SQLite go from the few matching files of a
+    /// rare condition straight to them, and check a common one against the files of the words.
+    /// </summary>
+    private static string PodmienkaMedii(MedialnaPodmienka podmienka, Func<object, string> parameter)
+    {
+        static string Udaje(string kde) => "s.id IN (SELECT subor_id FROM medialne_udaje WHERE " + kde + ")";
+
+        return podmienka switch
+        {
+            Kvality k => Udaje($"trieda_kvality IN ({string.Join(", ", k.Triedy.Select(t => parameter((int)t)))})"),
+            Kodeky k => Udaje($"video_kodek IN ({Zoznam(k.Zoznam, parameter)})"),
+            HdrDruhy h => Udaje($"hdr IN ({string.Join(", ", h.Druhy.Select(d => parameter((int)d)))})"),
+            Dlzka d => Udaje(Rozsah("dlzka_ms", d.OdMs, d.DoMs, parameter)),
+            Poskodene p => Udaje(p.Hodnota ? "chyby IS NOT NULL" : "chyby IS NULL"),
+            JazykyStop { Akakolvek: true } j => $"s.id IN (SELECT subor_id FROM stopa WHERE druh = {(int)j.Druh})",
+            JazykyStop j => $"s.id IN (SELECT subor_id FROM stopa WHERE druh = {(int)j.Druh} AND jazyk IN ({Zoznam(j.Jazyky, parameter)}))",
+            _ => "1",
+        };
     }
 
     private static string Zoznam(IEnumerable<string> hodnoty, Func<object, string> parameter) =>
