@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Small helper that reads disk health (SMART) with administrator rights, only on request (stage E5).
-       It depends on nothing, writes only numbers as JSON to its output and never touches the library. -->
+       It depends on no other project: it shares only the reading rules (Smart.cs, linked) with the core, writes only
+       numbers as JSON and never touches the library. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -9,4 +10,7 @@
     <RootNamespace>Katalog.Zdravie</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Katalog.Jadro\Zdravie\Smart.cs" Link="Smart.cs" />
+  </ItemGroup>
 </Project>

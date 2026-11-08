@@ -1,5 +1,6 @@
 using System.Globalization;
 using Katalog.Jadro.Model;
+using Katalog.Jadro.Zdravie;
 using Microsoft.Data.Sqlite;
 
 namespace Katalog.Data;
@@ -139,6 +140,25 @@ public static class Prehlady
             """);
         return new Statistiky(filmy, serialy, epizody, Math.Round(minuty / 60, 1), suborov, velkost, diskov, desatrocia, zanre, kvalita, disky);
     }
+
+    /// <summary>
+    /// Which disks of the library the helper's readings belong to: by the serial number of the physical disk (all the
+    /// volumes and folders of one physical disk share its health). Readings of disks the library does not know are left out.
+    /// </summary>
+    public static IReadOnlyList<(long DiskId, VysledokZdravia Zdravie)> Prirad(IEnumerable<Disk> disky, IEnumerable<VysledokZdravia> vysledky)
+    {
+        var podlaSerioveho = vysledky.Where(v => !string.IsNullOrWhiteSpace(v.Seriove))
+            .GroupBy(v => v.Seriove!.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        return disky
+            .Where(d => d.Identita.SerioveCisloDisku is { Length: > 0 } s && podlaSerioveho.ContainsKey(s.Trim()))
+            .Select(d => (d.Id, podlaSerioveho[d.Identita.SerioveCisloDisku!.Trim()]))
+            .ToList();
+    }
+
+    /// <summary>A reading of the helper as it is kept (its raw numbers go along as JSON).</summary>
+    public static ZdravieDisku ZoVysledku(VysledokZdravia v, long kedy) =>
+        new(kedy, (StavZdravia)Math.Clamp(v.Stav, 0, 3), v.Teplota, v.Hodiny, v.Realokovane, v.Cakajuce, v.Opotrebenie);
 
     /// <summary>Writes a health reading of a disk.</summary>
     public static void ZapisZdravie(SqliteConnection spojenie, long diskId, ZdravieDisku zdravie, string? surove)
