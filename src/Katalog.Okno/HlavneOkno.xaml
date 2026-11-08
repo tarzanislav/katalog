@@ -456,6 +456,101 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                            TextAlignment="Center" Style="{StaticResource TichyText}" MaxWidth="460" />
             </Grid>
 
+            <!-- center: overview of disks (space, contents, health) and where new files fit (N2) -->
+            <Grid Grid.Column="1" x:Name="PanelPrehladu" Margin="20,16,20,8" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Prehľad diskov" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock x:Name="PocetPrehladu" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource TichyText}" />
+                </StackPanel>
+                <WrapPanel Grid.Row="1" Margin="0,10,0,8" Orientation="Horizontal">
+                    <TextBlock Text="Kam sa zmestí" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBox x:Name="PotrebneMiesto" Width="90" Padding="6,4" VerticalContentAlignment="Center" ToolTip="Napr. 50 GB, 700 MB, 1,5 TB" />
+                    <Button Content="Nájsť disk" Padding="12,4" Margin="8,0,16,0" Click="KamSaZmesti_Click" />
+                    <Button x:Name="TlacidloZdravie" Padding="12,4" Click="ZistitZdravie_Click"
+                            ToolTip="Prečíta SMART pripojených diskov; Windows sa opýta na povolenie (číta sa s právami správcu, v samostatnom malom programe)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE9D9;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
+                            <TextBlock Text="Zistiť zdravie diskov" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+                <TextBlock Grid.Row="2" x:Name="VysledokPrehladu" Margin="0,0,0,8" TextWrapping="Wrap" Visibility="Collapsed" />
+                <ListView Grid.Row="3" x:Name="ZoznamPrehladu" SelectionChanged="ZoznamPrehladu_SelectionChanged">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Disk" Width="210">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" Fill="#2EA043" VerticalAlignment="Center"
+                                                     Visibility="{Binding Pripojeny, Converter={StaticResource BoolNaViditelnost}}" />
+                                            <TextBlock Text="{Binding Nazov}" FontWeight="{Binding Vaha}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Katalóg" Width="120" DisplayMemberBinding="{Binding Katalog}" />
+                            <GridViewColumn Header="Obsadené" Width="170">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <ProgressBar Height="6" Width="150" Maximum="1" Value="{Binding Obsadene}" />
+                                            <TextBlock Text="{Binding MiestoText}" FontSize="11" Opacity="0.75" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Súbory" Width="80" DisplayMemberBinding="{Binding SuboryText}" />
+                            <GridViewColumn Header="Tituly" Width="70" DisplayMemberBinding="{Binding TitulyText}" />
+                            <GridViewColumn Header="Len tu" Width="70" DisplayMemberBinding="{Binding LenTuText}" />
+                            <GridViewColumn Header="Posledný sken" Width="120" DisplayMemberBinding="{Binding SkenText}" />
+                            <GridViewColumn Header="Zdravie" Width="170" DisplayMemberBinding="{Binding ZdravieText}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+
+            <!-- center: statistics of the library (N5) -->
+            <ScrollViewer Grid.Column="1" x:Name="PanelStatistik" Margin="20,16,8,8" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="0,0,12,0">
+                    <TextBlock Text="Štatistiky" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock x:Name="SuhrnStatistik" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="15" />
+                    <ItemsControl x:Name="SekcieStatistik" Margin="0,8,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,14,0,0">
+                                    <TextBlock Text="{Binding Nadpis}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding Riadky}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,1">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="170" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Nazov}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                        <Border Height="12" Width="{Binding Sirka}" CornerRadius="2" Background="{DynamicResource AccentFillColorDefaultBrush}"
+                                                                VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding PocetText}" Margin="8,0,0,0" FontSize="12" Opacity="0.8" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
             <!-- center: saved searches -->
             <Grid Grid.Column="1" x:Name="PanelUlozenych" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>

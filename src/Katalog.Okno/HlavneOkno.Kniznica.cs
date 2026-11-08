@@ -126,6 +126,18 @@ public partial class HlavneOkno
     /// <summary>A view of the library chosen in the navigation.</summary>
     private bool ZobrazObsahNavigacie(ListBoxItem polozka)
     {
+        if (ReferenceEquals(polozka, NavigaciaPrehlad))
+        {
+            _ = ZobrazPrehladAsync();
+            return true;
+        }
+
+        if (ReferenceEquals(polozka, NavigaciaStatistiky))
+        {
+            _ = ZobrazStatistikyAsync();
+            return true;
+        }
+
         ObsahKniznice? obsah = polozka switch
         {
             _ when ReferenceEquals(polozka, NavigaciaFilmy) => ObsahKniznice.Filmy,

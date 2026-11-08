@@ -188,6 +188,7 @@ internal static class Samotest
 
         await HladanieAsync(okno);
         await KnizniceAsync(okno);
+        await PrehladyAsync(okno);
 
         App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
@@ -368,6 +369,84 @@ internal static class Samotest
         nastavenia.Show();
         await SnimkaAsync(nastavenia, "nastavenia-zdroje-tmave.png");
         nastavenia.Close();
+    }
+
+    /// <summary>
+    /// Duplicates, titles on one disk, the overview of disks with where a file fits, the health of disks (a stand-in for the
+    /// elevated helper writes invented numbers) and statistics – stage E5.
+    /// </summary>
+    private static async Task PrehladyAsync(HlavneOkno okno)
+    {
+        if (okno.Kniznica is not { } kniznica)
+        {
+            return;
+        }
+
+        // a second, bigger copy of the film elsewhere on the disk: a duplicate
+        Subor(Path.Combine(_vystup, "VymyslenyDisk"), @"Zálohy\Vymyslený Šťastný film (2024).mkv", 1500);
+        await okno.SkenujAsync(_diskId);
+        await okno.DoplnKnizniciuAsync();
+
+        App.NastavMotiv("Light");
+        okno.NavigaciaDuplicity.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        Over(okno.PolozkySteny.Count == 1 && okno.PolozkySteny[0].Nazov == "Vymyslený Šťastný film", "duplicity: film dvakrát");
+        if (okno.PolozkySteny.FirstOrDefault() is { } film)
+        {
+            await okno.VyberPolozkuAsync(film);
+            Over(okno.DetailZobrazeny is { Verzie.Count: 2, NajlepsieVerzie.Count: 1 }, "detail: dve verzie, jedna najlepšia");
+            await SnimkaAsync(okno, "duplicity-svetle.png");
+        }
+
+        okno.NavigaciaNezalohovane.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        Over(okno.PolozkySteny.Count >= 3, "s jedným diskom nie je zálohovaný nič");
+
+        // the health of the disk: the helper's answer for its physical disk
+        string seriove;
+        using (var c = kniznica.OtvorCitanie())
+        {
+            seriove = KatalogyADisky.NajdiDisk(c, _diskId)?.Identita.SerioveCisloDisku ?? "";
+        }
+
+        if (seriove.Length == 0)
+        {
+            seriove = "SAMOTEST-DISK";
+            await kniznica.Zapis.ZapisAsync(s =>
+            {
+                using var prikaz = s.CreateCommand();
+                prikaz.CommandText = "UPDATE disk SET seriove_cislo_disku = $s WHERE id = $id";
+                prikaz.Parameters.AddWithValue("$s", seriove);
+                prikaz.Parameters.AddWithValue("$id", _diskId);
+                prikaz.ExecuteNonQuery();
+            });
+        }
+
+        okno.SpustacZdravia = async vystup =>
+        {
+            var odpoved = new Jadro.Zdravie.VystupZdravia(1,
+            [
+                new(0, "Vymyslený SSD", seriove, "NVMe", 38, 1_234, null, null, 0, 4, Jadro.Zdravie.Smart.Dobry, null, null),
+                new(1, "Vymyslený USB disk", null, "USB", null, null, null, null, null, null, Jadro.Zdravie.Smart.Neznamy, null, "Rámček USB disku SMART neposiela ďalej."),
+            ]);
+            await File.WriteAllBytesAsync(vystup, System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(odpoved));
+            return 0;
+        };
+        okno.NavigaciaPrehlad.IsSelected = true;
+        await okno.ZobrazPrehladAsync();
+        Over(await okno.ZistiZdravieAsync() == 1, "zdravie disku priradené podľa sériového čísla");
+        Over(okno.Prehlad.SingleOrDefault() is { Tituly: >= 3, Zdravie: { Stav: StavZdravia.Dobry, Teplota: 38 } } r && r.LenTu == r.Tituly,
+            "prehľad: tituly, len tu, zdravie");
+        okno.PotrebneMiesto.Text = "1 MB";
+        await okno.ZobrazPrehladAsync(new HashSet<long> { _diskId });
+        await SnimkaAsync(okno, "prehlad-diskov-svetle.png");
+        okno.SpustacZdravia = null;
+
+        App.NastavMotiv("Dark");
+        okno.NavigaciaStatistiky.IsSelected = true;
+        await okno.ZobrazStatistikyAsync();
+        Over(okno.SuhrnStatistik.Text.Contains("2 filmy", StringComparison.Ordinal), "štatistiky: " + okno.SuhrnStatistik.Text.Split('\n')[0]);
+        await SnimkaAsync(okno, "statistiky-tmave.png");
     }
 
     /// <summary>An invented poster (a colour and the title), drawn here: no picture comes from the internet.</summary>

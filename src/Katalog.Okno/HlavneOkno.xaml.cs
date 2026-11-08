@@ -121,7 +121,7 @@ public partial class HlavneOkno : Window
         }
 
         ZobrazPrazdny(polozka.Content as string ?? "", "Táto časť príde v ďalších etapách",
-            "Duplicity a prehľad diskov prídu v etape E5, playlisty v E7. Súbory a priečinky nájdeš hľadaním hore.");
+            "Playlisty prídu v etape E7. Súbory a priečinky nájdeš hľadaním hore.");
     }
 
     private async void TlacidloAktualizacie_Click(object sender, RoutedEventArgs e) => await KontrolujAktualizacieAsync(rucne: true);
