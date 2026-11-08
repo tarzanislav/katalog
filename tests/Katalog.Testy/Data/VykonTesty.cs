@@ -54,7 +54,7 @@ public sealed class VykonTesty
         var prvych = await ZapisSuboryAsync(kniznica, nahoda, 0, 100_000);
         var ostatnych = await ZapisSuboryAsync(kniznica, nahoda, 100_000, PocetSuborov);
 
-        double najhorsie;
+        double najhorsie, najhorsieSoSlovami, najhorsieLenPolia;
         await using (var spojenie = await kniznica.OtvorCitanieAsync())
         {
             string[] dotazy = ["vlak cesta", "123456", "stastie udolie", "zima", "les 1999"];
@@ -72,15 +72,36 @@ public sealed class VykonTesty
             }
 
             najhorsie = casy.Max();
+
+            // the query language: words with fields (while typing), and fields alone (they may read the whole table)
+            var kontext = new KontextHladania([1L], DateTime.Now);
+            string[] sPolami = ["vlak typ:video velkost:>500MB", "zima -leto pripona:srt", "stastie disk:1 pripojene:ano zmenene:2001", "les 19"];
+            string[] lenPolia = ["velkost:950MB..951MB", "pripona:mp4 zmenene:2001-03", "typ:titulky velkost:>950MB"];
+            var casyPoli = new List<double>();
+            foreach (var text in sPolami.Concat(lenPolia))
+            {
+                var dotaz = Katalog.Jadro.Dotazy.Dotaz.Citaj(text);
+                Over.Rovne(0, dotaz.Upozornenia.Count, text);
+                var vysledky = Hladanie.Najdi(spojenie, dotaz, kontext);
+                casyPoli.Add(vysledky.Trvanie.TotalMilliseconds);
+                Over.Pravda(vysledky.Polozky.Count > 0, $"„{text}“ niečo nájde");
+                Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                    $"dotaz „{text}“: {vysledky.Polozky.Count}{(vysledky.Viac ? "+" : "")} výsledkov za {casyPoli[^1]:F1} ms"));
+            }
+
+            najhorsieSoSlovami = casyPoli.Take(sPolami.Length).Max();
+            najhorsieLenPolia = casyPoli.Skip(sPolami.Length).Max();
         }
 
         // closing merges the WAL into the library file: its size is what the user keeps on the disk
         await kniznica.DisposeAsync();
         var velkostMb = new FileInfo(cesta).Length / 1_000_000.0;
         Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-            $"::notice title=Výkon (1 milión súborov)::prvých 100 000 súborov {prvych.TotalSeconds:F1} s, ďalších 900 000 {ostatnych.TotalSeconds:F1} s, hľadanie najviac {najhorsie:F1} ms, knižnica {velkostMb:F0} MB"));
+            $"::notice title=Výkon (1 milión súborov)::prvých 100 000 súborov {prvych.TotalSeconds:F1} s, ďalších 900 000 {ostatnych.TotalSeconds:F1} s, hľadanie najviac {najhorsie:F1} ms, dotazy so slovami {najhorsieSoSlovami:F1} ms, len polia {najhorsieLenPolia:F1} ms, knižnica {velkostMb:F0} MB"));
 
         Over.Pravda(najhorsie < 100, $"hľadanie do 100 ms (bolo {najhorsie:F1} ms)");
+        Over.Pravda(najhorsieSoSlovami < 100, $"dotaz so slovami do 100 ms (bolo {najhorsieSoSlovami:F1} ms)");
+        Over.Pravda(najhorsieLenPolia < 500, $"dotaz len s poliami do 500 ms (bolo {najhorsieLenPolia:F1} ms)");
         Over.Pravda(prvych < TimeSpan.FromSeconds(30), $"zápis 100 000 súborov do 30 s (bolo {prvych.TotalSeconds:F1} s)");
         Over.Pravda(velkostMb < 400, $"knižnica do 400 MB pri milióne súborov (bola {velkostMb:F0} MB)");
     }
@@ -133,21 +154,27 @@ public sealed class VykonTesty
             var riadky = Enumerable.Range(zaciatok, Math.Min(vDavke, po - zaciatok))
                 // a scan writes folder by folder, so the files of one folder come together
                 .Select(i => (Priecinok: 2 + (int)((long)i * PocetPriecinkov / PocetSuborov), Nazov: string.Create(CultureInfo.InvariantCulture,
-                    $"{Slova[nahoda.Next(Slova.Length)]} {Slova[nahoda.Next(Slova.Length)]} {i} ({1950 + (i % 75)}).mkv"), Velkost: (long)i * 1000))
+                    $"{Slova[nahoda.Next(Slova.Length)]} {Slova[nahoda.Next(Slova.Length)]} {i} ({1950 + (i % 75)}).{Pripona(i)}"),
+                    Velkost: (long)i * 1000, Pripona: Pripona(i)))
                 .ToList();
             zapisy.Add(kniznica.Zapis.ZapisAsync(s =>
             {
                 using var prikaz = s.CreateCommand();
-                prikaz.CommandText = "INSERT INTO subor(priecinok_id, disk_id, nazov, pripona, velkost, zmeneny, prvy_raz) VALUES ($p, 1, $n, 'mkv', $v, 0, 0)";
+                prikaz.CommandText = "INSERT INTO subor(priecinok_id, disk_id, nazov, pripona, velkost, zmeneny, prvy_raz) VALUES ($p, 1, $n, $x, $v, $z, 0)";
                 var p = prikaz.Parameters.Add("$p", SqliteType.Integer);
                 var n = prikaz.Parameters.Add("$n", SqliteType.Text);
+                var x = prikaz.Parameters.Add("$x", SqliteType.Text);
                 var v = prikaz.Parameters.Add("$v", SqliteType.Integer);
+                var z = prikaz.Parameters.Add("$z", SqliteType.Integer);
                 prikaz.Prepare();
                 foreach (var riadok in riadky)
                 {
                     p.Value = riadok.Priecinok;
                     n.Value = riadok.Nazov;
+                    x.Value = riadok.Pripona;
                     v.Value = riadok.Velkost;
+                    // one file a minute from 1 January 2000 (UTC ticks, as the scan stores times)
+                    z.Value = Zaciatok + riadok.Velkost / 1000 * TimeSpan.TicksPerMinute;
                     prikaz.ExecuteNonQuery();
                 }
             }));
@@ -156,6 +183,11 @@ public sealed class VykonTesty
         await Task.WhenAll(zapisy);
         return cas.Elapsed;
     }
+
+    private static readonly long Zaciatok = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+
+    /// <summary>Mostly videos, every tenth file subtitles, every seventh another video format.</summary>
+    private static string Pripona(int i) => i % 10 == 0 ? "srt" : i % 7 == 0 ? "mp4" : "mkv";
 
     private static void Vykonaj(SqliteConnection spojenie, string sql)
     {

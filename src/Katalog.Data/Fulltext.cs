@@ -6,7 +6,7 @@ namespace Katalog.Data;
 /// <summary>
 /// The full-text index of all names in the library (files, folders, titles, episodes, people, collections, disks).
 /// Trigram tokens: any part of a word of three or more letters is found, with or without diacritics. The query language
-/// (stage E2) builds on this; here are the basic search and its quoting.
+/// (<see cref="Hladanie"/>) builds on this; here are the basic search and its quoting.
 /// </summary>
 public static class Fulltext
 {
@@ -40,6 +40,9 @@ public static class Fulltext
         return vysledok;
     }
 
+    /// <summary>A text as one quoted FTS5 phrase: no character of it can act as an operator.</summary>
+    public static string Fraza(string text) => "\"" + text.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+
     /// <summary>
     /// FTS5 expression for typed text: each word becomes a quoted phrase (so no character of the text can act as an FTS
     /// operator), words shorter than a trigram are left out; null when nothing searchable remains.
@@ -48,7 +51,7 @@ public static class Fulltext
     {
         var slova = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
             .Where(s => s.Length >= NajkratsiText)
-            .Select(s => "\"" + s.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"")
+            .Select(Fraza)
             .ToList();
         return slova.Count == 0 ? null : string.Join(" AND ", slova);
     }
