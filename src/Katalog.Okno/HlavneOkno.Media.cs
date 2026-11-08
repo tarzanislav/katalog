@@ -112,10 +112,13 @@ public partial class HlavneOkno
 
         int zostava;
         string nazov;
+        bool nahlady;
         using (var c = kniznica.OtvorCitanie())
         {
             zostava = TechnickeUdaje.Pocty(c, diskId).Zostava;
-            nazov = KatalogyADisky.NajdiDisk(c, diskId) is { } d ? $"{d.CisloText} {d.Nazov}" : "";
+            var d = KatalogyADisky.NajdiDisk(c, diskId);
+            nazov = d is null ? "" : $"{d.CisloText} {d.Nazov}";
+            nahlady = d?.Nahlady == true;
         }
 
         if (zostava == 0)
@@ -128,7 +131,7 @@ public partial class HlavneOkno
             return null;
         }
 
-        return await _citania.SpustiAsync(diskId, nazov, koren, nastroje, _nastavenia.RobitNahlady, pouzivatel);
+        return await _citania.SpustiAsync(diskId, nazov, koren, nastroje, nahlady, pouzivatel);
     }
 
     private async void CitatTechnickeUdaje_Click(object sender, RoutedEventArgs e)

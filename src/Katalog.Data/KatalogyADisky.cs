@@ -6,7 +6,8 @@ using Microsoft.Data.Sqlite;
 namespace Katalog.Data;
 
 /// <summary>Data of a new disk: where its volume is and how the user names it.</summary>
-public sealed record NovyDisk(long KatalogId, string Nazov, IdentitaZvazku Identita, string Koren, long? Volne, int? Cislo = null);
+/// <param name="Nahlady">Previews of its videos are made (R10: off unless the user switches them on for the disk).</param>
+public sealed record NovyDisk(long KatalogId, string Nazov, IdentitaZvazku Identita, string Koren, long? Volne, int? Cislo = null, bool Nahlady = false);
 
 /// <summary>
 /// Catalogues and disks of the library, and browsing their folders without the disk being connected. Reads take any
@@ -16,7 +17,7 @@ public static class KatalogyADisky
 {
     private const string StlpceDisku = """
         id, katalog_id, cislo, nazov, druh, seriove_cislo_zvazku, guid_zvazku, seriove_cislo_disku, menovka, suborovy_system,
-        velkost, volne, adresa, koren, umiestnenie, poznamka, pridany, posledny_sken, posledne_pripojenie
+        velkost, volne, adresa, koren, umiestnenie, poznamka, pridany, posledny_sken, posledne_pripojenie, nahlady
         """;
 
     // ------------------------------------------------------------------ catalogues
@@ -94,9 +95,9 @@ public static class KatalogyADisky
         var i = disk.Identita;
         using var prikaz = Prikaz(spojenie, """
             INSERT INTO disk(katalog_id, cislo, nazov, druh, seriove_cislo_zvazku, guid_zvazku, seriove_cislo_disku, menovka,
-                             suborovy_system, velkost, volne, adresa, koren, pridany, posledne_pripojenie)
+                             suborovy_system, velkost, volne, adresa, koren, pridany, posledne_pripojenie, nahlady)
             VALUES ($katalog, coalesce($cislo, (SELECT coalesce(max(cislo), 0) + 1 FROM disk)), $nazov, $druh, $serZvazku, $guid,
-                    $serDisku, $menovka, $fs, $velkost, $volne, $adresa, $koren, $teraz, $teraz)
+                    $serDisku, $menovka, $fs, $velkost, $volne, $adresa, $koren, $teraz, $teraz, $nahlady)
             RETURNING id
             """);
         var teraz = Cas.Teraz();
@@ -114,6 +115,7 @@ public static class KatalogyADisky
         prikaz.Parameters.AddWithValue("$adresa", (object?)i.Adresa ?? DBNull.Value);
         prikaz.Parameters.AddWithValue("$koren", disk.Koren);
         prikaz.Parameters.AddWithValue("$teraz", teraz);
+        prikaz.Parameters.AddWithValue("$nahlady", disk.Nahlady ? 1 : 0);
         var id = Convert.ToInt64(prikaz.ExecuteScalar(), CultureInfo.InvariantCulture);
 
         using var koren = Prikaz(spojenie, "INSERT INTO priecinok(id, disk_id, rodic_id, nazov) VALUES ($id, $disk, NULL, '')");
@@ -123,13 +125,16 @@ public static class KatalogyADisky
         return id;
     }
 
-    /// <summary>Changes what the user may change about a disk: name, catalogue, number, place, note.</summary>
-    public static void UpravDisk(SqliteConnection spojenie, long id, string nazov, long katalogId, int cislo, string? umiestnenie, string? poznamka)
+    /// <summary>Changes what the user may change about a disk: name, catalogue, number, place, note, previews (null keeps them).</summary>
+    public static void UpravDisk(
+        SqliteConnection spojenie, long id, string nazov, long katalogId, int cislo, string? umiestnenie, string? poznamka, bool? nahlady = null)
     {
         using var prikaz = Prikaz(spojenie, """
-            UPDATE disk SET nazov = $nazov, katalog_id = $katalog, cislo = $cislo, umiestnenie = $umiestnenie, poznamka = $poznamka
+            UPDATE disk SET nazov = $nazov, katalog_id = $katalog, cislo = $cislo, umiestnenie = $umiestnenie, poznamka = $poznamka,
+                            nahlady = coalesce($nahlady, nahlady)
             WHERE id = $id
             """);
+        prikaz.Parameters.AddWithValue("$nahlady", nahlady is { } n ? (n ? 1 : 0) : DBNull.Value);
         prikaz.Parameters.AddWithValue("$id", id);
         prikaz.Parameters.AddWithValue("$nazov", nazov.Trim());
         prikaz.Parameters.AddWithValue("$katalog", katalogId);
@@ -263,7 +268,7 @@ public static class KatalogyADisky
         long? Cislo(int i) => c.IsDBNull(i) ? null : c.GetInt64(i);
         var identita = new IdentitaZvazku((DruhDisku)c.GetInt32(4), Text(5), Text(6), Text(7), Text(8), Text(9), Cislo(10), Text(12));
         return new Disk(c.GetInt64(0), c.GetInt64(1), c.GetInt32(2), c.GetString(3), identita, c.GetString(13), Cislo(11), Text(14), Text(15),
-            c.GetInt64(16), Cislo(17), Cislo(18));
+            c.GetInt64(16), Cislo(17), Cislo(18), c.GetInt32(19) == 1);
     }
 
     private static SqliteCommand Prikaz(SqliteConnection spojenie, string sql)

@@ -9,7 +9,8 @@ namespace Katalog.Okno;
 
 /// <summary>What the user chose to add: where it is now, its identity and how it is named.</summary>
 /// <param name="KatalogId">An existing catalogue, or null when <paramref name="NovyKatalog"/> is to be created.</param>
-internal sealed record VolbaDisku(string Cesta, IdentitaZvazku Identita, string Koren, string Nazov, long? KatalogId, string? NovyKatalog, long? Volne);
+/// <param name="Nahlady">Previews of its videos are made (R10: off unless chosen).</param>
+internal sealed record VolbaDisku(string Cesta, IdentitaZvazku Identita, string Koren, string Nazov, long? KatalogId, string? NovyKatalog, long? Volne, bool Nahlady = false);
 
 /// <summary>Adding a disk: a whole connected volume, one folder of it, or a network share by its address.</summary>
 public partial class PridatDiskOkno : Window
@@ -181,7 +182,8 @@ public partial class PridatDiskOkno : Window
             return Zle($"Tento disk už je v knižnici ako disk {rovnaky.CisloText} ({rovnaky.Nazov}). Na jeho aktualizáciu použi „Aktualizovať disk“.");
         }
 
-        return new VolbaDisku(cesta, identita, koren, nazov, novyKatalog is null ? katalog?.Id : null, novyKatalog, _zvazky.Miesto(cesta).Volne);
+        return new VolbaDisku(cesta, identita, koren, nazov, novyKatalog is null ? katalog?.Id : null, novyKatalog, _zvazky.Miesto(cesta).Volne,
+            Nahlady.IsChecked == true);
     }
 
     private VolbaDisku? Zle(string sprava)

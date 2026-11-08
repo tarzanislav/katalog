@@ -454,7 +454,8 @@ public partial class HlavneOkno
     {
         var katalog = volba.KatalogId ?? await kniznica.Zapis.ZapisAsync(s => KatalogyADisky.VytvorKatalog(s, volba.NovyKatalog ?? "Videotéka"));
         var koren = kniznica.NovyIdPriecinka();
-        return await kniznica.Zapis.ZapisAsync(s => KatalogyADisky.PridajDisk(s, new NovyDisk(katalog, volba.Nazov, volba.Identita, volba.Koren, volba.Volne), koren));
+        return await kniznica.Zapis.ZapisAsync(s =>
+            KatalogyADisky.PridajDisk(s, new NovyDisk(katalog, volba.Nazov, volba.Identita, volba.Koren, volba.Volne, Nahlady: volba.Nahlady), koren));
     }
 
     /// <summary>Selects a disk in the tree (and shows its content).</summary>
@@ -637,7 +638,7 @@ public partial class HlavneOkno
         var dialog = new UpravDiskOkno(disk, katalogy, cisla) { Owner = this };
         if (dialog.ShowDialog() == true && dialog.Vysledok is { } v)
         {
-            await kniznica.Zapis.ZapisAsync(s => KatalogyADisky.UpravDisk(s, diskId, v.Nazov, v.KatalogId, v.Cislo, v.Umiestnenie, v.Poznamka));
+            await kniznica.Zapis.ZapisAsync(s => KatalogyADisky.UpravDisk(s, diskId, v.Nazov, v.KatalogId, v.Cislo, v.Umiestnenie, v.Poznamka, v.Nahlady));
             ObnovStrom();
             VyberDisk(diskId);
         }

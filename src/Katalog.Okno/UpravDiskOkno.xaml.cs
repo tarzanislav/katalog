@@ -19,13 +19,14 @@ public partial class UpravDiskOkno : Window
         Katalogy.ItemsSource = katalogy;
         Katalogy.SelectedItem = katalogy.FirstOrDefault(k => k.Id == disk.KatalogId);
         Umiestnenie.Text = disk.Umiestnenie ?? "";
+        Nahlady.IsChecked = disk.Nahlady;
         Poznamka.Text = disk.Poznamka ?? "";
         PovodneCislo = disk.Cislo;
     }
 
     internal int PovodneCislo { get; }
 
-    internal (string Nazov, int Cislo, long KatalogId, string? Umiestnenie, string? Poznamka)? Vysledok { get; private set; }
+    internal (string Nazov, int Cislo, long KatalogId, string? Umiestnenie, string? Poznamka, bool Nahlady)? Vysledok { get; private set; }
 
     private void Ulozit_Click(object sender, RoutedEventArgs e)
     {
@@ -53,7 +54,7 @@ public partial class UpravDiskOkno : Window
             return;
         }
 
-        Vysledok = (Nazov.Text.Trim(), cislo, katalog.Id, Umiestnenie.Text, Poznamka.Text);
+        Vysledok = (Nazov.Text.Trim(), cislo, katalog.Id, Umiestnenie.Text, Poznamka.Text, Nahlady.IsChecked == true);
         DialogResult = true;
     }
 

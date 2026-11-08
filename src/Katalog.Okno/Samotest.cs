@@ -93,7 +93,7 @@ internal static class Samotest
 
         var koren = Skenovanie.RozpoznanieDiskov.RelativnyKoren(Path.GetPathRoot(disk)!, disk);
         _diskId = await HlavneOkno.PridajDiskAsync(kniznica,
-            new VolbaDisku(disk, identita, koren, "Vymyslený disk", null, "Vymyslená videotéka", zvazky.Miesto(disk).Volne));
+            new VolbaDisku(disk, identita, koren, "Vymyslený disk", null, "Vymyslená videotéka", zvazky.Miesto(disk).Volne, Nahlady: true));
         var ulozisko = new Skenovanie.LokalneUlozisko(disk, identita.Druh, zvazky);
         var prvy = await Ulohy.SkenovanieDisku.SpustiAsync(kniznica, _diskId, ulozisko, null, CancellationToken.None);
         Over(prvy is { Stav: StavUlohy.Hotova, Zmeny.Pridane: 4, Priecinky: 7 }, $"prvý sken: {prvy.Stav}, {prvy.Zmeny}, {prvy.Priecinky} priečinkov");

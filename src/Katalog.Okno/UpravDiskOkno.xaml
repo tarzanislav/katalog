@@ -31,6 +31,9 @@
             <TextBox x:Name="Poznamka" Grid.Row="4" Grid.Column="1" Padding="8,5" Margin="0,8,0,0" Height="64"
                      TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" />
         </Grid>
+        <CheckBox x:Name="Nahlady" Margin="0,12,0,0" Content="Robiť náhľady videí z tohto disku (asi 15 kB na video, vedľa knižnice)" />
+        <TextBlock Margin="24,2,0,0" TextWrapping="Wrap" Style="{StaticResource TichyText}"
+                   Text="Na pomalých USB a sieťových diskoch zaberú čas; technické údaje sa čítajú aj bez nich." />
         <TextBlock x:Name="Chyba" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="#C42B1C" Visibility="Collapsed" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button Content="Uložiť" IsDefault="True" Padding="20,6" MinWidth="80" Click="Ulozit_Click" />

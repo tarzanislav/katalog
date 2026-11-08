@@ -26,7 +26,8 @@
         </StackPanel>
         <CheckBox x:Name="CitatTechnickeUdaje" Margin="0,10,0,0"
                   Content="Čítať ich samo po skene a po pripojení disku" />
-        <CheckBox x:Name="RobitNahlady" Margin="0,6,0,0" Content="Robiť náhľad každého videa (asi 15 kB, ukladá sa vedľa knižnice)" />
+        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Style="{StaticResource TichyText}"
+                   Text="Náhľady videí sa robia len pre disky, ktoré si zvolíš (Upraviť disk → Robiť náhľady videí)." />
 
         <TextBlock Text="Vzhľad" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,8" />
         <ComboBox x:Name="Motiv">

@@ -23,7 +23,8 @@ public sealed record Disk(
     string? Poznamka,
     long Pridany,
     long? PoslednySken,
-    long? PoslednePripojenie)
+    long? PoslednePripojenie,
+    bool Nahlady = false)
 {
     public DruhDisku Druh => Identita.Druh;
 

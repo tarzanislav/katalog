@@ -53,6 +53,7 @@
             <TextBox Grid.Row="2" Grid.Column="1" x:Name="NazovDisku" Margin="0,8,0,0" Padding="8,5" />
         </Grid>
 
+        <CheckBox x:Name="Nahlady" Margin="0,14,0,0" Content="Robiť náhľady videí z tohto disku (dá sa zmeniť neskôr)" />
         <TextBlock x:Name="Chyba" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="#C42B1C" Visibility="Collapsed" />
         <TextBlock Margin="0,10,0,0" Style="{StaticResource TichyText}"
                    Text="KATALOG z disku iba číta, nikdy naň nič nezapisuje. Skenovanie beží na pozadí s nízkou prioritou." />

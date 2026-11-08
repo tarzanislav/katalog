@@ -20,7 +20,6 @@ public partial class NastaveniaOkno : Window
         _najdenyFfmpeg = ffmpeg;
         _priecinokFfmpeg = nastavenia.PriecinokFfmpeg;
         CitatTechnickeUdaje.IsChecked = nastavenia.CitatTechnickeUdaje;
-        RobitNahlady.IsChecked = nastavenia.RobitNahlady;
         ZobrazFfmpeg();
         _volby.Add(new VolbaPrehravaca(Prehravac.Predvoleny));
         _volby.AddRange(najdene.Select(p => new VolbaPrehravaca(p)));
@@ -98,7 +97,6 @@ public partial class NastaveniaOkno : Window
     {
         _nastavenia.PriecinokFfmpeg = _priecinokFfmpeg;
         _nastavenia.CitatTechnickeUdaje = CitatTechnickeUdaje.IsChecked == true;
-        _nastavenia.RobitNahlady = RobitNahlady.IsChecked == true;
         _nastavenia.Prehravac = (ZoznamPrehravacov.SelectedItem as VolbaPrehravaca)?.Prehravac.Program ?? "";
         _nastavenia.Motiv = (Motiv.SelectedItem as ComboBoxItem)?.Tag as string ?? "System";
         _nastavenia.AutomatickeAktualizacie = AutomatickeAktualizacie.IsChecked == true;

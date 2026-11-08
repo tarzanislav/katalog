@@ -79,7 +79,8 @@ Hotové:
   trieda kvality (SD, HD, FHD, 4K – rovnaké hranice ako UNIVERSUM), HDR (HDR10, HLG, Dolby Vision), snímky za sekundu,
   zvukové stopy a titulky s jazykmi, kanálmi a príznakmi (predvolené, vynútené, pre nepočujúcich). Aj **externé
   titulky** vedľa videa (`Film.sk.forced.srt`). Poškodené súbory sa zapíšu s chybou (N3), program nespadne.
-- **Náhľad** každého videa (ffmpeg, tretina dĺžky, 320 px, asi 15 kB) v priečinku `<knižnica>.obrazky` vedľa knižnice.
+- **Náhľad** videa (ffmpeg, tretina dĺžky, 320 px, asi 15 kB) v priečinku `<knižnica>.obrazky` vedľa knižnice – podľa R10
+  len pre disky, pri ktorých ho používateľ zapne (predvolene vypnuté; opravené na začiatku E4).
 - Číta sa **na pozadí s nízkou prioritou** po skene a po pripojení disku, jeden súbor naraz na disk; zastaviť sa dá
   v stavovom riadku, spustiť z ponuky disku. Vypnúť sa dá v Nastaveniach.
 - **Trvalá fronta úloh** (A7): sken aj čítanie sú úlohy v knižnici; sken prerušený zatvorením programu pokračuje po
