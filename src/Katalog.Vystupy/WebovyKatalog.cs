@@ -92,7 +92,12 @@ public static class WebovyKatalog
 
     private const byte VerziaFormatu = 1;
 
-    private static readonly JsonSerializerOptions Json = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+    // letters with diacritics stay letters (smaller data): the JSON is only ever read by JSON.parse, never put into HTML
+    private static readonly JsonSerializerOptions Json = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>The key of a password: PBKDF2 with SHA-256, 32 bytes.</summary>
     public static byte[] Kluc(string heslo, byte[] sol, int iteracie = Iteracie) =>
@@ -208,7 +213,7 @@ public static class WebovyKatalog
                 return;
             }
 
-            var sifra = Zasifruj(JsonSerializer.SerializeToUtf8Bytes(balik), kluc);
+            var sifra = Zasifruj(JsonSerializer.SerializeToUtf8Bytes(balik, Json), kluc);
             bajtov += ZapisSkript(Path.Combine(plagatyPriecinok, $"{cisloBaliku:000}.js"), $"KATALOG.plagaty({cisloBaliku},\"{Convert.ToBase64String(sifra)}\");");
             cisloBaliku++;
             balik.Clear();
