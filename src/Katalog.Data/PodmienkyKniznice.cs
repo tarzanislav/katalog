@@ -54,6 +54,11 @@ internal static class PodmienkyKniznice
         Pozicane p => $"({t}.id IN (SELECT titul_id FROM vypozicka WHERE do IS NULL AND titul_id IS NOT NULL{Komu(p, parameter)}) " +
                       $"OR EXISTS (SELECT 1 FROM ({VerzieTitulu(t + ".id")}) vt JOIN verzia_subor vs ON vs.verzia_id = vt.id " +
                       $"JOIN subor sp ON sp.id = vs.subor_id WHERE sp.stav = 0 AND sp.disk_id IN ({PozicaneDisky(p, parameter)})))",
+        Rozpozerane r => (r.Hodnota ? "" : "NOT ") +
+                         $"({t}.druh = 2 AND EXISTS (SELECT 1 FROM epizoda e JOIN pozretie p ON p.epizoda_id = e.id WHERE e.titul_id = {t}.id) " +
+                         $"AND EXISTS (SELECT 1 FROM epizoda e JOIN verzia v ON v.epizoda_id = e.id JOIN verzia_subor vs ON vs.verzia_id = v.id " +
+                         $"JOIN subor sp ON sp.id = vs.subor_id WHERE e.titul_id = {t}.id AND sp.stav = 0 " +
+                         "AND NOT EXISTS (SELECT 1 FROM pozretie p WHERE p.epizoda_id = e.id)))",
         Stitkovane { Nazvy.Count: 0 } => $"{t}.id IN (SELECT titul_id FROM titul_stitok)",
         Stitkovane st => $"{t}.id IN (SELECT ts.titul_id FROM titul_stitok ts JOIN stitok st ON st.id = ts.stitok_id WHERE " +
                          string.Join(" OR ", st.Nazvy.Select(n => $"st.kluc LIKE {parameter("%" + Escape(n) + "%")} ESCAPE '\\'")) + ")",

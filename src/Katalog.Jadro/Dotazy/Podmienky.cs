@@ -37,6 +37,7 @@ public enum PoleDotazu
     Duplikat = 30,
     Pozicane = 31,
     Stitok = 32,
+    Rozpozerane = 33,
 }
 
 /// <summary>Where a file or title stands in the library of titles (kniznica:film, kniznica:potvrdit…).</summary>
@@ -173,6 +174,9 @@ public sealed record Pozicane(IReadOnlyList<string> Komu, bool Zaporna) : Titulo
 
 /// <summary>stitok:ano, or stitok:vianoce,deti – titles with any tag, or with one of these (by a part, without diacritics).</summary>
 public sealed record Stitkovane(IReadOnlyList<string> Nazvy, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>rozpozerane:ano – series begun but not finished: a watched episode and an unwatched one the user has.</summary>
+public sealed record Rozpozerane(bool Hodnota) : TitulovaPodmienka(false);
 
 /// <summary>duplikat:ano – files with an exact copy elsewhere (the same fingerprint: size, first and last megabyte).</summary>
 public sealed record Duplikat(bool Hodnota) : Podmienka(false);

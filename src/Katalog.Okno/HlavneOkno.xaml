@@ -174,7 +174,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                             <ListBoxItem x:Name="NavigaciaKolekcie" Content="Kolekcie" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaStitky" Content="Štítky" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaHistra" Content="Zoznamy HISTRA" Style="{StaticResource PolozkaNavigacie}" />
-                            <ListBoxItem Content="Playlisty" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaPlaylisty" Content="Playlisty" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaDuplicity" Content="Duplicity" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaNezalohovane" Content="Len na jednom disku" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaPozicane" Content="Požičané" Style="{StaticResource PolozkaNavigacie}" />
@@ -349,8 +349,8 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                 </StackPanel>
                 <Grid Grid.Row="1" Margin="0,10,0,8">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" MaxWidth="420" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="2*" MinWidth="180" MaxWidth="420" />
+                        <ColumnDefinition Width="3*" />
                     </Grid.ColumnDefinitions>
                     <Grid>
                         <TextBox x:Name="FilterKniznice" Padding="8,5" VerticalContentAlignment="Center" TextChanged="FilterKniznice_TextChanged"
@@ -360,7 +360,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
 rok:2001   rok:1990..1999   zaner:komedia   hodnotenie:>=7   moje:>=8
 herec:"Meno"   rezia:Priezvisko   kolekcia:ano | "Názov"
 videne:nie   mam:nie   zelane:ano   kniznica:film | serial | potvrdit
-stitok:Vianoce   pozicane:ano | Meno   verzie:>1   zalohovane:nie
+stitok:Vianoce   pozicane:ano | Meno   verzie:>1   zalohovane:nie   rozpozerane:ano
 kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextBlock>
                             </TextBox.ToolTip>
                         </TextBox>
@@ -368,15 +368,55 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                    VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.6" TextTrimming="CharacterEllipsis" />
                     </Grid>
                     <WrapPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
-                        <Button x:Name="TlacidloPrehratTitul" Padding="14,5" Click="PrehratTitul_Click" IsEnabled="False">
+                        <Button x:Name="TlacidloNovyPlaylist" Content="Nový playlist…" Padding="14,5" Margin="0,0,8,4" Click="NovyPlaylist_Click"
+                                Visibility="Collapsed" />
+                        <Button x:Name="TlacidloPrehratPlaylist" Padding="14,5" Margin="0,0,8,4" Click="PrehratPlaylist_Click" Visibility="Collapsed"
+                                ToolTip="Celý playlist na pripojených diskoch; seriál hrá ďalšiu nevidenú epizódu">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE768;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
+                                <TextBlock Text="Prehrať všetko" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="TlacidloZamiesat" Padding="14,5" Margin="0,0,8,4" Click="ZamiesatPlaylist_Click" Visibility="Collapsed"
+                                ToolTip="Prehrať v náhodnom poradí">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8B1;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
+                                <TextBlock Text="Zamiešať" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="TlacidloUlozitNavrh" Content="Uložiť ako playlist" Padding="14,5" Margin="0,0,8,4" Click="UlozitNavrh_Click"
+                                Visibility="Collapsed" />
+                        <Button x:Name="TlacidloPlaylist" Content="Playlist" Padding="14,5" Margin="0,0,8,4" Click="VystupKniznice_Click" Visibility="Collapsed">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem x:Name="PonukaUpravitPlaylist" Header="Upraviť…" Click="UpravitPlaylist_Click" />
+                                    <MenuItem x:Name="PonukaVylosovat" Header="Vylosovať znova" Click="Vylosovat_Click" />
+                                    <MenuItem x:Name="PonukaVyssie" Header="Posunúť vybraný vyššie" Click="PosunutVyssie_Click" />
+                                    <MenuItem x:Name="PonukaNizsie" Header="Posunúť vybraný nižšie" Click="PosunutNizsie_Click" />
+                                    <MenuItem x:Name="PonukaOdobrat" Header="Odobrať vybraný z playlistu" Click="OdobratZPlaylistu_Click" />
+                                    <Separator />
+                                    <MenuItem Header="Exportovať ako M3U…" Click="ExportovatM3u_Click"
+                                              ToolTip="Zoznam na prehrávanie pre iné programy – súbory na pripojených diskoch" />
+                                    <MenuItem x:Name="PonukaZmazatPlaylist" Header="Zmazať playlist…" Click="ZmazatPlaylist_Click" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                        <Button x:Name="TlacidloNahodne" Padding="14,5" Margin="0,0,8,4" Click="NahodnyVyber_Click"
+                                ToolTip="Vyber mi niečo: náhodný titul spomedzi zobrazených, ktoré máš (filter platí, napr. videne:nie)">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8B1;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
+                                <TextBlock Text="Náhodne" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="TlacidloPrehratTitul" Padding="14,5" Margin="0,0,0,4" Click="PrehratTitul_Click" IsEnabled="False">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE768;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
                                 <TextBlock Text="Prehrať" Margin="8,0,0,0" />
                             </StackPanel>
                         </Button>
-                        <Button x:Name="TlacidloNacitatHistra" Content="Načítať zoznamy z HISTRA" Padding="14,5" Margin="8,0,0,0"
+                        <Button x:Name="TlacidloNacitatHistra" Content="Načítať zoznamy z HISTRA" Padding="14,5" Margin="8,0,0,4"
                                 Click="NacitatHistra_Click" Visibility="Collapsed" />
-                        <Button x:Name="TlacidloVystupKniznice" Padding="10,5" Margin="8,0,0,0" Click="VystupKniznice_Click" ToolTip="Export, tlač a štítky">
+                        <Button x:Name="TlacidloVystupKniznice" Padding="10,5" Margin="8,0,0,4" Click="VystupKniznice_Click" ToolTip="Export, tlač a štítky">
                             <TextBlock Text="&#xE749;" FontFamily="{StaticResource Ikony}" />
                             <Button.ContextMenu>
                                 <ContextMenu>
@@ -387,7 +427,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>
-                        <Button x:Name="TlacidloDoplnit" Content="Doplniť údaje" Padding="14,5" Margin="8,0,0,0" Click="Doplnit_Click"
+                        <Button x:Name="TlacidloDoplnit" Content="Doplniť údaje" Padding="14,5" Margin="8,0,0,4" Click="Doplnit_Click"
                                 ToolTip="Rozpoznať nové videá a doplniť názvy, dej a plagáty zo zdrojov (beží aj samo)" />
                     </WrapPanel>
                 </Grid>
@@ -678,6 +718,8 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                             <Button Content="Štítky…" Padding="12,4" Margin="0,0,6,6" Click="StitkyTitulu_Click"
                                     ToolTip="Vlastné štítky titulu (napr. Vianoce, Pre deti), oddelené čiarkou" />
                             <Button x:Name="DetailPozicat" Content="Požičať…" Padding="12,4" Margin="0,0,6,6" Click="PozicatTitul_Click" />
+                            <Button x:Name="DetailDoPlaylistu" Content="Do playlistu…" Padding="12,4" Margin="0,0,6,6" Click="DoPlaylistu_Click"
+                                    ToolTip="Pridať titul do ručného playlistu (alebo do nového)" />
                         </WrapPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                             <TextBlock Text="Moje hodnotenie" VerticalAlignment="Center" Margin="0,0,8,0" />

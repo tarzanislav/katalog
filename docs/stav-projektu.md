@@ -175,6 +175,26 @@ Hotové (všetko vlastným kódom, bez nových knižníc – rozhodnutie vlastn�
 - Samotest: štítky v okne aj v PDF, export výsledkov do všetkých formátov, tabuľka titulov s diskami, prehľad,
   výpožička a štítok s ich poliami, export katalógu a import späť (disk už v knižnici je).
 
+## Etapa E7 – playlisty a náhodný výber (8. 11. 2026, vetva vyvoj/etapa7)
+
+Hotové:
+
+- **Playlisty** troch druhov: **ručný** (tituly v tvojom poradí: pridať z detailu titulu, posunúť, odobrať),
+  **inteligentný** (dotaz jedného jazyka A4, chronologicky, dopĺňa sa sám) a **náhodný** (daný počet titulov vylosovaný
+  z dotazu; žreb ostáva rovnaký, kým nedáš Vylosovať znova). Losovanie je vlastný generátor s pevnou postupnosťou
+  (rovnaký výsledok na každom počítači), overený nezávislým skriptom.
+- **Návrhy playlistov** z knižnice: nevidené filmy, to najlepšie nevidené, rozpozerané seriály, na krátky večer,
+  tvoje obľúbené, najväčšie žánre, tvoje štítky, maratóny kolekcií (len s aspoň dvoma titulmi); jedným klikom sa
+  uložia ako playlist.
+- **Prehratie playlistu** celého alebo zamiešaného: film hrá najlepšiu verziu (na pripojenom disku, ak je), **seriál
+  ďalšiu nevidenú epizódu**; tituly na nepripojených diskoch sa vynechajú a okno povie, ktoré disky chýbajú.
+- **Export do M3U** (.m3u8) pre iné prehrávače – cesty súborov na pripojených diskoch.
+- **Vyber mi niečo**: tlačidlo Náhodne vyberie titul spomedzi zobrazených, ktoré máš (platí filter, napr.
+  `videne:nie zaner:komedia`); ďalší klik vyberie iný, kým sa nevystriedajú všetky.
+- Pole dotazu `rozpozerane:ano`; schéma knižnice **v6** (počet a semienko náhodného playlistu).
+- Samotest: playlisty a návrhy na stene, ručný playlist v poradí, prehratie playlistu (epizóda, potom film), M3U,
+  náhodný playlist, dva rôzne náhodné výbery za sebou, otvorenie návrhu.
+
 Otvorené:
 
 - **Logo TMDB** v okne O programe: podmienky TMDB ho chcú pri upozornení; oficiálny súbor loga sa tu nedal stiahnuť –
@@ -185,6 +205,6 @@ Otvorené:
 - Tlač na skutočnej tlačiarni a zdravie skutočných diskov sa dajú vyskúšať len na počítači vlastníka.
 
 **Vydania** (so súhlasom vlastníka – schválenie v Review deployments; podpis zoznamu súčtov a súčet inštalátora
-overené): **0.1.0**, **0.2.0** a **0.4.0** 8. 11. 2026.
+overené): **0.1.0**, **0.2.0**, **0.4.0** a **0.5.0** 8. 11. 2026.
 
-Ďalšia etapa: **E7 – playlisty a náhodný výber**.
+Ďalšia etapa: **E8 – vzdialené úložiská** (NAS, sieťové disky, servery cez WinSCP).

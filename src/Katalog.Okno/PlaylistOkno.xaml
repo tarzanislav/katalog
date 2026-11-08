@@ -1,0 +1,34 @@
+<Window x:Class="Katalog.Okno.PlaylistOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Playlist"
+        Icon="Zdroje/katalog.ico"
+        SizeToContent="Height" Width="520" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock Text="Názov" Margin="0,0,0,4" />
+        <TextBox x:Name="Nazov" Padding="8,5" />
+
+        <TextBlock Text="Druh" Margin="0,14,0,4" />
+        <RadioButton x:Name="DruhRucny" Content="Ručný – tituly pridávaš sám a určuješ poradie" GroupName="Druh" Checked="Druh_Changed" />
+        <RadioButton x:Name="DruhInteligentny" Content="Inteligentný – všetko, čo zodpovedá dotazu (dopĺňa sa sám)" GroupName="Druh" Margin="0,6,0,0" Checked="Druh_Changed" />
+        <RadioButton x:Name="DruhNahodny" Content="Náhodný – vylosuje daný počet titulov z dotazu" GroupName="Druh" Margin="0,6,0,0" Checked="Druh_Changed" />
+
+        <StackPanel x:Name="PanelDotazu">
+            <TextBlock Text="Dotaz (ako vo filtri knižnice; prázdny = celá knižnica)" Margin="0,14,0,4" />
+            <TextBox x:Name="Dotaz" Padding="8,5" FontFamily="Consolas" TextChanged="Dotaz_TextChanged"
+                     ToolTip="Napr. kniznica:film videne:nie, zaner:komedia rok:>=2000, rozpozerane:ano, stitok:Vianoce" />
+            <TextBlock x:Name="Zodpoveda" Margin="0,6,0,0" Style="{StaticResource TichyText}" />
+        </StackPanel>
+        <StackPanel x:Name="PanelPoctu" Orientation="Horizontal" Margin="0,12,0,0">
+            <TextBlock Text="Počet titulov" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <ComboBox x:Name="Pocet" Width="90" IsEditable="True" />
+        </StackPanel>
+
+        <TextBlock x:Name="Chyba" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="#C42B1C" Visibility="Collapsed" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Uložiť" IsDefault="True" Padding="20,6" MinWidth="80" Click="Ok_Click" />
+            <Button Content="Zrušiť" IsCancel="True" Padding="20,6" MinWidth="80" Margin="8,0,0,0" />
+        </StackPanel>
+    </StackPanel>
+</Window>

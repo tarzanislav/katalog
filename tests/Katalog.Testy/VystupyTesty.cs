@@ -261,4 +261,18 @@ public sealed class VystupyTesty
 
         Over.Vyhodi<ArgumentException>(() => PdfSubor.Zapis(new MemoryStream(), [], "nič"), "PDF bez strán");
     }
+
+    [Test]
+    public void PlaylistM3u()
+    {
+        var text = M3u.Text(
+        [
+            new PolozkaM3u(@"E:\Filmy\Vymyslený film (2001).mkv", "Vymyslený film (2001)", TimeSpan.FromMinutes(101.5)),
+            new PolozkaM3u(@"F:\Seriál\S01E02.mkv", "Vymyslený seriál\r\nS01E02"),
+        ], "Na víkend");
+        Over.Rovne(
+            "#EXTM3U\r\n#PLAYLIST:Na víkend\r\n#EXTINF:6090,Vymyslený film (2001)\r\nE:\\Filmy\\Vymyslený film (2001).mkv\r\n" +
+            "#EXTINF:-1,Vymyslený seriál S01E02\r\nF:\\Seriál\\S01E02.mkv\r\n",
+            text, "M3U");
+    }
 }

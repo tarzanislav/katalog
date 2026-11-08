@@ -2,7 +2,7 @@
 
 Pole hľadania hore v okne hľadá v názvoch súborov a priečinkov všetkých diskov knižnice, aj keď disk nie je
 pripojený. Výsledky sa ukážu počas písania (po krátkej pauze), **Enter** hľadá hneď, **Esc** hľadanie zruší.
-Rovnaký zápis používajú filtre, uložené hľadania a neskôr aj playlisty, štítky a webový katalóg.
+Rovnaký zápis používajú filtre, uložené hľadania, inteligentné a náhodné playlisty a neskôr aj webový katalóg.
 
 ## Slová
 
@@ -66,6 +66,7 @@ Názvy, žánre a hercov doplnia zdroje údajov (TMDB, HISTRA); bez nich poznaj�
 | `verzie:>1` | duplicity: titul máš viackrát (pri seriáli niektorú epizódu); `verzie:2` presne dvakrát |
 | `zalohovane:nie` | tituly len na jednom disku – stratíš ich s ním (pri seriáli stačí jedna taká epizóda); `zalohovane:ano` na aspoň dvoch |
 | `stitok:Vianoce` | tvoj štítok titulu (časť názvu, bez diakritiky); `stitok:ano` akýkoľvek, `stitok:nie` žiadny |
+| `rozpozerane:ano` | seriály, ktoré si začal: niektorú epizódu si videl a nevidenú máš na disku |
 | `pozicane:ano` | požičané teraz: titul sám alebo disk s jeho súborom (súbor: jeho disk alebo titul); `pozicane:Meno` komu, `pozicane:nie` nič z toho |
 | `kniznica:film` | filmy; `kniznica:serial` seriály, `kniznica:potvrdit` čaká na potvrdenie, `kniznica:ano` súbor je verziou titulu, `kniznica:nie` video odložené mimo knižnice |
 
@@ -97,6 +98,7 @@ kniznica:serial -zvuk:cs                seriály bez českého zvuku
 zalohovane:nie hodnotenie:>=8           najlepšie tituly, ktoré ešte nemáš zálohované
 stitok:vianoce videne:nie               vianočné tituly, ktoré si ešte nevidel
 pozicane:jano                           čo má požičané Jano
+rozpozerane:ano                         seriály, ktoré si začal pozerať (aj ako playlist)
 ```
 
 Výsledkov je najviac 500; keď ich je viac, program to povie a stačí pridať slovo alebo filter.

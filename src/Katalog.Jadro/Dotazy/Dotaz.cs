@@ -57,6 +57,7 @@ public sealed class Dotaz
         ["duplikat"] = PoleDotazu.Duplikat, ["duplikaty"] = PoleDotazu.Duplikat, ["kopia"] = PoleDotazu.Duplikat,
         ["pozicane"] = PoleDotazu.Pozicane, ["pozicany"] = PoleDotazu.Pozicane, ["vypozicane"] = PoleDotazu.Pozicane, ["komu"] = PoleDotazu.Pozicane,
         ["stitok"] = PoleDotazu.Stitok, ["stitky"] = PoleDotazu.Stitok, ["tag"] = PoleDotazu.Stitok,
+        ["rozpozerane"] = PoleDotazu.Rozpozerane, ["rozpozerany"] = PoleDotazu.Rozpozerane, ["rozsledovane"] = PoleDotazu.Rozpozerane,
     };
 
     private Dotaz(string text, IReadOnlyList<Podmienka> podmienky, IReadOnlyList<string> upozornenia)
@@ -169,6 +170,7 @@ public sealed class Dotaz
         PoleDotazu.Duplikat => "duplikat",
         PoleDotazu.Pozicane => "pozicane",
         PoleDotazu.Stitok => "stitok",
+        PoleDotazu.Rozpozerane => "rozpozerane",
         _ => "zmazane",
     };
 
@@ -387,6 +389,9 @@ public sealed class Dotaz
                 var komu = Zoznam(h).Select(Normalizacia.Nazov).Where(k => k.Length >= 2).Distinct().ToList();
                 return komu.Count == 0 ? null : new Pozicane(komu, zaporny);
 
+            case PoleDotazu.Rozpozerane:
+                return AnoNie(h) is { } rozpozerane ? new Rozpozerane(rozpozerane != zaporny) : null;
+
             case PoleDotazu.Stitok:
                 if (AnoNie(h) is { } stitkovany)
                 {
@@ -442,6 +447,7 @@ public sealed class Dotaz
         PoleDotazu.Duplikat => "duplikat:ano (presné kópie súborov)",
         PoleDotazu.Pozicane => "pozicane:ano alebo pozicane:Meno",
         PoleDotazu.Stitok => "stitok:ano alebo stitok:vianoce,deti",
+        PoleDotazu.Rozpozerane => "rozpozerane:ano (seriály, ktoré si začal pozerať)",
         _ => "zmazane:aj alebo zmazane:len",
     };
 

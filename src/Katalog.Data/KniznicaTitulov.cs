@@ -130,9 +130,10 @@ public static class KniznicaTitulov
     /// <param name="kolekciaId">Only the parts of this collection (all of them, in their order).</param>
     /// <param name="zoznamHistra">Only the titles of this HISTRA list.</param>
     /// <param name="stitokId">Only the titles with this tag of the user.</param>
+    /// <param name="playlistId">Only the titles of this (hand-made) playlist, in its order.</param>
     public static IReadOnlyList<PolozkaKniznice> Najdi(
         SqliteConnection spojenie, Dotaz dotaz, KontextHladania kontext, PohladKniznice pohlad, long? kolekciaId = null, long? zoznamHistra = null,
-        long? stitokId = null)
+        long? stitokId = null, long? playlistId = null)
     {
         using var prikaz = spojenie.CreateCommand();
         var cislo = 0;
@@ -144,7 +145,7 @@ public static class KniznicaTitulov
         }
 
         var podmienky = new List<string>();
-        var hovoriOMam = dotaz.Podmienky.Any(p => p is Mam or Zelane or Kolekcie) || kolekciaId is not null || zoznamHistra is not null;
+        var hovoriOMam = dotaz.Podmienky.Any(p => p is Mam or Zelane or Kolekcie) || kolekciaId is not null || zoznamHistra is not null || playlistId is not null;
         switch (pohlad)
         {
             case PohladKniznice.Filmy:
@@ -171,6 +172,11 @@ public static class KniznicaTitulov
         if (pohlad is PohladKniznice.Filmy or PohladKniznice.Serialy && !hovoriOMam)
         {
             podmienky.Add("p.titul_id IS NOT NULL");
+        }
+
+        if (playlistId is { } pl)
+        {
+            podmienky.Add($"t.id IN (SELECT coalesce(pp.titul_id, e.titul_id) FROM playlist_polozka pp LEFT JOIN epizoda e ON e.id = pp.epizoda_id WHERE pp.playlist_id = {Parameter(pl)})");
         }
 
         if (stitokId is { } st)
@@ -241,8 +247,33 @@ public static class KniznicaTitulov
             return vysledok.OrderBy(t => poradie.TryGetValue(t.Id, out var i) ? i : int.MaxValue).ThenBy(t => t.Rok).ToList();
         }
 
+        if (playlistId is { } pl2)
+        {
+            var poradie = PoradiePlaylistu(spojenie, pl2);
+            return vysledok.OrderBy(t => poradie.TryGetValue(t.Id, out var i) ? i : int.MaxValue).ToList();
+        }
+
         var porovnanie = StringComparer.Create(CultureInfo.GetCultureInfo("sk-SK"), CompareOptions.IgnoreCase);
         return vysledok.OrderBy(t => t.Nazov, porovnanie).ThenBy(t => t.Rok).ToList();
+    }
+
+    /// <summary>The place of each title in a playlist (the first, when it is there with more episodes).</summary>
+    private static Dictionary<long, int> PoradiePlaylistu(SqliteConnection spojenie, long playlistId)
+    {
+        using var prikaz = spojenie.CreateCommand();
+        prikaz.CommandText = """
+            SELECT coalesce(pp.titul_id, e.titul_id), min(pp.poradie) FROM playlist_polozka pp LEFT JOIN epizoda e ON e.id = pp.epizoda_id
+            WHERE pp.playlist_id = $p GROUP BY 1
+            """;
+        prikaz.Parameters.AddWithValue("$p", playlistId);
+        using var citac = prikaz.ExecuteReader();
+        var vysledok = new Dictionary<long, int>();
+        while (citac.Read())
+        {
+            vysledok[citac.GetInt64(0)] = citac.GetInt32(1);
+        }
+
+        return vysledok;
     }
 
     /// <summary>Everything about one title for its detail; null when it is gone.</summary>

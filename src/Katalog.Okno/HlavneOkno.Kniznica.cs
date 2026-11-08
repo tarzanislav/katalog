@@ -27,6 +27,9 @@ internal enum ObsahKniznice
     Nezalohovane,
     Stitky,
     Stitok,
+    Playlisty,
+    Playlist,
+    Navrh,
 }
 
 /// <summary>
@@ -166,6 +169,7 @@ public partial class HlavneOkno
             _ when ReferenceEquals(polozka, NavigaciaDuplicity) => ObsahKniznice.Duplicity,
             _ when ReferenceEquals(polozka, NavigaciaNezalohovane) => ObsahKniznice.Nezalohovane,
             _ when ReferenceEquals(polozka, NavigaciaStitky) => ObsahKniznice.Stitky,
+            _ when ReferenceEquals(polozka, NavigaciaPlaylisty) => ObsahKniznice.Playlisty,
             _ => null,
         };
         if (obsah is not { } o)
@@ -200,6 +204,7 @@ public partial class HlavneOkno
         var dotaz = Dotaz.Citaj(FilterKniznice.Text);
         var kontext = KontextHladania.Teraz(_stav?.Pripojene.Keys.ToList() ?? []);
         var obrazky = _obrazky;
+        var navrh = _otvorenyNavrh;
         List<PolozkaSteny> polozky;
         try
         {
@@ -212,6 +217,13 @@ public partial class HlavneOkno
                         .Where(k => dotaz.JePrazdny || dotaz.Podmienky.OfType<Slovo>().All(s => Normalizacia.Nazov(k.Nazov).Contains(Normalizacia.Nazov(s.Text), StringComparison.Ordinal) != s.Zaporna))
                         .Select(k => new PolozkaSteny(k, obrazky)).ToList(),
                     ObsahKniznice.ZoznamyHistra => KniznicaTitulov.ZoznamyHistra(c).Select(z => new PolozkaSteny(z)).ToList(),
+                    ObsahKniznice.Playlisty => Playlisty.Zoznam(c)
+                        .Where(k => dotaz.JePrazdny || dotaz.Podmienky.OfType<Slovo>().All(s => Normalizacia.Nazov(k.Nazov).Contains(Normalizacia.Nazov(s.Text), StringComparison.Ordinal) != s.Zaporna))
+                        .Select(k => new PolozkaSteny(k))
+                        .Concat(dotaz.JePrazdny ? Playlisty.Navrhy(c, kontext).Select(n => new PolozkaSteny(n)) : [])
+                        .ToList(),
+                    ObsahKniznice.Playlist or ObsahKniznice.Navrh => TitulyPlaylistu(c, obsah, otvorene, navrh, dotaz, kontext)
+                        .Select(t => new PolozkaSteny(t, obrazky)).ToList(),
                     ObsahKniznice.Stitky => StitkyTitulov.Zoznam(c)
                         .Where(k => dotaz.JePrazdny || dotaz.Podmienky.OfType<Slovo>().All(s => Normalizacia.Nazov(k.Nazov).Contains(Normalizacia.Nazov(s.Text), StringComparison.Ordinal) != s.Zaporna))
                         .Select(k => new PolozkaSteny(k)).ToList(),
@@ -254,6 +266,8 @@ public partial class HlavneOkno
             ObsahKniznice.Duplicity => "Duplicity",
             ObsahKniznice.Nezalohovane => "Len na jednom disku",
             ObsahKniznice.Stitky => "Štítky",
+            ObsahKniznice.Playlisty => "Playlisty",
+            ObsahKniznice.Navrh => navrh?.Nazov ?? "",
             _ => otvorene?.Nazov ?? "",
         };
         PocetKniznice.Text = Format.Mnozne(polozky.Count, obsah switch
@@ -261,21 +275,25 @@ public partial class HlavneOkno
             ObsahKniznice.Kolekcie => "kolekcia",
             ObsahKniznice.ZoznamyHistra => "zoznam",
             ObsahKniznice.Stitky => "štítok",
+            ObsahKniznice.Playlisty => "playlist",
             _ => "titul",
         }, obsah switch
         {
             ObsahKniznice.Kolekcie => "kolekcie",
             ObsahKniznice.ZoznamyHistra => "zoznamy",
             ObsahKniznice.Stitky => "štítky",
+            ObsahKniznice.Playlisty => "playlisty",
             _ => "tituly",
         }, obsah switch
         {
             ObsahKniznice.Kolekcie => "kolekcií",
             ObsahKniznice.ZoznamyHistra => "zoznamov",
             ObsahKniznice.Stitky => "štítkov",
+            ObsahKniznice.Playlisty => "playlistov",
             _ => "titulov",
         });
-        TlacidloSpatKniznica.Visibility = otvorene is null ? Visibility.Collapsed : Visibility.Visible;
+        TlacidloSpatKniznica.Visibility = otvorene is null && obsah != ObsahKniznice.Navrh ? Visibility.Collapsed : Visibility.Visible;
+        UkazTlacidlaPlaylistov(obsah);
         TlacidloNacitatHistra.Visibility = obsah == ObsahKniznice.ZoznamyHistra ? Visibility.Visible : Visibility.Collapsed;
         UpozornenieKniznice.Text = string.Join(" ", dotaz.Upozornenia);
         UpozornenieKniznice.Visibility = dotaz.Upozornenia.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -320,6 +338,8 @@ public partial class HlavneOkno
             ObsahKniznice.ZoznamyHistra => "Zatiaľ žiadne zoznamy. Načítaj ich tlačidlom „Načítať zoznamy z HISTRA“ (potrebuje token HISTRA).",
             ObsahKniznice.Duplicity => "Žiadny titul nemáš viackrát. Keď bude, ukáže sa tu aj s návrhom, ktorá verzia je lepšia.",
             ObsahKniznice.Nezalohovane => "Všetky tituly máš aspoň na dvoch diskoch. Výborne – strata jedného disku ťa nepripraví o žiadny film.",
+            ObsahKniznice.Playlisty => "Zatiaľ žiadny playlist. Vytvor ho tlačidlom „Nový playlist…“ – ručný, inteligentný (podľa dotazu) alebo náhodný.",
+            ObsahKniznice.Playlist => "Playlist je prázdny. Tituly doň pridáš v ich detaile tlačidlom „Do playlistu…“.",
             ObsahKniznice.Stitky => "Zatiaľ žiadne štítky. Titulu ich pridáš v jeho detaile tlačidlom „Štítky…“ (napr. Vianoce, Pre deti).",
             _ => "Prázdne.",
         };
@@ -416,7 +436,7 @@ public partial class HlavneOkno
     }
 
     /// <summary>A double click: a collection or list opens, a title plays.</summary>
-    private async Task OtvorPolozkuAsync(PolozkaSteny polozka)
+    internal async Task OtvorPolozkuAsync(PolozkaSteny polozka)
     {
         switch (polozka)
         {
@@ -435,6 +455,17 @@ public partial class HlavneOkno
                 _otvorene = (st.Id, st.Nazov);
                 await ZobrazKnizniciuAsync();
                 break;
+            case { Playlist: { } pl }:
+                _obsah = ObsahKniznice.Playlist;
+                _otvorene = (pl.Id, pl.Nazov);
+                await ZobrazKnizniciuAsync();
+                break;
+            case { Navrh: { } n }:
+                _obsah = ObsahKniznice.Navrh;
+                _otvorene = null;
+                _otvorenyNavrh = n;
+                await ZobrazKnizniciuAsync();
+                break;
             case { Titul: { Mam: true } t }:
                 await PrehrajTitulAsync(t.Id);
                 break;
@@ -447,6 +478,7 @@ public partial class HlavneOkno
         {
             ObsahKniznice.ZoznamHistra => ObsahKniznice.ZoznamyHistra,
             ObsahKniznice.Stitok => ObsahKniznice.Stitky,
+            ObsahKniznice.Playlist or ObsahKniznice.Navrh => ObsahKniznice.Playlisty,
             _ => ObsahKniznice.Kolekcie,
         };
         _otvorene = null;
@@ -515,7 +547,28 @@ public partial class HlavneOkno
             riadky.Add(new RiadokDetailu("O kolekcii", dej));
         }
 
-        riadky.Add(new RiadokDetailu("Otvoriť", polozka.Znacka is not null
+        if (polozka.Playlist is { } playlist)
+        {
+            riadky.Add(new RiadokDetailu("Druh", playlist.Druh switch
+            {
+                DruhPlaylistu.Rucny => "ručný – tituly v tvojom poradí",
+                DruhPlaylistu.Nahodny => $"náhodný – {playlist.Pocet} titulov vylosovaných z dotazu (Vylosovať znova dá iné)",
+                _ => "inteligentný – všetko, čo zodpovedá dotazu, chronologicky; dopĺňa sa sám",
+            }));
+            if (!string.IsNullOrEmpty(playlist.Dotaz))
+            {
+                riadky.Add(new RiadokDetailu("Dotaz", playlist.Dotaz));
+            }
+        }
+        else if (polozka.Navrh is { } navrhPlaylistu)
+        {
+            riadky.Add(new RiadokDetailu("Dotaz", navrhPlaylistu.Dotaz));
+            riadky.Add(new RiadokDetailu("Návrh", "Dvojklik ukáže jeho tituly; tlačidlom „Uložiť ako playlist“ si ho necháš."));
+        }
+
+        riadky.Add(new RiadokDetailu("Otvoriť", polozka.Playlist is not null || polozka.Navrh is not null
+            ? "Dvojklik ukáže jeho tituly; seriál v ňom hrá ďalšiu nevidenú epizódu."
+            : polozka.Znacka is not null
             ? "Dvojklik ukáže jeho tituly. Hľadanie: stitok:\"" + polozka.Nazov + "\""
             : "Dvojklik ukáže jej tituly – aj tie, ktoré nemáš (bledé)."));
         DetailRiadky.ItemsSource = riadky;

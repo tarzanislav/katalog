@@ -53,6 +53,30 @@ internal sealed class PolozkaSteny : INotifyPropertyChanged
         Ikona = "\uE8EC";
     }
 
+    public PolozkaSteny(Playlist playlist)
+    {
+        Playlist = playlist;
+        Nazov = playlist.Nazov;
+        Podnadpis = playlist.Druh switch
+        {
+            DruhPlaylistu.Rucny => "ručný · " + Format.Mnozne(playlist.Poloziek, "titul", "tituly", "titulov"),
+            DruhPlaylistu.Nahodny => $"náhodný · {playlist.Pocet} z {(string.IsNullOrEmpty(playlist.Dotaz) ? "celej knižnice" : playlist.Dotaz)}",
+            _ => "inteligentný · " + (string.IsNullOrEmpty(playlist.Dotaz) ? "celá knižnica" : playlist.Dotaz),
+        };
+        Priehladnost = 1;
+        Ikona = playlist.Druh switch { DruhPlaylistu.Nahodny => "\uE8B1", DruhPlaylistu.Inteligentny => "\uE71C", _ => "\uE8FD" };
+    }
+
+    public PolozkaSteny(NavrhPlaylistu navrh)
+    {
+        Navrh = navrh;
+        Nazov = navrh.Nazov;
+        Podnadpis = $"{navrh.Popis} · {Format.Mnozne(navrh.Titulov, "titul", "tituly", "titulov")}";
+        Stitok = "Návrh";
+        Priehladnost = 0.85;
+        Ikona = "\uE82F";
+    }
+
     public PolozkaSteny(ZoznamHistraKniznice zoznam)
     {
         Zoznam = zoznam;
@@ -67,6 +91,12 @@ internal sealed class PolozkaSteny : INotifyPropertyChanged
     public KolekciaKniznice? Kolekcia { get; }
 
     public ZoznamHistraKniznice? Zoznam { get; }
+
+    /// <summary>A playlist of the user's (a tile of the view Playlisty).</summary>
+    public Playlist? Playlist { get; }
+
+    /// <summary>A playlist the library suggests.</summary>
+    public NavrhPlaylistu? Navrh { get; }
 
     /// <summary>A tag of the user's (a tile of the view Štítky).</summary>
     public StitokTitulov? Znacka { get; }
@@ -91,7 +121,7 @@ internal sealed class PolozkaSteny : INotifyPropertyChanged
     // list columns
     public string RokText => Titul?.Rok?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
 
-    public string DruhText => Titul?.Druh switch { DruhTitulu.Serial => "seriál", DruhTitulu.Film => "film", _ => Kolekcia is not null ? "kolekcia" : Znacka is not null ? "štítok" : "zoznam" };
+    public string DruhText => Titul?.Druh switch { DruhTitulu.Serial => "seriál", DruhTitulu.Film => "film", _ => Kolekcia is not null ? "kolekcia" : Znacka is not null ? "štítok" : Playlist is not null ? "playlist" : Navrh is not null ? "návrh" : "zoznam" };
 
     public string KvalitaText => Titul?.Kvalita switch { TriedaKvality.UHD4K => "4K", TriedaKvality.Nezistena or null => "", var k => k.ToString()! };
 

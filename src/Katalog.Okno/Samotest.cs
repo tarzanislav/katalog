@@ -190,6 +190,7 @@ internal static class Samotest
         await KnizniceAsync(okno);
         await PrehladyAsync(okno);
         await VystupyAsync(okno, nastavenia);
+        await PlaylistyAsync(okno);
 
         App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
@@ -577,6 +578,85 @@ internal static class Samotest
                 Vypozicky.Vrat(s, v.Id, Cas.Teraz());
             }
         });
+    }
+
+    /// <summary>
+    /// Playlists and random choice (stage E7): a smart and a hand-made playlist with the suggestions on the wall, playing a
+    /// playlist (the series plays its next episode), its M3U, a random playlist and "pick something for me".
+    /// </summary>
+    private static async Task PlaylistyAsync(HlavneOkno okno)
+    {
+        if (okno.Kniznica is not { } kniznica)
+        {
+            return;
+        }
+
+        var nikto = new KontextHladania([], DateTime.Now);
+        long filmId, serialId;
+        using (var c = kniznica.OtvorCitanie())
+        {
+            filmId = KniznicaTitulov.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("\"Vymyslený Šťastný film\""), nikto, PohladKniznice.Filmy).Single().Id;
+            serialId = KniznicaTitulov.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("\"Vymyslený seriál\""), nikto, PohladKniznice.Serialy).Single().Id;
+        }
+
+        var teraz = Cas.Teraz();
+        await kniznica.Zapis.ZapisAsync(s => Playlisty.Vytvor(s, "Všetky filmy", DruhPlaylistu.Inteligentny, "kniznica:film", null, teraz));
+        var rucny = await kniznica.Zapis.ZapisAsync(s =>
+        {
+            var id = Playlisty.Vytvor(s, "Na víkend", DruhPlaylistu.Rucny, null, null, teraz);
+            Playlisty.Pridaj(s, id, [serialId, filmId]);
+            return id;
+        });
+        var nahodny = await kniznica.Zapis.ZapisAsync(s => Playlisty.Vytvor(s, "Prekvapenie", DruhPlaylistu.Nahodny, "", 1, teraz));
+        using (var c = kniznica.OtvorCitanie())
+        {
+            Over(Playlisty.Tituly(c, Playlisty.Najdi(c, nahodny)!, nikto).Count == 1, "náhodný playlist vylosoval jeden titul");
+        }
+
+        App.NastavMotiv("Light");
+        okno.FilterKniznice.Text = "";
+        okno.NavigaciaPlaylisty.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        Over(okno.PolozkySteny.Count(p => p.Playlist is not null) == 3, "tri playlisty na stene");
+        Over(okno.PolozkySteny.Any(p => p.Navrh is not null), "návrhy playlistov: " + string.Join(", ", okno.PolozkySteny.Where(p => p.Navrh is not null).Select(p => p.Nazov)));
+        await SnimkaAsync(okno, "playlisty-svetle.png");
+
+        if (okno.PolozkySteny.FirstOrDefault(p => p.Playlist?.Id == rucny) is { } dlazdica)
+        {
+            await okno.OtvorPolozkuAsync(dlazdica);
+            Over(okno.PolozkySteny.Select(p => p.Titul?.Id).SequenceEqual(new long?[] { serialId, filmId }), "ručný playlist v poradí pridania");
+
+            Jadro.Prehravanie.Spustenie? spustenie = null;
+            okno.SpustacPrehravania = s => spustenie = s;
+            var hra = await okno.PrehrajPlaylistAsync(zamiesat: false);
+            Over(hra && spustenie?.Playlist is { } obsah && obsah.Contains("S01E01", StringComparison.Ordinal) && obsah.Contains("Šťastný film", StringComparison.Ordinal)
+                 && obsah.IndexOf("S01E01", StringComparison.Ordinal) < obsah.IndexOf("Šťastný film", StringComparison.Ordinal),
+                "prehratie playlistu: epizóda seriálu, potom film");
+            okno.SpustacPrehravania = null;
+
+            using (var c = kniznica.OtvorCitanie())
+            {
+                var (polozky, vynechane) = okno.PolozkyM3u(c, okno.PolozkySteny.Where(p => p.Titul is not null).Select(p => p.Titul!).ToList());
+                Over(polozky.Count == 2 && vynechane == 0 && polozky.All(p => File.Exists(p.Cesta)), "M3U s cestami na pripojenom disku");
+                File.WriteAllText(Path.Combine(_vystup, "vystupy", "playlist.m3u8"), Vystupy.M3u.Text(polozky, "Na víkend"));
+            }
+
+            App.NastavMotiv("Dark");
+            var vybrana = await okno.VyberNahodneAsync();
+            var dalsia = await okno.VyberNahodneAsync();
+            Over(vybrana?.Titul is not null && dalsia?.Titul is not null && vybrana.Titul.Id != dalsia.Titul.Id, "náhodný výber: dva rôzne tituly za sebou");
+            await SnimkaAsync(okno, "playlist-tmave.png");
+        }
+
+        // a suggestion opens as titles and can be saved
+        App.NastavMotiv("Light");
+        okno.NavigaciaPlaylisty.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        if (okno.PolozkySteny.FirstOrDefault(p => p.Navrh is not null) is { } navrh)
+        {
+            await okno.OtvorPolozkuAsync(navrh);
+            Over(okno.PolozkySteny.Count == navrh.Navrh!.Titulov, $"návrh „{navrh.Nazov}“ ukáže svoje tituly");
+        }
     }
 
     /// <summary>An invented poster (a colour and the title), drawn here: no picture comes from the internet.</summary>
