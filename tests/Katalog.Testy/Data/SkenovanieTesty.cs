@@ -111,6 +111,7 @@ public sealed class SkenovanieTesty
     }
 
     [Test]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public async Task NeprecitatelnyPriecinokOstaneAkoBol()
     {
         if (!OperatingSystem.IsLinux() || Environment.UserName == "root")
