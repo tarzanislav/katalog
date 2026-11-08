@@ -8,6 +8,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -44,10 +45,28 @@
                     Click="TlacidloOPrograme_Click" />
         </Grid>
 
+        <!-- notice bar: a disk of the library was connected -->
+        <Border Grid.Row="1" x:Name="Oznam" Visibility="Collapsed" Margin="12,0,12,8" Padding="12,8" CornerRadius="6"
+                Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#xEDA2;" FontFamily="{StaticResource Ikony}" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <TextBlock Grid.Column="1" x:Name="OznamText" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <Button Grid.Column="2" x:Name="OznamAkcia" Content="Aktualizovať" Padding="14,4" Margin="12,0,0,0" Click="OznamAkcia_Click" />
+                <Button Grid.Column="3" Content="Neskôr" Padding="14,4" Margin="8,0,0,0" Click="OznamZavriet_Click" />
+            </Grid>
+        </Border>
+
         <!-- three columns: navigation, library, detail -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="230" MinWidth="180" />
+                <ColumnDefinition Width="260" MinWidth="180" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="320" MinWidth="240" />
             </Grid.ColumnDefinitions>
@@ -65,9 +84,57 @@
                             <ListBoxItem Content="Zoznam želaní" Style="{StaticResource PolozkaNavigacie}" />
                         </ListBox>
 
-                        <TextBlock Text="DISKY" Style="{StaticResource NadpisSekcie}" />
-                        <TextBlock Text="Zatiaľ žiadny disk. Pridávanie a skenovanie diskov príde v etape E1."
+                        <Grid Margin="0,0,8,0">
+                            <TextBlock Text="DISKY" Style="{StaticResource NadpisSekcie}" />
+                            <Button x:Name="TlacidloPridatDisk" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="8,2"
+                                    Margin="0,0,0,2" Click="PridatDisk_Click" ToolTip="Pridať disk alebo priečinok do katalógu">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE710;" FontFamily="{StaticResource Ikony}" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Text="Pridať disk" Margin="6,0,0,0" FontSize="12" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock x:Name="ZiadnyDisk" Text="Zatiaľ žiadny disk. Pridaj prvý tlačidlom „Pridať disk“."
                                    Margin="12,2,12,4" Style="{StaticResource TichyText}" />
+                        <TreeView x:Name="StromDiskov" BorderThickness="0" Background="Transparent" Margin="4,0,4,0"
+                                  SelectedItemChanged="StromDiskov_SelectedItemChanged"
+                                  PreviewMouseRightButtonDown="StromDiskov_PreviewMouseRightButtonDown">
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                    <Setter Property="IsExpanded" Value="{Binding Otvoreny, Mode=TwoWay}" />
+                                    <Setter Property="IsSelected" Value="{Binding Vybraty, Mode=TwoWay}" />
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                            <TreeView.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Deti}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center"
+                                                   Margin="0,0,8,0" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Nazov}" />
+                                            <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7"
+                                                       Visibility="{Binding MaPopis, Converter={StaticResource BoolNaViditelnost}}" />
+                                        </StackPanel>
+                                        <Ellipse Width="8" Height="8" Fill="#2EA043" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                 ToolTip="Disk je pripojený"
+                                                 Visibility="{Binding Pripojeny, Converter={StaticResource BoolNaViditelnost}}" />
+                                    </StackPanel>
+                                </HierarchicalDataTemplate>
+                            </TreeView.ItemTemplate>
+                            <TreeView.ContextMenu>
+                                <ContextMenu x:Name="PonukaStromu" Opened="PonukaStromu_Opened">
+                                    <MenuItem x:Name="PonukaAktualizovat" Header="Aktualizovať disk" Click="AktualizovatDisk_Click" />
+                                    <MenuItem x:Name="PonukaOtvorit" Header="Otvoriť v Prieskumníkovi" Click="OtvoritVPrieskumnikovi_Click" />
+                                    <MenuItem x:Name="PonukaUpravit" Header="Upraviť disk…" Click="UpravitDisk_Click" />
+                                    <MenuItem x:Name="PonukaOdstranit" Header="Odstrániť disk z knižnice…" Click="OdstranitDisk_Click" />
+                                    <Separator />
+                                    <MenuItem Header="Pridať disk…" Click="PridatDisk_Click" />
+                                    <MenuItem Header="Nový katalóg…" Click="NovyKatalog_Click" />
+                                    <MenuItem x:Name="PonukaPremenovatKatalog" Header="Premenovať katalóg…" Click="PremenovatKatalog_Click" />
+                                    <MenuItem x:Name="PonukaZmazatKatalog" Header="Zmazať katalóg…" Click="ZmazatKatalog_Click" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
+                        </TreeView>
 
                         <TextBlock Text="ZBIERKY" Style="{StaticResource NadpisSekcie}" />
                         <ListBox x:Name="NavigaciaZbierky" BorderThickness="0" Background="Transparent"
@@ -82,46 +149,107 @@
                 </ScrollViewer>
             </Border>
 
-            <Grid Grid.Column="1" Margin="20,16,20,16">
+            <!-- center: an empty state, or the content of a disk's folder -->
+            <Grid Grid.Column="1" x:Name="PanelPrazdny" Margin="20,16,20,16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <TextBlock x:Name="NadpisStredu" Text="Filmy" FontSize="22" FontWeight="SemiBold" />
-                <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="420">
+                <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="440">
                     <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource Ikony}" FontSize="48"
                                HorizontalAlignment="Center" Opacity="0.6" />
-                    <TextBlock Text="Knižnica je zatiaľ prázdna" FontSize="18" FontWeight="SemiBold"
-                               HorizontalAlignment="Center" Margin="0,12,0,6" />
-                    <TextBlock TextAlignment="Center" Style="{StaticResource TichyText}"
-                               Text="Pridávanie diskov a skenovanie príde v etape E1, plagátová stena s filmami a seriálmi v etape E4." />
+                    <TextBlock x:Name="PrazdnyNadpis" Text="Knižnica je zatiaľ prázdna" FontSize="18" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" TextAlignment="Center" Margin="0,12,0,6" TextWrapping="Wrap" />
+                    <TextBlock x:Name="PrazdnyText" TextAlignment="Center" Style="{StaticResource TichyText}"
+                               Text="Pridaj disk vľavo (Pridať disk). Plagátová stena s filmami a seriálmi príde v etape E4." />
                 </StackPanel>
+            </Grid>
+
+            <Grid Grid.Column="1" x:Name="PanelSuborov" Margin="20,16,20,8" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="NadpisPriecinka" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Row="1" x:Name="PopisPriecinka" Margin="0,2,0,0" Style="{StaticResource TichyText}" />
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,8">
+                    <Button x:Name="TlacidloHore" Padding="10,5" Click="Hore_Click" ToolTip="O priečinok vyššie">
+                        <TextBlock Text="&#xE74A;" FontFamily="{StaticResource Ikony}" />
+                    </Button>
+                    <Button x:Name="TlacidloAktualizovatDisk" Content="Aktualizovať disk" Padding="14,5" Margin="8,0,0,0"
+                            Click="AktualizovatDisk_Click" />
+                    <Button x:Name="TlacidloOtvorit" Content="Otvoriť v Prieskumníkovi" Padding="14,5" Margin="8,0,0,0"
+                            Click="OtvoritVPrieskumnikovi_Click" />
+                    <CheckBox x:Name="AjZmazane" Content="Ukázať aj zmazané" Margin="16,0,0,0" VerticalAlignment="Center"
+                              Checked="AjZmazane_Changed" Unchecked="AjZmazane_Changed" />
+                </StackPanel>
+                <ListView Grid.Row="3" x:Name="ZoznamSuborov" SelectionMode="Single"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                          SelectionChanged="ZoznamSuborov_SelectionChanged" MouseDoubleClick="ZoznamSuborov_MouseDoubleClick">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Názov" Width="420">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Opacity="{Binding Priehladnost}">
+                                            <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding Nazov}" TextDecorations="{Binding Preciarknutie}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Veľkosť" Width="100" DisplayMemberBinding="{Binding VelkostText}" />
+                            <GridViewColumn Header="Zmenené" Width="140" DisplayMemberBinding="{Binding ZmeneneText}" />
+                            <GridViewColumn Header="Typ" Width="90" DisplayMemberBinding="{Binding Typ}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Grid>
 
             <Border Grid.Column="2" BorderThickness="1,1,0,0" Padding="16"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
                 <StackPanel>
-                    <TextBlock Text="Detail titulu" FontSize="16" FontWeight="SemiBold" />
-                    <TextBlock Margin="0,8,0,0" Style="{StaticResource TichyText}"
+                    <TextBlock x:Name="DetailNadpis" Text="Detail titulu" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock x:Name="DetailPrazdny" Margin="0,8,0,0" Style="{StaticResource TichyText}"
                                Text="Vyber titul alebo súbor. Tu uvidíš plagát, dej, kde leží (disk, cesta, či je pripojený), technické údaje, zvuk a titulky s jazykmi a ďalšie verzie na iných diskoch." />
+                    <ItemsControl x:Name="DetailRiadky" Margin="0,8,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7" />
+                                    <TextBlock Text="{Binding Hodnota}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
         </Grid>
 
         <!-- status line: library, background jobs, version -->
-        <Border Grid.Row="2" BorderThickness="0,1,0,0" Padding="12,6"
+        <Border Grid.Row="3" BorderThickness="0,1,0,0" Padding="12,6"
                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="StavKniznice" Text="Otváram knižnicu…" Style="{StaticResource TichyText}"
-                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-                <TextBlock Grid.Column="1" x:Name="StavUloh" Text="Fronta úloh: prázdna" Margin="16,0"
-                           Style="{StaticResource TichyText}" />
-                <TextBlock Grid.Column="2" x:Name="StavVerzie" Style="{StaticResource TichyText}" />
+                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" x:Name="StavUloh" Text="Fronta úloh: prázdna" Margin="16,0,8,0"
+                           Style="{StaticResource TichyText}" VerticalAlignment="Center" TextWrapping="NoWrap" />
+                <ProgressBar Grid.Column="2" x:Name="PriebehSkenu" Width="160" Height="6" Visibility="Collapsed"
+                             VerticalAlignment="Center" Minimum="0" Maximum="100" />
+                <Button Grid.Column="3" x:Name="TlacidloZrusitSken" Content="Zrušiť" Padding="10,2" Margin="8,0,0,0"
+                        Visibility="Collapsed" Click="ZrusitSken_Click" />
+                <TextBlock Grid.Column="4" x:Name="StavVerzie" Margin="16,0,0,0" Style="{StaticResource TichyText}"
+                           VerticalAlignment="Center" />
             </Grid>
         </Border>
     </Grid>

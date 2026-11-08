@@ -1,0 +1,64 @@
+<Window x:Class="Katalog.Okno.PridatDiskOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pridať disk"
+        Icon="Zdroje/katalog.ico"
+        Width="620" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock Text="Čo chceš pridať do katalógu?" FontSize="16" FontWeight="SemiBold" />
+
+        <RadioButton x:Name="VolbaZvazok" Content="Celý pripojený disk" Margin="0,12,0,4" IsChecked="True" Checked="Volba_Changed" />
+        <ListBox x:Name="ZoznamZvazkov" Height="170" Margin="24,0,0,0" SelectionChanged="ZoznamZvazkov_SelectionChanged">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Margin="2,3">
+                        <TextBlock Text="{Binding Nadpis}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Popis}" Style="{StaticResource TichyText}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock x:Name="NacitavamZvazky" Text="Hľadám pripojené disky…" Margin="24,4,0,0" Style="{StaticResource TichyText}" />
+
+        <RadioButton x:Name="VolbaPriecinok" Content="Len jeden priečinok (napr. D:\Filmy)" Margin="0,12,0,4" Checked="Volba_Changed" />
+        <Grid Margin="24,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="CestaPriecinka" IsReadOnly="True" Padding="8,5" />
+            <Button Grid.Column="1" Content="Vybrať…" Margin="8,0,0,0" Padding="14,5" Click="VybratPriecinok_Click" />
+        </Grid>
+
+        <RadioButton x:Name="VolbaSiet" Content="Sieťový disk alebo NAS podľa adresy" Margin="0,12,0,4" Checked="Volba_Changed" />
+        <TextBox x:Name="SietovaAdresa" Margin="24,0,0,0" Padding="8,5" TextChanged="SietovaAdresa_TextChanged"
+                 ToolTip="Napríklad \\nas\filmy" />
+
+        <Grid Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Katalóg" VerticalAlignment="Center" />
+            <ComboBox x:Name="Katalogy" Grid.Column="1" DisplayMemberPath="Nazov" SelectionChanged="Katalogy_SelectionChanged" />
+            <TextBlock Grid.Row="1" Text="Nový katalóg" VerticalAlignment="Center" Margin="0,8,0,0" x:Name="NovyKatalogPopis" />
+            <TextBox Grid.Row="1" Grid.Column="1" x:Name="NovyKatalog" Margin="0,8,0,0" Padding="8,5" />
+            <TextBlock Grid.Row="2" Text="Názov disku" VerticalAlignment="Center" Margin="0,8,0,0" />
+            <TextBox Grid.Row="2" Grid.Column="1" x:Name="NazovDisku" Margin="0,8,0,0" Padding="8,5" />
+        </Grid>
+
+        <TextBlock x:Name="Chyba" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="#C42B1C" Visibility="Collapsed" />
+        <TextBlock Margin="0,10,0,0" Style="{StaticResource TichyText}"
+                   Text="KATALOG z disku iba číta, nikdy naň nič nezapisuje. Skenovanie beží na pozadí s nízkou prioritou." />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="TlacidloPridat" Content="Pridať a skenovať" IsDefault="True" Padding="20,6" Click="Pridat_Click" />
+            <Button Content="Zrušiť" IsCancel="True" Padding="20,6" MinWidth="80" Margin="8,0,0,0" />
+        </StackPanel>
+    </StackPanel>
+</Window>

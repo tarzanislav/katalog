@@ -40,6 +40,7 @@ public partial class HlavneOkno : Window
         {
             Kniznica = await Kniznica.OtvorAsync(_cestaKniznice);
             StavKniznice.Text = PopisKniznice(Kniznica);
+            await InicializujDiskyAsync(Kniznica);
             if (!Kniznica.Kontrola.JeVPoriadku)
             {
                 MessageBox.Show(this,
@@ -70,7 +71,9 @@ public partial class HlavneOkno : Window
 
     private void ZavriKniznicu()
     {
-        // the writer finishes its last batch; the WAL is merged, so the file can be copied right away
+        // running scans stop (each folder is written whole or not at all); the writer finishes its last batch and the WAL
+        // is merged, so the file can be copied right away
+        _skeny?.ZrusVsetky();
         if (Kniznica is { } kniznica)
         {
             Kniznica = null;
@@ -88,10 +91,18 @@ public partial class HlavneOkno : Window
             return;
         }
 
-        // the two lists act as one navigation: choosing in one clears the other
+        // the two lists and the tree act as one navigation: choosing in one clears the others
         var druhy = ReferenceEquals(zoznam, NavigaciaKniznica) ? NavigaciaZbierky : NavigaciaKniznica;
         druhy.SelectedItem = null;
-        NadpisStredu.Text = polozka.Content as string ?? "";
+        if (!IsLoaded)
+        {
+            NadpisStredu.Text = polozka.Content as string ?? "";
+            return;
+        }
+
+        ZrusVyberVStrome();
+        ZobrazPrazdny(polozka.Content as string ?? "", "Táto časť príde v ďalších etapách",
+            "Filmy, seriály a kolekcie s plagátmi prídu v etape E4, uložené hľadania v E2, duplicity a prehľad diskov v E5.");
     }
 
     private async void TlacidloAktualizacie_Click(object sender, RoutedEventArgs e) => await KontrolujAktualizacieAsync(rucne: true);

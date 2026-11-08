@@ -52,34 +52,68 @@ internal static class Samotest
 
     private static string Log => Path.Combine(_vystup, "selftest.log");
 
+    /// <summary>Id of the invented disk the self-test scans.</summary>
+    private static long _diskId;
+
     private static async Task KniznicaAsync(string cesta)
     {
         await using var kniznica = await Kniznica.OtvorAsync(cesta, new ZalohyKniznice(Path.Combine(_vystup, "Zalohy")));
         Over(kniznica.VerziaSchemy == Migracie.Posledna, $"knižnica má schému v{Migracie.Posledna}");
         Over(kniznica.Kontrola.JeVPoriadku, "kontrola integrity");
 
+        // an invented disk: a folder of the runner's volume, scanned as a disk of a catalogue
+        var disk = Path.Combine(_vystup, "VymyslenyDisk");
+        if (Directory.Exists(disk))
+        {
+            Directory.Delete(disk, recursive: true);
+        }
+
+        Subor(disk, @"MOVIES\Vymyslený Šťastný film (2024)\Vymyslený Šťastný film (2024) - CZ EN FHD H264 SMALL.mkv", 1000);
+        Subor(disk, @"TVSHOWS\Vymyslený seriál (2025)\Season 01\Vymyslený seriál S01E01 - CZ FHD H265 SMALL.mkv", 700);
+        Subor(disk, @"TVSHOWS\Vymyslený seriál (2025)\Season 01\Vymyslený seriál S01E02 - CZ FHD H265 SMALL.mkv", 710);
+        Subor(disk, @"Dokumenty\Vymyslená poznámka.txt", 12);
+
+        var zvazky = Skenovanie.Zvazky.Systemove;
+        var identita = zvazky.Identita(disk);
+        Over(identita is not null, $"identita zväzku ({identita?.Druh}, sériové číslo {(identita?.SerioveCisloZvazku is null ? "chýba" : "je")})");
+        if (identita is null)
+        {
+            return;
+        }
+
+        var koren = Skenovanie.RozpoznanieDiskov.RelativnyKoren(Path.GetPathRoot(disk)!, disk);
+        _diskId = await HlavneOkno.PridajDiskAsync(kniznica,
+            new VolbaDisku(disk, identita, koren, "Vymyslený disk", null, "Vymyslená videotéka", zvazky.Miesto(disk).Volne));
+        var ulozisko = new Skenovanie.LokalneUlozisko(disk, identita.Druh, zvazky);
+        var prvy = await Ulohy.SkenovanieDisku.SpustiAsync(kniznica, _diskId, ulozisko, null, CancellationToken.None);
+        Over(prvy is { Stav: StavUlohy.Hotova, Zmeny.Pridane: 4, Priecinky: 7 }, $"prvý sken: {prvy.Stav}, {prvy.Zmeny}, {prvy.Priecinky} priečinkov");
+
         await kniznica.Zapis.ZapisAsync(s =>
         {
             using var prikaz = s.CreateCommand();
             prikaz.CommandText = """
-                INSERT INTO katalog(id, nazov, vytvoreny) VALUES (1, 'Vymyslená videotéka', 0);
-                INSERT INTO disk(id, katalog_id, cislo, nazov, pridany) VALUES (1, 1, 1, 'Vymyslený disk 001', 0);
-                INSERT INTO priecinok(id, disk_id, rodic_id, nazov) VALUES (1, 1, NULL, ''), (2, 1, 1, 'MOVIES');
-                INSERT INTO subor(id, priecinok_id, disk_id, nazov, pripona, velkost, zmeneny, prvy_raz)
-                  VALUES (1, 2, 1, 'Vymyslený Šťastný film (2024) - CZ EN FHD H264 SMALL.mkv', 'mkv', 1000, 0, 0);
                 INSERT INTO titul(id, druh, nazov, rok, vytvoreny, zmeneny) VALUES (1, 1, 'Vymyslený Šťastný film', 2024, 0, 0);
                 INSERT INTO verzia(id, titul_id, potvrdena, vytvorena) VALUES (1, 1, 1, 0);
-                INSERT INTO verzia_subor(verzia_id, subor_id) VALUES (1, 1);
+                INSERT INTO verzia_subor(verzia_id, subor_id) SELECT 1, id FROM subor WHERE nazov LIKE 'Vymyslený Šťastný film%';
                 """;
             prikaz.ExecuteNonQuery();
         });
 
-        using var citanie = await kniznica.OtvorCitanieAsync();
-        var najdene = Fulltext.Najdi(citanie, "stastny film");
-        Over(najdene.Contains((DruhHladania.Subor, 1L)) && najdene.Contains((DruhHladania.Titul, 1L)), "hľadanie bez diakritiky nájde súbor aj titul");
+        using (var citanie = await kniznica.OtvorCitanieAsync())
+        {
+            var najdene = Fulltext.Najdi(citanie, "stastny film");
+            Over(najdene.Any(n => n.Druh == DruhHladania.Subor) && najdene.Contains((DruhHladania.Titul, 1L)), "hľadanie bez diakritiky nájde súbor aj titul");
+        }
 
+        var bezZmien = await Ulohy.SkenovanieDisku.SpustiAsync(kniznica, _diskId, ulozisko, null, CancellationToken.None);
+        Over(bezZmien.Zmeny == default, $"sken bez zmien nič nezapísal ({bezZmien.Zmeny})");
+        File.Delete(Path.Combine(disk, "TVSHOWS", "Vymyslený seriál (2025)", "Season 01", "Vymyslený seriál S01E02 - CZ FHD H265 SMALL.mkv"));
+        var poZmazani = await Ulohy.SkenovanieDisku.SpustiAsync(kniznica, _diskId, ulozisko, null, CancellationToken.None);
+        Over(poZmazani.Zmeny == new PocetZmien(0, 0, 1), $"zmazaný súbor sa označil ({poZmazani.Zmeny})");
+
+        using var c = await kniznica.OtvorCitanieAsync();
         var zalohy = new ZalohyKniznice(Path.Combine(_vystup, "Zalohy"));
-        var zaloha = zalohy.Vytvor(citanie, kniznica.VerziaSchemy);
+        var zaloha = zalohy.Vytvor(c, kniznica.VerziaSchemy);
         Over(File.Exists(zaloha) && Path.GetFileName(zaloha).StartsWith(Produkt.Nazov + "-zaloha-0001-", StringComparison.Ordinal), "číslovaná záloha");
     }
 
@@ -93,12 +127,36 @@ internal static class Samotest
         await okno.Pripravene;
         Over(okno.Kniznica is { Kontrola.JeVPoriadku: true }, "okno otvorilo knižnicu");
         Over(okno.Title == Produkt.Nazov, "názov okna");
+        Over(okno.Pripojenie?.Pripojene.ContainsKey(_diskId) == true, "vymyslený disk je rozpoznaný ako pripojený podľa zväzku");
 
         App.NastavMotiv("Light");
+        okno.VyberDisk(_diskId);
         await SnimkaAsync(okno, "hlavne-okno-svetle.png");
         App.NastavMotiv("Dark");
         await SnimkaAsync(okno, "hlavne-okno-tmave.png");
 
+        var vysledok = await okno.SkenujAsync(_diskId);
+        Over(vysledok is { Stav: StavUlohy.Hotova }, $"sken z okna: {vysledok?.Stav}");
+
+        App.NastavMotiv("Light");
+        if (okno.Kniznica is { } kniznica && okno.Pripojenie is { } pripojenie)
+        {
+            IReadOnlyList<KatalogKniznice> katalogy;
+            IReadOnlyList<Disk> disky;
+            using (var c = kniznica.OtvorCitanie())
+            {
+                katalogy = KatalogyADisky.Katalogy(c);
+                disky = KatalogyADisky.Disky(c);
+            }
+
+            var pridat = new PridatDiskOkno(katalogy, disky, pripojenie.Zvazky, katalogy[0].Id) { Owner = okno };
+            pridat.Show();
+            await Task.Delay(1500);
+            await SnimkaAsync(pridat, "pridat-disk-svetle.png");
+            pridat.Close();
+        }
+
+        App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
         oPrograme.Show();
         await SnimkaAsync(oPrograme, "o-programe-tmave.png");
@@ -107,6 +165,13 @@ internal static class Samotest
         App.NastavMotiv("System");
         okno.Close();
         Over(okno.Kniznica is null, "okno pri zatvorení zavrelo knižnicu");
+    }
+
+    private static void Subor(string disk, string relativna, int velkost)
+    {
+        var cesta = Path.Combine(disk, relativna);
+        Directory.CreateDirectory(Path.GetDirectoryName(cesta)!);
+        File.WriteAllBytes(cesta, new byte[velkost]);
     }
 
     private static async Task SnimkaAsync(Window okno, string nazov)

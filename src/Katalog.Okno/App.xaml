@@ -6,6 +6,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <FontFamily x:Key="Ikony">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+            <BooleanToVisibilityConverter x:Key="BoolNaViditelnost" />
 
             <!-- section names in the left panel (KNIŽNICA, DISKY, ZBIERKY) -->
             <Style x:Key="NadpisSekcie" TargetType="TextBlock">
