@@ -24,6 +24,12 @@ public enum PohladKniznice
 
     /// <summary>Every title, also those without a version (collections, HISTRA lists).</summary>
     Vsetko,
+
+    /// <summary>Titles with more present versions (a series: of an episode) – duplicates, stage E5.</summary>
+    Duplicity,
+
+    /// <summary>Titles that lie on one disk only (N1).</summary>
+    Nezalohovane,
 }
 
 /// <summary>A title as the poster wall and the list show it.</summary>
@@ -151,6 +157,12 @@ public static class KniznicaTitulov
             case PohladKniznice.Zelane:
                 podmienky.Add("t.zelany = 1");
                 hovoriOMam = true;
+                break;
+            case PohladKniznice.Duplicity:
+                podmienky.Add(PodmienkyKniznice.PreTitul(new PocetVerzii(2, null, false), "t", Parameter));
+                break;
+            case PohladKniznice.Nezalohovane:
+                podmienky.Add(PodmienkyKniznice.PreTitul(new Zalohovane(false), "t", Parameter));
                 break;
         }
 
@@ -465,6 +477,28 @@ public static class KniznicaTitulov
 
         var porovnanie = StringComparer.Create(CultureInfo.GetCultureInfo("sk-SK"), CompareOptions.IgnoreCase);
         return vysledok.OrderBy(z => z.Nazov, porovnanie).ToList();
+    }
+
+    /// <summary>How many titles have duplicates and how many lie on one disk only (the counts next to the views).</summary>
+    public static (int Duplicity, int Nezalohovane) PoctyZbierok(SqliteConnection spojenie)
+    {
+        using var prikaz = spojenie.CreateCommand();
+        var cislo = 0;
+        string Parameter(object hodnota)
+        {
+            var meno = "$p" + (++cislo).ToString(CultureInfo.InvariantCulture);
+            prikaz.Parameters.AddWithValue(meno, hodnota);
+            return meno;
+        }
+
+        prikaz.CommandText = $"""
+            SELECT count(*) FILTER (WHERE {PodmienkyKniznice.PreTitul(new PocetVerzii(2, null, false), "t", Parameter)}),
+                   count(*) FILTER (WHERE {PodmienkyKniznice.PreTitul(new Zalohovane(false), "t", Parameter)})
+            FROM titul t
+            """;
+        using var c = prikaz.ExecuteReader();
+        c.Read();
+        return (c.GetInt32(0), c.GetInt32(1));
     }
 
     /// <summary>How many titles each view has (for the counts next to the views).</summary>

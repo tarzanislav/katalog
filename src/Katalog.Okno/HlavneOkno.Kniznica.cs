@@ -23,6 +23,8 @@ internal enum ObsahKniznice
     Kolekcia,
     ZoznamyHistra,
     ZoznamHistra,
+    Duplicity,
+    Nezalohovane,
 }
 
 /// <summary>
@@ -108,6 +110,13 @@ public partial class HlavneOkno
             NavigaciaSerialy.Content = serialy > 0 ? $"Seriály ({Format.Pocet(serialy)})" : "Seriály";
             NavigaciaNaPotvrdenie.Content = naPotvrdenie > 0 ? $"Na potvrdenie ({Format.Pocet(naPotvrdenie)})" : "Na potvrdenie";
             NavigaciaZelane.Content = zelane > 0 ? $"Zoznam želaní ({Format.Pocet(zelane)})" : "Zoznam želaní";
+            var (duplicity, nezalohovane) = await Task.Run(() =>
+            {
+                using var c = kniznica.OtvorCitanie();
+                return KniznicaTitulov.PoctyZbierok(c);
+            });
+            NavigaciaDuplicity.Content = duplicity > 0 ? $"Duplicity ({Format.Pocet(duplicity)})" : "Duplicity";
+            NavigaciaNezalohovane.Content = nezalohovane > 0 ? $"Len na jednom disku ({Format.Pocet(nezalohovane)})" : "Len na jednom disku";
         }
         catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
         {
@@ -125,6 +134,8 @@ public partial class HlavneOkno
             _ when ReferenceEquals(polozka, NavigaciaZelane) => ObsahKniznice.Zelane,
             _ when ReferenceEquals(polozka, NavigaciaKolekcie) => ObsahKniznice.Kolekcie,
             _ when ReferenceEquals(polozka, NavigaciaHistra) => ObsahKniznice.ZoznamyHistra,
+            _ when ReferenceEquals(polozka, NavigaciaDuplicity) => ObsahKniznice.Duplicity,
+            _ when ReferenceEquals(polozka, NavigaciaNezalohovane) => ObsahKniznice.Nezalohovane,
             _ => null,
         };
         if (obsah is not { } o)
@@ -177,6 +188,8 @@ public partial class HlavneOkno
                             ObsahKniznice.Serialy => PohladKniznice.Serialy,
                             ObsahKniznice.NaPotvrdenie => PohladKniznice.NaPotvrdenie,
                             ObsahKniznice.Zelane => PohladKniznice.Zelane,
+                            ObsahKniznice.Duplicity => PohladKniznice.Duplicity,
+                            ObsahKniznice.Nezalohovane => PohladKniznice.Nezalohovane,
                             _ => PohladKniznice.Vsetko,
                         },
                         kolekciaId: obsah == ObsahKniznice.Kolekcia ? otvorene?.Id : null,
@@ -204,6 +217,8 @@ public partial class HlavneOkno
             ObsahKniznice.Zelane => "Zoznam želaní",
             ObsahKniznice.Kolekcie => "Kolekcie",
             ObsahKniznice.ZoznamyHistra => "Zoznamy HISTRA",
+            ObsahKniznice.Duplicity => "Duplicity",
+            ObsahKniznice.Nezalohovane => "Len na jednom disku",
             _ => otvorene?.Nazov ?? "",
         };
         PocetKniznice.Text = Format.Mnozne(polozky.Count, obsah switch
@@ -265,6 +280,8 @@ public partial class HlavneOkno
             ObsahKniznice.Zelane => "Zoznam želaní je prázdny. Titul doň pridáš v jeho detaile tlačidlom Želané.",
             ObsahKniznice.Kolekcie => "Zatiaľ žiadne kolekcie. Doplnia sa z TMDB (série filmov) a z Jellyfin.",
             ObsahKniznice.ZoznamyHistra => "Zatiaľ žiadne zoznamy. Načítaj ich tlačidlom „Načítať zoznamy z HISTRA“ (potrebuje token HISTRA).",
+            ObsahKniznice.Duplicity => "Žiadny titul nemáš viackrát. Keď bude, ukáže sa tu aj s návrhom, ktorá verzia je lepšia.",
+            ObsahKniznice.Nezalohovane => "Všetky tituly máš aspoň na dvoch diskoch. Výborne – strata jedného disku ťa nepripraví o žiadny film.",
             _ => "Prázdne.",
         };
     }
@@ -467,7 +484,7 @@ public partial class HlavneOkno
             detail = await Task.Run(() =>
             {
                 using var c = kniznica.OtvorCitanie();
-                return KniznicaTitulov.Detail(c, titulId);
+                return KniznicaTitulov.Detail(c, titulId, PorovnanieVerzii.ZTextu(_nastavenia.PoradieKvality));
             });
         }
         catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
@@ -593,7 +610,13 @@ public partial class HlavneOkno
                      (v.Subory.Count > 1 ? $" · {Format.Mnozne(v.Subory.Count, "súbor", "súbory", "súborov")}" : "") +
                      (v.Poznamka is { } poz ? $" · {poz}" : "") +
                      (!v.Pritomna ? " · zmazaná z disku" : "") + "\n" + prvy.Nazov;
-            riadky.Add(new RiadokDetailu(v.Potvrdena ? "Verzia" : "Verzia (čaká na potvrdenie)", popis));
+            var nadpis = !v.Potvrdena ? "Verzia (čaká na potvrdenie)" : d.NajlepsieVerzie.Contains(v.Id) ? "Verzia – najlepšia" : "Verzia";
+            if (d.NajlepsieVerzie.Contains(v.Id) && DovodNajlepsej(d, v) is { } dovod)
+            {
+                popis += $"\nnajlepšia: {dovod}";
+            }
+
+            riadky.Add(new RiadokDetailu(nadpis, popis));
         }
 
         foreach (var k in d.Kolekcie)
@@ -631,6 +654,19 @@ public partial class HlavneOkno
         }
 
         DetailRiadky.ItemsSource = riadky;
+    }
+
+    /// <summary>Why the best version is better than the next one of the same film or episode.</summary>
+    private string? DovodNajlepsej(DetailTitulu d, VerziaTitulu najlepsia)
+    {
+        var poradie = PorovnanieVerzii.ZTextu(_nastavenia.PoradieKvality);
+        var ja = d.Vlastnosti.FirstOrDefault(x => x.VerziaId == najlepsia.Id);
+        var ostatne = d.Verzie.Where(v => v.Id != najlepsia.Id && v.EpizodaId == najlepsia.EpizodaId && v.Pritomna)
+            .Select(v => d.Vlastnosti.FirstOrDefault(x => x.VerziaId == v.Id))
+            .OfType<VlastnostiVerzie>()
+            .OrderByDescending(x => x, Comparer<VlastnostiVerzie>.Create((a, b) => PorovnanieVerzii.Porovnaj(a, b, poradie)))
+            .FirstOrDefault();
+        return ja is null || ostatne is null ? null : PorovnanieVerzii.Dovod(ja, ostatne, poradie);
     }
 
     private static string NazovZdroja(ZdrojUdajov zdroj) => zdroj switch

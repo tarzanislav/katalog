@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Collections.ObjectModel;
+using Katalog.Jadro.Model;
 using Katalog.Jadro.Prehravanie;
 using Katalog.Media;
 using Katalog.Zdroje;
@@ -19,6 +21,7 @@ public partial class NastaveniaOkno : Window
     private readonly Tajomstva _tajomstva;
     private bool _odstranitTmdb;
     private bool _odstranitHistra;
+    private readonly ObservableCollection<PolozkaKriteria> _kriteria;
 
     internal NastaveniaOkno(Nastavenia nastavenia, IReadOnlyList<Prehravac> najdene, NastrojeFfmpeg? ffmpeg, Tajomstva tajomstva, bool zdroje = false)
     {
@@ -31,6 +34,8 @@ public partial class NastaveniaOkno : Window
         JellyfinAdresa.Text = nastavenia.JellyfinAdresa;
         JellyfinPouzivatel.Text = nastavenia.JellyfinPouzivatel;
         JellyfinKlucPopis.Text = tajomstva.Ma("jellyfin") ? "Kľúč API (uložený)" : "Kľúč API";
+        _kriteria = new ObservableCollection<PolozkaKriteria>(PorovnanieVerzii.ZTextu(nastavenia.PoradieKvality).Select(k => new PolozkaKriteria(k)));
+        PoradieKvality.ItemsSource = _kriteria;
         ZobrazKluce();
         if (zdroje)
         {
@@ -145,6 +150,19 @@ public partial class NastaveniaOkno : Window
         TlacidloOdstranitHistra.Visibility = vlastnaHistra ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void KriteriumHore_Click(object sender, RoutedEventArgs e) => PosunKriterium(-1);
+
+    private void KriteriumDole_Click(object sender, RoutedEventArgs e) => PosunKriterium(1);
+
+    private void PosunKriterium(int smer)
+    {
+        if (PoradieKvality.SelectedIndex is var i && i >= 0 && i + smer >= 0 && i + smer < _kriteria.Count)
+        {
+            _kriteria.Move(i, i + smer);
+            PoradieKvality.SelectedIndex = i + smer;
+        }
+    }
+
     private void OdstranitTmdb_Click(object sender, RoutedEventArgs e)
     {
         _odstranitTmdb = true;
@@ -203,6 +221,7 @@ public partial class NastaveniaOkno : Window
             return;
         }
 
+        _nastavenia.PoradieKvality = PorovnanieVerzii.NaText(_kriteria.Select(k => k.Kriterium));
         _nastavenia.PouzivatTmdb = PouzivatTmdb.IsChecked == true;
         _nastavenia.PouzivatHistra = PouzivatHistra.IsChecked == true;
         _nastavenia.PouzivatJellyfin = PouzivatJellyfin.IsChecked == true;
@@ -215,6 +234,11 @@ public partial class NastaveniaOkno : Window
         _nastavenia.AutomatickeAktualizacie = AutomatickeAktualizacie.IsChecked == true;
         App.NastavMotiv(_nastavenia.Motiv);
         DialogResult = true;
+    }
+
+    private sealed record PolozkaKriteria(KriteriumVerzie Kriterium)
+    {
+        public string Nazov => PorovnanieVerzii.Nazov(Kriterium);
     }
 
     private sealed record VolbaPrehravaca(Prehravac Prehravac)

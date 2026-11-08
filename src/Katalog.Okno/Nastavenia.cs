@@ -37,6 +37,9 @@ public sealed class Nastavenia
         ? Jadro.Prehravanie.Prehravac.Predvoleny
         : Jadro.Prehravanie.Prehravac.ZProgramu(Prehravac);
 
+    /// <summary>The order of criteria for the best of more versions (duplicates), as numbers of <c>KriteriumVerzie</c>.</summary>
+    public string PoradieKvality { get; set; } = "1,2,3,4,5";
+
     /// <summary>TMDB is asked for names, plots, posters and collections (with its key: own, else UNIVERSUM's).</summary>
     public bool PouzivatTmdb { get; set; } = true;
 

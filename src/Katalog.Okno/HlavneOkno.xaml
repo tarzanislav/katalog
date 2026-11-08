@@ -165,8 +165,10 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                             <ListBoxItem x:Name="NavigaciaKolekcie" Content="Kolekcie" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaHistra" Content="Zoznamy HISTRA" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Playlisty" Style="{StaticResource PolozkaNavigacie}" />
-                            <ListBoxItem Content="Duplicity" Style="{StaticResource PolozkaNavigacie}" />
-                            <ListBoxItem Content="Prehľad diskov" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaDuplicity" Content="Duplicity" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaNezalohovane" Content="Len na jednom disku" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaPrehlad" Content="Prehľad diskov" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaStatistiky" Content="Štatistiky" Style="{StaticResource PolozkaNavigacie}" />
                         </ListBox>
                     </StackPanel>
                 </ScrollViewer>
