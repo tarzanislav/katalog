@@ -120,8 +120,7 @@ Hotové:
 - **Dotazovací jazyk** (A4): `rok`, `zaner`, `hodnotenie`, `moje`, `herec`, `rezia`, `kolekcia`, `videne`, `mam`,
   `zelane`, `kniznica` – v hľadaní súborov aj vo filtri knižnice (tam platia aj podmienky súborov ako `kvalita:4k`).
 - O programe: upozornenie TMDB; zdroje v THIRD-PARTY-NOTICES.
-- **Výkon** (GitHub Actions): 10 000 titulov – stena filmov okolo 40 ms, filter okolo 50 ms, rozpoznanie 14 000 videí
-  pár sekúnd (merané aj lokálne).
+- **Výkon** (GitHub Actions): 10 000 titulov – stena filmov 58 ms, filter 49 ms, rozpoznanie 14 000 videí 2,4 s.
 - Samotest: vymyslený zdroj namiesto TMDB (nič nejde na internet), plagáty nakreslené samotestom, potvrdenie návrhu,
   kolekcia s chýbajúcim dielom, prehranie seriálu, snímky steny, zoznamu, seriálu, Na potvrdenie, kolekcií a Nastavení.
 
