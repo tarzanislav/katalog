@@ -127,7 +127,7 @@ internal static class Samotest
         var pozadie = new DrawingVisual();
         using (var kreslenie = pozadie.RenderOpen())
         {
-            kreslenie.DrawRectangle(okno.Background ?? Brushes.White, null, new Rect(0, 0, sirka, vyska));
+            kreslenie.DrawRectangle(Pozadie(okno), null, new Rect(0, 0, sirka, vyska));
         }
 
         obrazok.Render(pozadie);
@@ -137,6 +137,25 @@ internal static class Samotest
         await using var prud = File.Create(Path.Combine(_vystup, nazov));
         koder.Save(prud);
         Zapis("snímka " + nazov);
+    }
+
+    /// <summary>
+    /// Background of a screenshot: with the Fluent theme a window is transparent (Windows draws the Mica backdrop behind it),
+    /// so the picture gets the theme's own application background instead.
+    /// </summary>
+    private static Brush Pozadie(Window okno)
+    {
+        if (okno.Background is SolidColorBrush { Color.A: 255 } plna)
+        {
+            return plna;
+        }
+
+        if (okno.TryFindResource("ApplicationBackgroundBrush") is SolidColorBrush { Color.A: 255 } tema)
+        {
+            return tema;
+        }
+
+        return Application.Current.ThemeMode == ThemeMode.Dark ? new SolidColorBrush(Color.FromRgb(0x20, 0x20, 0x20)) : Brushes.White;
     }
 
     private static void Over(bool podmienka, string co)
