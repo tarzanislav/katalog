@@ -63,7 +63,12 @@ Názvy, žánre a hercov doplnia zdroje údajov (TMDB, HISTRA); bez nich poznaj�
 | `videne:nie` | nevidené (pri súbore jeho film alebo epizóda, pri seriáli žiadna epizóda) |
 | `mam:nie` | tituly, ktoré nemáš: chýbajúce diely kolekcií, zoznamy HISTRA, želania |
 | `zelane:ano` | v zozname želaní |
+| `verzie:>1` | duplicity: titul máš viackrát (pri seriáli niektorú epizódu); `verzie:2` presne dvakrát |
+| `zalohovane:nie` | tituly len na jednom disku – stratíš ich s ním (pri seriáli stačí jedna taká epizóda); `zalohovane:ano` na aspoň dvoch |
 | `kniznica:film` | filmy; `kniznica:serial` seriály, `kniznica:potvrdit` čaká na potvrdenie, `kniznica:ano` súbor je verziou titulu, `kniznica:nie` video odložené mimo knižnice |
+
+Súbory majú aj pole `duplikat:ano` – presná kópia toho istého súboru inde (rovnaká veľkosť a rovnaký začiatok aj koniec;
+odtlačok sa zistí pri čítaní technických údajov videa).
 
 Vo filtri knižnice platia aj podmienky súborov (`kvalita:4k`, `zvuk:cs`, `disk:3`…): titul ich spĺňa, keď ich má
 niektorý súbor jeho verzie, ktorý je na disku.
@@ -87,6 +92,7 @@ kvalita:<=hd typ:video                  kandidáti na lepšiu verziu
 zaner:komedia videne:nie                nevidené komédie (vo filtri knižnice)
 kolekcia:ano mam:nie                    chýbajúce diely kolekcií
 kniznica:serial -zvuk:cs                seriály bez českého zvuku
+zalohovane:nie hodnotenie:>=8           najlepšie tituly, ktoré ešte nemáš zálohované
 ```
 
 Výsledkov je najviac 500; keď ich je viac, program to povie a stačí pridať slovo alebo filter.

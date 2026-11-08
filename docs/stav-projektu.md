@@ -124,6 +124,28 @@ Hotové:
 - Samotest: vymyslený zdroj namiesto TMDB (nič nejde na internet), plagáty nakreslené samotestom, potvrdenie návrhu,
   kolekcia s chýbajúcim dielom, prehranie seriálu, snímky steny, zoznamu, seriálu, Na potvrdenie, kolekcií a Nastavení.
 
+## Etapa E5 – duplicity, zdravie diskov, prehľady (8. 11. 2026, vetva vyvoj/etapa5)
+
+Hotové:
+
+- **Duplicity**: titul viackrát je jeden titul s viacerými verziami; pohľad Duplicity, pole `verzie:>1`. Najlepšia verzia
+  sa označí v detaile aj s dôvodom; poradie kritérií (rozlíšenie, CZ/SK zvuk, titulky, kodek, veľkosť, HDR) sa dá
+  zmeniť v Nastaveniach.
+- **Presné kópie súborov**: odtlačok (veľkosť, prvý a posledný megabajt) sa zistí pri čítaní technických údajov videa,
+  aj pre videá prečítané skôr; pole `duplikat:ano`.
+- **Nezálohované tituly (N1)**: pohľad Len na jednom disku, pole `zalohovane:nie` (film na jednom disku, seriál s epizódou
+  na jednom disku). Názov bez roka (napr. záloha seriálu) sa priradí k jedinému titulu toho mena s rokom.
+- **Prehľad diskov**: obsadenosť, súbory, tituly, „Len tu“ (čo by sa stratilo s diskom), posledný sken, pripojenie,
+  zdravie a jeho história.
+- **Kam sa to zmestí (N2)**: k zadanej veľkosti navrhne disky s miestom, najtesnejšie prvé.
+- **Zdravie diskov**: malý pomocník Katalog.Zdravie sa spustí len na požiadanie s právami správcu (Windows sa opýta),
+  prečíta SMART diskov ATA/SATA a záznam zdravia NVMe (USB, ak to rámček dovolí), zapíše len čísla do nového súboru;
+  hlavný program práva správcu nemá. Pravidlá čítania sú v jadre a otestované; disky sa priradia podľa sériového čísla.
+  Varovanie: presunuté, čakajúce či neopraviteľné sektory, chyby média, teplota, opotrebenie SSD; zlé: atribút pod
+  prahom alebo disk hlási zníženú spoľahlivosť.
+- **Štatistiky (N5)**: filmy, seriály, epizódy, hodiny sledovania, kvalita, desaťročia, žánre, tituly na diskoch.
+- Samotest: duplicita a najlepšia verzia, nezálohované, prehľad so zdravím (vymyslená odpoveď pomocníka), štatistiky.
+
 Otvorené:
 
 - **Logo TMDB** v okne O programe: podmienky TMDB ho chcú pri upozornení; oficiálny súbor loga sa tu nedal stiahnuť –
@@ -133,7 +155,7 @@ Otvorené:
   a `Directory.Build.props`).
 
 **Vydania** (so súhlasom vlastníka, podpis zoznamu súčtov a súčet inštalátora overené): **0.1.0** a **0.2.0**
-8. 11. 2026. Poznámky k vydaniu 0.3.0 (E4) sú pripravené; vydá sa len so súhlasom vlastníka.
+8. 11. 2026. Poznámky k vydaniam 0.3.0 (E4) a 0.4.0 (E5) sú pripravené; vydajú sa len so súhlasom vlastníka.
 
-Ďalšia etapa: **E5 – duplicity, zdravie diskov, prehľady**: duplicitné tituly a súbory, tituly len na jednom disku
-(N1), zdravie diskov (SMART), prehľad diskov a knižnice.
+Ďalšia etapa: **E6 – výstupy**: štítky diskov s QR kódmi, tlač a export (CSV, Excel, PDF), export a import katalógu,
+výpožičky (N6), štítky titulov.
