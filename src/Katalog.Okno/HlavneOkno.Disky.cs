@@ -107,11 +107,18 @@ public partial class HlavneOkno
         ? $"{disk.CisloText} · zatiaľ nenaskenovaný"
         : $"{disk.CisloText} · {Format.Mnozne(suhrn.Subory, "súbor", "súbory", "súborov")} · {Format.Velkost(suhrn.Bajty)}";
 
-    /// <summary>The name column takes what the other columns leave.</summary>
+    /// <summary>
+    /// The name column takes what the other columns leave; in a narrow window the type and then the date step aside
+    /// (the detail panel still shows them).
+    /// </summary>
     private void ZoznamSuborov_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        var ostatne = StlpecVelkost.Width + StlpecZmenene.Width + StlpecTyp.Width + 36;
-        StlpecNazov.Width = Math.Max(160, ZoznamSuborov.ActualWidth - ostatne);
+        const double nazov = 180, velkost = 90, zmenene = 130, typ = 90, okraj = 36;
+        var sirka = ZoznamSuborov.ActualWidth - okraj;
+        StlpecVelkost.Width = velkost;
+        StlpecZmenene.Width = sirka >= nazov + velkost + zmenene ? zmenene : 0;
+        StlpecTyp.Width = sirka >= nazov + velkost + zmenene + typ ? typ : 0;
+        StlpecNazov.Width = Math.Max(nazov, sirka - velkost - StlpecZmenene.Width - StlpecTyp.Width);
     }
 
     private void NacitajDeti(Uzol uzol)
@@ -730,8 +737,8 @@ public partial class HlavneOkno
         if (oznamit && nove.FirstOrDefault(n => _skeny?.Bezi(n.Disk.Id) == false) is { } prvy)
         {
             _diskOznamu = prvy.Disk.Id;
-            var dalsie = nove.Count > 1 ? $" (pripojili sa aj ďalšie: {nove.Count - 1})" : "";
-            OznamText.Text = $"Pripojil sa disk {prvy.Disk.CisloText} – {prvy.Disk.Nazov} ({prvy.Cesta}). Aktualizovať jeho obsah v katalógu?{dalsie}";
+            var dalsie = nove.Count > 1 ? $" (pripojené sú aj ďalšie: {nove.Count - 1})" : "";
+            OznamText.Text = $"Disk {prvy.Disk.CisloText} – {prvy.Disk.Nazov} je pripojený ({prvy.Cesta}). Aktualizovať jeho obsah v katalógu?{dalsie}";
             Oznam.Visibility = Visibility.Visible;
         }
     }
