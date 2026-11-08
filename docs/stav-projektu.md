@@ -66,8 +66,8 @@ Hotové:
 - **Prehrávanie**: predvolený prehrávač Windows alebo VLC, MPC-HC, MPC-BE, PotPlayer, mpv či iný program
   (Nastavenia); viac súborov ako playlist, celý priečinok (napr. sezóna), priečinky Blu-ray a DVD. Keď disk nie je
   pripojený, okno povie, ktorý pripojiť, a prehrávanie spustí samo po jeho pripojení.
-- **Výkon** pri 1 milióne súborov (GitHub Actions): samotné slová do 2,4 ms, slová s poľami do 99 ms, len polia
-  do 77 ms.
+- **Výkon** pri 1 milióne súborov (GitHub Actions): samotné slová do 5 ms, slová s poľami okolo 100 ms, len polia
+  do 80 ms.
 - Okno Nastavenia (prehrávač, motív, aktualizácie); poznámky k vydaniu 0.1.0 pripravené.
 - Samotest: hľadanie z okna, prehratie súboru aj sezóny (bez spustenia prehrávača), filtre, uložené hľadania, snímky.
 
