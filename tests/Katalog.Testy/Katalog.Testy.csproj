@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Own test runner, no third-party test framework. Run: dotnet run --project tests/Katalog.Testy [-- filter]
+  <!-- Own test runner, no third-party test framework. Run: dotnet run (project tests/Katalog.Testy), optionally with a name filter
        Tests use invented names only: no real file, film or disk of the user ever appears here. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
