@@ -26,6 +26,9 @@ public sealed class Nastavenia
     /// <summary>The folder with ffprobe.exe and ffmpeg.exe; empty = found by itself (UNIVERSUM, KATALOG's own, PATH).</summary>
     public string PriecinokFfmpeg { get; set; } = "";
 
+    /// <summary>The folder with WinSCP.com for servers (E8); empty = found by itself (its installation, PATH).</summary>
+    public string PriecinokWinScp { get; set; } = "";
+
     /// <summary>Technical data of videos are read by themselves after a scan and when a disk is connected.</summary>
     public bool CitatTechnickeUdaje { get; set; } = true;
 

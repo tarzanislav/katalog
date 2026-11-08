@@ -94,6 +94,13 @@ public partial class HlavneOkno
         }
 
         var chybajuce = hratelne.Select(c => c.DiskId).Distinct().Where(d => !_stav.Pripojene.ContainsKey(d)).ToList();
+        if (chybajuce.FirstOrDefault(JeServer) is var server && server != 0)
+        {
+            // a server is never "connected": nothing to wait for
+            MessageBox.Show(this, PripojDisk(server), Produkt.Nazov, MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+
         if (chybajuce.Count > 0)
         {
             CakajNaDisky(hratelne, chybajuce);

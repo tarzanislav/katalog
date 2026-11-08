@@ -35,6 +35,28 @@
         <TextBox x:Name="SietovaAdresa" Margin="24,0,0,0" Padding="8,5" TextChanged="SietovaAdresa_TextChanged"
                  ToolTip="Napríklad \\nas\filmy" />
 
+        <RadioButton x:Name="VolbaServer" Content="Server cez WinSCP (SFTP, FTP, WebDAV, S3)" Margin="0,12,0,4" Checked="Volba_Changed" />
+        <Grid Margin="24,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Lokalita uložená vo WinSCP" Margin="0,0,0,4" />
+            <ComboBox Grid.Row="1" x:Name="LokalityWinScp" SelectionChanged="LokalityWinScp_SelectionChanged" />
+            <TextBlock Grid.Column="2" Text="Priečinok na serveri" Margin="0,0,0,4" />
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="PriecinokServera" Padding="8,5" Text="/" TextChanged="PriecinokServera_TextChanged"
+                     ToolTip="Napríklad /volume1/video" />
+        </Grid>
+        <StackPanel Orientation="Horizontal" Margin="24,6,0,0">
+            <TextBlock x:Name="StavWinScp" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420" Style="{StaticResource TichyText}" FontSize="12" />
+            <Button x:Name="TlacidloWinScp" Content="Vybrať WinSCP…" Padding="10,3" Margin="8,0,0,0" Click="VybratWinScp_Click" Visibility="Collapsed" />
+        </StackPanel>
+
         <Grid Margin="0,18,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="110" />

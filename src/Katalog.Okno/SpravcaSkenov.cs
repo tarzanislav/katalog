@@ -1,6 +1,7 @@
 using Katalog.Data;
 using Katalog.Jadro.Model;
 using Katalog.Jadro.Rozhrania;
+using Katalog.Skenovanie;
 using Katalog.Ulohy;
 
 namespace Katalog.Okno;
@@ -36,6 +37,12 @@ internal sealed class SpravcaSkenov(Kniznica kniznica)
         }
 
         using var zrusenie = new CancellationTokenSource();
+        if (ulozisko is WinScpUlozisko server)
+        {
+            // stopping the scan stops WinSCP too
+            server.Zrusenie = zrusenie.Token;
+        }
+
         _beziace[diskId] = (zrusenie, new BeziaciSken(diskId, nazovDisku, null));
         _zrusenePouzivatelom.Remove(diskId);
         Zmena?.Invoke();

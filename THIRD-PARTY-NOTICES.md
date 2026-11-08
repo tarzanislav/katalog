@@ -14,6 +14,12 @@ KATALOG je vlastný kód (licencia Apache 2.0). Používa tieto diela tretích s
 
 PDF, Excel (Office Open XML), CSV a HTML zapisuje KATALOG vlastným kódom, bez ďalších knižníc.
 
+## Programy používateľa
+
+- **WinSCP** (https://winscp.net, GNU GPL 3): ak je nainštalovaný, KATALOG ním číta zoznamy súborov na serveroch
+  (SFTP, FTP, WebDAV, S3) podľa lokalít uložených vo WinSCP. Spúšťa ho ako samostatný program, nepribaľuje ho
+  a heslá ani kľúče nikdy nevidí.
+
 ## Zdroje údajov
 
 KATALOG sa môže pýtať služieb na údaje o filmoch a seriáloch – len ak ich používateľ zapne a dá im svoj vlastný kľúč;

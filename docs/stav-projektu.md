@@ -195,6 +195,26 @@ Hotové:
 - Samotest: playlisty a návrhy na stene, ručný playlist v poradí, prehratie playlistu (epizóda, potom film), M3U,
   náhodný playlist, dva rôzne náhodné výbery za sebou, otvorenie návrhu.
 
+## Etapa E8 – vzdialené úložiská (8. 11. 2026, vetva vyvoj/etapa8)
+
+Hotové (rozhodnutie vlastníka 8. 11. 2026: servery cez nainštalovaný WinSCP, bez novej knižnice):
+
+- **Server ako disk katalógu**: Pridať disk → Server cez WinSCP – lokalita uložená vo WinSCP (SFTP, FTP, WebDAV, S3)
+  a priečinok na serveri. KATALOG pozná len meno lokality; heslo či kľúč ostáva vo WinSCP. Lokality sa čítajú z
+  registra používateľa alebo z WinSCP.ini prenosného WinSCP (len názvy). WinSCP.com sa nájde sám (inštalácia, PATH),
+  inak ho používateľ vyberie.
+- **Čítanie stromu**: príkazy idú WinSCP.com ako argumenty (Unicode – slovenské názvy prejdú) a výsledok v jeho XML
+  zázname; strom sa číta po úrovniach, veľa priečinkov jedným spojením (pod limitom príkazového riadka), odkazy sa
+  preskočia (nezacyklí sa). Nečitateľný priečinok sa ohlási a jeho obsah ostane. Zrušenie skenu ukončí aj WinSCP.
+- Pred pridaním sa pripojenie overí jedným spojením so zrozumiteľnou chybou (napr. treba uložiť heslo a raz sa
+  pripojiť vo WinSCP, aby poznal kľúč servera).
+- Disk servera sa aktualizuje na požiadanie (nie je „pripojený“ ako USB disk); súbory sa dajú hľadať a rozpoznať do
+  knižnice; prehrávanie zo servera program vysvetlí (KATALOG cez WinSCP len katalogizuje).
+- **Sieťové disky a NAS** (`\\server\zdielanie`) fungujú ako doteraz (od E1), s časovým limitom, aby nedostupný server
+  nezdržal okno.
+- Testy proti vymyslenému serveru, ktorý odpovedá ako záznam WinSCP (úrovne, dávky, chyby, úvodzovky, lokality z
+  WinSCP.ini); samotest pridá, naskenuje a rozpozná disk vymysleného servera.
+
 Otvorené:
 
 - **Logo TMDB** v okne O programe: podmienky TMDB ho chcú pri upozornení; oficiálny súbor loga sa tu nedal stiahnuť –
@@ -202,9 +222,10 @@ Otvorené:
 - Fotky hercov a pozadia (prídu s webovým katalógom E9, plagáty v troch veľkostiach tiež).
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
-- Tlač na skutočnej tlačiarni a zdravie skutočných diskov sa dajú vyskúšať len na počítači vlastníka.
+- Tlač na skutočnej tlačiarni, zdravie skutočných diskov a skutočný server cez WinSCP sa dajú vyskúšať len na počítači
+  vlastníka.
 
 **Vydania** (so súhlasom vlastníka – schválenie v Review deployments; podpis zoznamu súčtov a súčet inštalátora
-overené): **0.1.0**, **0.2.0**, **0.4.0** a **0.5.0** 8. 11. 2026.
+overené): **0.1.0**, **0.2.0**, **0.4.0**, **0.5.0** a **0.6.0** 8. 11. 2026.
 
-Ďalšia etapa: **E8 – vzdialené úložiská** (NAS, sieťové disky, servery cez WinSCP).
+Ďalšia etapa: **E9 – webový katalóg** (súkromné webové stránky katalógu, verzia 1.0).

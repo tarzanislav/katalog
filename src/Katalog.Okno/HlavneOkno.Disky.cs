@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using Katalog.Data;
 using Katalog.Jadro;
 using Katalog.Jadro.Model;
+using Katalog.Jadro.Rozhrania;
 using Katalog.Skenovanie;
 using Katalog.Ulohy;
 
@@ -204,7 +205,7 @@ public partial class HlavneOkno
         var diskId = VybranyDisk();
         var jeDisk = diskId is not null;
         PonukaPrehrat.IsEnabled = jeDisk;
-        PonukaAktualizovat.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true && _skeny?.Bezi(diskId.Value) == false;
+        PonukaAktualizovat.IsEnabled = jeDisk && (_stav?.Pripojene.ContainsKey(diskId!.Value) == true || JeServer(diskId!.Value)) && _skeny?.Bezi(diskId.Value) == false;
         PonukaCitat.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true && _citania?.Bezi(diskId.Value) == false;
         PonukaOtvorit.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true;
         PonukaUpravit.IsEnabled = jeDisk;
@@ -275,7 +276,7 @@ public partial class HlavneOkno
             : $"Disk {disk.CisloText} · {disk.Nazov}{miesto} · nie je pripojený, obsah je z posledného skenu ({Format.Cas(disk.PoslednySken)})";
         TlacidloHore.IsEnabled = cesta.Length > 0;
         TlacidloOtvorit.IsEnabled = pripojeny is not null;
-        TlacidloAktualizovatDisk.IsEnabled = pripojeny is not null && _skeny?.Bezi(diskId) == false;
+        TlacidloAktualizovatDisk.IsEnabled = (pripojeny is not null || JeServer(diskId)) && _skeny?.Bezi(diskId) == false;
         UkazStred(PanelSuborov);
 
         if (polozky.Count == 0)
@@ -360,8 +361,57 @@ public partial class HlavneOkno
     {
         using var c = Kniznica!.OtvorCitanie();
         var disk = KatalogyADisky.NajdiDisk(c, diskId);
+        if (disk?.Druh == DruhDisku.Vzdialeny)
+        {
+            return $"Disk {disk.CisloText} ({disk.Nazov}) je na serveri ({Lokalita(disk)}). KATALOG ho cez WinSCP len katalogizuje – " +
+                   "video zo servera prehrá program, ktorý vie čítať zo siete (napr. zdieľaný priečinok alebo DLNA).";
+        }
+
         var kde = disk?.Umiestnenie is { Length: > 0 } u ? $" Leží: {u}." : "";
         return $"Pripoj disk {disk?.CisloText} ({disk?.Nazov}).{kde}";
+    }
+
+    /// <summary>A disk on a server reached through WinSCP (stage E8): scanned on request, never "connected".</summary>
+    private bool JeServer(long diskId)
+    {
+        if (Kniznica is not { } kniznica)
+        {
+            return false;
+        }
+
+        using var c = kniznica.OtvorCitanie();
+        return KatalogyADisky.NajdiDisk(c, diskId)?.Druh == DruhDisku.Vzdialeny;
+    }
+
+    /// <summary>"NAS doma, priečinok /volume1/video" – where a server disk is.</summary>
+    private static string Lokalita(Disk disk) =>
+        $"lokalita WinSCP „{LokalitaServera(disk)}“, priečinok /{disk.Koren}";
+
+    private static string LokalitaServera(Disk disk) =>
+        disk.Identita.Adresa is { } a && a.StartsWith("winscp:", StringComparison.Ordinal) ? a["winscp:".Length..] : disk.Nazov;
+
+    /// <summary>The storage of a server disk through this computer's WinSCP; null (with a message) when WinSCP is missing.</summary>
+    private IUlozisko? UloziskoServera(long diskId)
+    {
+        Disk? disk;
+        using (var c = Kniznica!.OtvorCitanie())
+        {
+            disk = KatalogyADisky.NajdiDisk(c, diskId);
+        }
+
+        if (disk is null)
+        {
+            return null;
+        }
+
+        if (WinScp.Najdi(_nastavenia.PriecinokWinScp) is not { } winScp)
+        {
+            MessageBox.Show(this, "Disk je na serveri a číta sa cez WinSCP, ktorý sa na tomto počítači nenašiel. Nainštaluj WinSCP (winscp.net) " +
+                                  "alebo ho vyber pri pridávaní disku.", Produkt.Nazov, MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+
+        return WinScpUlozisko.SWinScp(winScp, LokalitaServera(disk), disk.Koren);
     }
 
     private void ZoznamSuborov_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -431,7 +481,9 @@ public partial class HlavneOkno
         }
 
         riadky.Add(new RiadokDetailu("Disk", $"{disk.CisloText} · {disk.Nazov} · {Format.Druh(disk.Druh)}"));
-        riadky.Add(new RiadokDetailu("Kde je", pripojeny is not null ? $"Pripojený ako {pripojeny}" : "Nie je pripojený" + (disk.Umiestnenie is { Length: > 0 } u ? $" · leží: {u}" : "")));
+        riadky.Add(new RiadokDetailu("Kde je", disk.Druh == DruhDisku.Vzdialeny
+            ? $"Na serveri: {Lokalita(disk)} (cez WinSCP; aktualizuje sa na požiadanie)"
+            : pripojeny is not null ? $"Pripojený ako {pripojeny}" : "Nie je pripojený" + (disk.Umiestnenie is { Length: > 0 } u ? $" · leží: {u}" : "")));
         riadky.Add(new RiadokDetailu("Posledný sken", Format.Cas(disk.PoslednySken)));
         if (Kniznica is { } kniznicaDisku)
         {
@@ -474,8 +526,21 @@ public partial class HlavneOkno
             disky = KatalogyADisky.Disky(c);
         }
 
-        var dialog = new PridatDiskOkno(katalogy, disky, _stav.Zvazky, VybranyKatalog()) { Owner = this };
-        if (dialog.ShowDialog() != true || dialog.Volba is not { } volba)
+        var dialog = new PridatDiskOkno(katalogy, disky, _stav.Zvazky, VybranyKatalog(), _nastavenia.PriecinokWinScp) { Owner = this };
+        var pridat = dialog.ShowDialog() == true;
+        if (dialog.PriecinokWinScp != _nastavenia.PriecinokWinScp)
+        {
+            _nastavenia.PriecinokWinScp = dialog.PriecinokWinScp;
+            try
+            {
+                _nastavenia.Uloz();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+
+        if (!pridat || dialog.Volba is not { } volba)
         {
             return;
         }
@@ -484,7 +549,7 @@ public partial class HlavneOkno
         ObnovStrom();
         await ObnovPripojenieAsync(oznamit: false);
         VyberDisk(diskId);
-        await SkenujAsync(diskId);
+        await SkenujAsync(diskId, volba.Ulozisko);
     }
 
     /// <summary>Writes a chosen disk (and a new catalogue for it) into the library; returns the disk's id.</summary>
@@ -514,16 +579,22 @@ public partial class HlavneOkno
     }
 
     /// <summary>Scans a connected disk into the library (in the background; the window stays usable).</summary>
-    internal async Task<VysledokSkenu?> SkenujAsync(long diskId)
+    /// <param name="ulozisko">A storage prepared already (a server checked when it was added); else found now.</param>
+    internal async Task<VysledokSkenu?> SkenujAsync(long diskId, IUlozisko? ulozisko = null)
     {
         if (Kniznica is not { } kniznica || _skeny is null || _stav is null)
         {
             return null;
         }
 
-        if (_stav.Ulozisko(diskId) is not { } ulozisko)
+        ulozisko ??= JeServer(diskId) ? UloziskoServera(diskId) : _stav.Ulozisko(diskId);
+        if (ulozisko is null)
         {
-            MessageBox.Show(this, PripojDisk(diskId), Produkt.Nazov, MessageBoxButton.OK, MessageBoxImage.Information);
+            if (!JeServer(diskId))
+            {
+                MessageBox.Show(this, PripojDisk(diskId), Produkt.Nazov, MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
             return null;
         }
 

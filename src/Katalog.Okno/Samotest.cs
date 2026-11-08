@@ -191,6 +191,7 @@ internal static class Samotest
         await PrehladyAsync(okno);
         await VystupyAsync(okno, nastavenia);
         await PlaylistyAsync(okno);
+        await ServerAsync(okno);
 
         App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
@@ -662,6 +663,92 @@ internal static class Samotest
         {
             Chyba("na stene playlistov nie je návrh");
         }
+    }
+
+    /// <summary>
+    /// A server through WinSCP (stage E8): an invented server answers as WinSCP.com's XML log does; the disk is added,
+    /// scanned, searched and recognised, and the window treats it as a server (scanned on request, never played from).
+    /// </summary>
+    private static async Task ServerAsync(HlavneOkno okno)
+    {
+        if (okno.Kniznica is not { } kniznica)
+        {
+            return;
+        }
+
+        Zapis("WinSCP na tomto počítači: " + (Skenovanie.WinScp.Najdi() ?? "nenájdený (samotest používa vymyslený server)"));
+        var priecinky = new Dictionary<string, (string Nazov, string Druh, long Velkost)[]>
+        {
+            ["/volume1/video"] = [("Filmy", "d", 0), ("Seriály", "d", 0)],
+            ["/volume1/video/Filmy"] = [("Vymyslený film zo servera (2003).mkv", "-", 2_000_000_000)],
+            ["/volume1/video/Seriály"] = [("Vymyslený seriál zo servera S01E01.mkv", "-", 500_000_000)],
+        };
+        string Server(IReadOnlyList<string> prikazy, CancellationToken zrusenie)
+        {
+            string E(string t) => System.Net.WebUtility.HtmlEncode(t);
+            var xml = new System.Text.StringBuilder("<session xmlns=\"http://winscp.net/schema/session/1.0\">");
+            foreach (var prikaz in prikazy)
+            {
+                xml.Append("<group name=\"").Append(E(prikaz)).Append("\">");
+                if (prikaz.StartsWith("ls ", StringComparison.Ordinal))
+                {
+                    var cesta = prikaz[4..^1].TrimEnd('/');
+                    xml.Append("<ls><destination value=\"").Append(E(cesta)).Append("\" />");
+                    if (priecinky.TryGetValue(cesta, out var polozky))
+                    {
+                        xml.Append("<files>");
+                        foreach (var (nazov, druh, velkost) in polozky)
+                        {
+                            xml.Append($"<file><filename value=\"{E(nazov)}\" /><type value=\"{druh}\" /><size value=\"{velkost}\" /><modification value=\"2026-11-08T12:00:00.000Z\" /></file>");
+                        }
+
+                        xml.Append("</files><result success=\"true\" />");
+                    }
+                    else
+                    {
+                        xml.Append("<result success=\"false\" />");
+                    }
+
+                    xml.Append("</ls>");
+                }
+                else
+                {
+                    xml.Append("<result success=\"true\" />");
+                }
+
+                xml.Append("</group>");
+            }
+
+            return xml.Append("</session>").ToString();
+        }
+
+        long katalogId;
+        using (var c = kniznica.OtvorCitanie())
+        {
+            katalogId = KatalogyADisky.NajdiDisk(c, _diskId)!.KatalogId;
+        }
+
+        var ulozisko = new Skenovanie.WinScpUlozisko("Vymyslený NAS", "volume1/video", Server);
+        ulozisko.Over();
+        var identita = new Jadro.Rozhrania.IdentitaZvazku(DruhDisku.Vzdialeny, null, null, null, "Vymyslený NAS", null, null,
+            Skenovanie.WinScpUlozisko.Adresa("Vymyslený NAS"));
+        var serverId = await HlavneOkno.PridajDiskAsync(kniznica, new VolbaDisku(ulozisko.Koren, identita, "volume1/video", "Vymyslený NAS", katalogId, null, null));
+        var sken = await okno.SkenujAsync(serverId, ulozisko);
+        Over(sken is { Stav: StavUlohy.Hotova }, $"sken servera cez WinSCP: {sken?.Stav} {sken?.Sprava}");
+        await okno.DoplnKnizniciuAsync();
+        using (var c = kniznica.OtvorCitanie())
+        {
+            var nikto = new KontextHladania([], DateTime.Now);
+            Over(Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("zo servera typ:video"), nikto).Polozky.Count == 2, "súbory servera sa dajú nájsť");
+            Over(KniznicaTitulov.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("\"Vymyslený film zo servera\""), nikto, PohladKniznice.Vsetko).Count == 1,
+                "film zo servera je v knižnici");
+            Over(KatalogyADisky.NajdiDisk(c, serverId) is { Druh: DruhDisku.Vzdialeny, Koren: "volume1/video" }, "disk servera v knižnici");
+        }
+
+        Over(okno.Pripojenie?.Pripojene.ContainsKey(serverId) == false, "server nie je „pripojený“ ako disk");
+        App.NastavMotiv("Light");
+        okno.VyberDisk(serverId);
+        await SnimkaAsync(okno, "server-svetle.png");
     }
 
     /// <summary>An invented poster (a colour and the title), drawn here: no picture comes from the internet.</summary>
