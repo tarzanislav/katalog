@@ -13,7 +13,11 @@ public static class Fulltext
     /// <summary>Shortest text the index can search (one trigram).</summary>
     public const int NajkratsiText = 3;
 
-    /// <summary>Objects whose name contains every word of <paramref name="text"/> (in any order), best first.</summary>
+    /// <summary>
+    /// Objects whose name contains every word of <paramref name="text"/> (in any order). Not ordered by relevance: ranking
+    /// every match of a common word costs more than the 100 ms the typing allows; the query language (E2) orders the
+    /// limited result by kind and name.
+    /// </summary>
     public static IReadOnlyList<(DruhHladania Druh, long Id)> Najdi(SqliteConnection spojenie, string text, int najviac = 200)
     {
         var vyraz = Vyraz(text);
@@ -23,7 +27,7 @@ public static class Fulltext
         }
 
         using var prikaz = spojenie.CreateCommand();
-        prikaz.CommandText = "SELECT rowid FROM hladanie WHERE hladanie MATCH $vyraz ORDER BY rank LIMIT $najviac";
+        prikaz.CommandText = "SELECT rowid FROM hladanie WHERE hladanie MATCH $vyraz LIMIT $najviac";
         prikaz.Parameters.AddWithValue("$vyraz", vyraz);
         prikaz.Parameters.AddWithValue("$najviac", najviac);
         var vysledok = new List<(DruhHladania, long)>();

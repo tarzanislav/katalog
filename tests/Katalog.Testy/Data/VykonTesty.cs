@@ -28,7 +28,7 @@ public sealed class VykonTesty
 
         using var priecinok = new DocasnyPriecinok();
         var cesta = priecinok.Subor("Vykon.katalog");
-        await using var kniznica = await Kniznica.OtvorAsync(cesta);
+        var kniznica = await Kniznica.OtvorAsync(cesta);
         await kniznica.Zapis.ZapisAsync(s => Vykonaj(s, """
             INSERT INTO katalog(id, nazov, vytvoreny) VALUES (1, 'Výkon', 0);
             INSERT INTO disk(id, katalog_id, cislo, nazov, pridany) VALUES (1, 1, 1, 'Vymyslený disk', 0);
@@ -48,14 +48,51 @@ public sealed class VykonTesty
             }
         });
 
-        // the scan writes in batches of thousands of rows, each batch one queued write
+        // the scan writes in batches of thousands of rows, each batch one queued write; the first 100 000 files are timed
+        // on their own (design target: a first scan of 100 000 files within a minute, of which writing is a part)
         var nahoda = new Random(8112026);
-        var cas = Stopwatch.StartNew();
-        const int vDavke = 10_000;
-        var zapisy = new List<Task>();
-        for (var zaciatok = 0; zaciatok < PocetSuborov; zaciatok += vDavke)
+        var prvych = await ZapisSuboryAsync(kniznica, nahoda, 0, 100_000);
+        var ostatnych = await ZapisSuboryAsync(kniznica, nahoda, 100_000, PocetSuborov);
+
+        double najhorsie;
+        await using (var spojenie = await kniznica.OtvorCitanieAsync())
         {
-            var riadky = Enumerable.Range(zaciatok, vDavke)
+            string[] dotazy = ["vlak cesta", "123456", "stastie udolie", "zima", "les 1999"];
+            // first query warms the cache, as in the program after opening the library
+            Fulltext.Najdi(spojenie, "kino");
+            var casy = new List<double>();
+            foreach (var dotaz in dotazy)
+            {
+                var hladanie = Stopwatch.StartNew();
+                var vysledky = Fulltext.Najdi(spojenie, dotaz);
+                casy.Add(hladanie.Elapsed.TotalMilliseconds);
+                Over.Pravda(vysledky.Count > 0, $"„{dotaz}“ niečo nájde");
+                Over.Pravda(vysledky.All(r => r.Druh == DruhHladania.Subor || r.Druh == DruhHladania.Priecinok), "len súbory a priečinky");
+                Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"hľadanie „{dotaz}“: {vysledky.Count} výsledkov za {casy[^1]:F1} ms"));
+            }
+
+            najhorsie = casy.Max();
+        }
+
+        // closing merges the WAL into the library file: its size is what the user keeps on the disk
+        await kniznica.DisposeAsync();
+        var velkostMb = new FileInfo(cesta).Length / 1_000_000.0;
+        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            $"::notice title=Výkon (1 milión súborov)::prvých 100 000 súborov {prvych.TotalSeconds:F1} s, ďalších 900 000 {ostatnych.TotalSeconds:F1} s, hľadanie najviac {najhorsie:F1} ms, knižnica {velkostMb:F0} MB"));
+
+        Over.Pravda(najhorsie < 100, $"hľadanie do 100 ms (bolo {najhorsie:F1} ms)");
+        Over.Pravda(prvych < TimeSpan.FromSeconds(30), $"zápis 100 000 súborov do 30 s (bolo {prvych.TotalSeconds:F1} s)");
+        Over.Pravda(velkostMb < 400, $"knižnica do 400 MB pri milióne súborov (bola {velkostMb:F0} MB)");
+    }
+
+    private static async Task<TimeSpan> ZapisSuboryAsync(Kniznica kniznica, Random nahoda, int od, int po)
+    {
+        const int vDavke = 10_000;
+        var cas = Stopwatch.StartNew();
+        var zapisy = new List<Task>();
+        for (var zaciatok = od; zaciatok < po; zaciatok += vDavke)
+        {
+            var riadky = Enumerable.Range(zaciatok, Math.Min(vDavke, po - zaciatok))
                 .Select(i => (Priecinok: 2 + (i % PocetPriecinkov), Nazov: string.Create(CultureInfo.InvariantCulture,
                     $"{Slova[nahoda.Next(Slova.Length)]} {Slova[nahoda.Next(Slova.Length)]} {i} ({1950 + (i % 75)}).mkv"), Velkost: (long)i * 1000))
                 .ToList();
@@ -78,31 +115,7 @@ public sealed class VykonTesty
         }
 
         await Task.WhenAll(zapisy);
-        var zapis = cas.Elapsed;
-
-        using var spojenie = kniznica.OtvorCitanie();
-        string[] dotazy = ["vlak cesta", "123456", "stastie udolie", "zima", "les 1999"];
-        // first query warms the cache, as in the program after opening the library
-        Fulltext.Najdi(spojenie, "kino");
-        var casy = new List<double>();
-        foreach (var dotaz in dotazy)
-        {
-            var hladanie = Stopwatch.StartNew();
-            var vysledky = Fulltext.Najdi(spojenie, dotaz);
-            casy.Add(hladanie.Elapsed.TotalMilliseconds);
-            Over.Pravda(vysledky.Count > 0, $"„{dotaz}“ niečo nájde");
-            Over.Pravda(vysledky.All(r => r.Druh == DruhHladania.Subor || r.Druh == DruhHladania.Priecinok), "len súbory a priečinky");
-        }
-
-        await kniznica.Zapis.VyprazdniAsync();
-        var velkostMb = (new FileInfo(cesta).Length + (File.Exists(cesta + "-wal") ? new FileInfo(cesta + "-wal").Length : 0)) / 1_000_000.0;
-        var najhorsie = casy.Max();
-        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-            $"::notice title=Výkon (1 milión súborov)::zápis {zapis.TotalSeconds:F1} s, hľadanie najviac {najhorsie:F1} ms, knižnica {velkostMb:F0} MB"));
-
-        Over.Pravda(najhorsie < 100, $"hľadanie do 100 ms (bolo {najhorsie:F1} ms)");
-        Over.Pravda(zapis < TimeSpan.FromMinutes(3), $"zápis milióna súborov do 3 min (bolo {zapis.TotalSeconds:F0} s)");
-        Over.Pravda(velkostMb < 400, $"knižnica do 400 MB pri milióne súborov (bola {velkostMb:F0} MB)");
+        return cas.Elapsed;
     }
 
     private static void Vykonaj(SqliteConnection spojenie, string sql)

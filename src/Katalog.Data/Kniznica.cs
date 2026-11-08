@@ -177,7 +177,7 @@ public sealed class Kniznica : IAsyncDisposable
         return prikaz.ExecuteScalar();
     }
 
-    /// <summary>Settings of every connection: WAL (readers never wait for the writer), 64 MB cache, 5 s busy wait.</summary>
+    /// <summary>Settings of every connection: WAL (readers never wait for the writer, kept under 64 MB), 64 MB cache, 5 s busy wait.</summary>
     private static void Nastav(SqliteConnection spojenie) =>
         Vykonaj(spojenie, """
             PRAGMA journal_mode = WAL;
@@ -185,6 +185,7 @@ public sealed class Kniznica : IAsyncDisposable
             PRAGMA busy_timeout = 5000;
             PRAGMA temp_store = MEMORY;
             PRAGMA cache_size = -65536;
+            PRAGMA journal_size_limit = 67108864;
             PRAGMA foreign_keys = ON;
             PRAGMA query_only = 0;
             """);
