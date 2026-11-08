@@ -37,6 +37,10 @@ internal static class Format
 
     public static string Pocet(long pocet) => pocet.ToString("#,0", Slovensky);
 
+    /// <summary>Slovak plural: "1 súbor", "3 súbory", "5 súborov".</summary>
+    public static string Mnozne(long pocet, string jeden, string dvaAzStyri, string piatAViac) =>
+        Pocet(pocet) + " " + (pocet == 1 ? jeden : pocet is >= 2 and <= 4 ? dvaAzStyri : piatAViac);
+
     public static string Druh(DruhDisku druh) => druh switch
     {
         DruhDisku.Usb => "USB disk",

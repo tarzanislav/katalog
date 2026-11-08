@@ -91,13 +91,8 @@ public partial class HlavneOkno
                 }
             }
 
-            uzol.Popis = disky.Count(d => d.KatalogId == katalog.Id) switch
-            {
-                0 => "prázdny",
-                1 => "1 disk",
-                < 5 and var n => $"{n} disky",
-                var n => $"{n} diskov",
-            };
+            var pocet = disky.Count(d => d.KatalogId == katalog.Id);
+            uzol.Popis = pocet == 0 ? "prázdny" : Format.Mnozne(pocet, "disk", "disky", "diskov");
             uzol.Otvoreny = true;
             _strom.Add(uzol);
         }
@@ -108,10 +103,15 @@ public partial class HlavneOkno
             : "V katalógoch zatiaľ nie je žiadny disk.";
     }
 
-    private static string PopisDisku(Disk disk, Suhrn suhrn)
+    private static string PopisDisku(Disk disk, Suhrn suhrn) => disk.PoslednySken is null
+        ? $"{disk.CisloText} · zatiaľ nenaskenovaný"
+        : $"{disk.CisloText} · {Format.Mnozne(suhrn.Subory, "súbor", "súbory", "súborov")} · {Format.Velkost(suhrn.Bajty)}";
+
+    /// <summary>The name column takes what the other columns leave.</summary>
+    private void ZoznamSuborov_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        var popis = $"{disk.CisloText} · {Format.Druh(disk.Druh)}";
-        return disk.PoslednySken is null ? popis + " · zatiaľ nenaskenovaný" : $"{popis} · {Format.Pocet(suhrn.Subory)} súborov · {Format.Velkost(suhrn.Bajty)}";
+        var ostatne = StlpecVelkost.Width + StlpecZmenene.Width + StlpecTyp.Width + 36;
+        StlpecNazov.Width = Math.Max(160, ZoznamSuborov.ActualWidth - ostatne);
     }
 
     private void NacitajDeti(Uzol uzol)
@@ -491,9 +491,9 @@ public partial class HlavneOkno
     {
         var text = vysledok.Stav switch
         {
-            StavUlohy.Hotova => $"Sken hotový za {vysledok.Trvanie.TotalSeconds:0} s: {Format.Pocet(vysledok.Zmeny.Pridane)} nových, " +
-                                $"{Format.Pocet(vysledok.Zmeny.Zmenene)} zmenených, {Format.Pocet(vysledok.Zmeny.Zmazane)} zmazaných súborov" +
-                                (vysledok.Chyby > 0 ? $", {vysledok.Chyby} nečitateľných priečinkov" : ""),
+            StavUlohy.Hotova => $"Sken hotový za {vysledok.Trvanie.TotalSeconds:0} s: nové {Format.Pocet(vysledok.Zmeny.Pridane)}, " +
+                                $"zmenené {Format.Pocet(vysledok.Zmeny.Zmenene)}, zmazané {Format.Pocet(vysledok.Zmeny.Zmazane)}" +
+                                (vysledok.Chyby > 0 ? $", nečitateľné priečinky {vysledok.Chyby}" : ""),
             StavUlohy.Zrusena => "Sken zrušený. Hotové priečinky sú uložené, ďalší sken pokračuje.",
             _ => "Sken sa nepodaril: " + (vysledok.Sprava ?? "neznáma chyba"),
         };
@@ -522,7 +522,7 @@ public partial class HlavneOkno
         var dalsie = beziace.Count > 1 ? $" (+ {beziace.Count - 1} ďalšie)" : "";
         StavUloh.Text = p is null
             ? $"Skenujem disk {sken.NazovDisku}…{dalsie}"
-            : $"Skenujem disk {sken.NazovDisku}: {(p.Podiel is { } podiel ? $"{podiel * 100:0} % · " : "")}{Format.Pocet(p.Subory)} súborov{dalsie}";
+            : $"Skenujem disk {sken.NazovDisku}: {(p.Podiel is { } podiel ? $"{podiel * 100:0} % · " : "")}{Format.Mnozne(p.Subory, "súbor", "súbory", "súborov")}{dalsie}";
         PriebehSkenu.Visibility = Visibility.Visible;
         PriebehSkenu.IsIndeterminate = p?.Podiel is null;
         PriebehSkenu.Value = (p?.Podiel ?? 0) * 100;
@@ -605,7 +605,7 @@ public partial class HlavneOkno
         }
 
         if (disk is null || MessageBox.Show(this,
-                $"Odstrániť disk {disk.CisloText} ({disk.Nazov}) z knižnice?\n\nZ katalógu zmizne záznam o {Format.Pocet(suhrn.Subory)} súboroch. " +
+                $"Odstrániť disk {disk.CisloText} ({disk.Nazov}) z knižnice?\n\nZ katalógu zmizne záznam o súboroch disku ({Format.Pocet(suhrn.Subory)}). " +
                 "Samotný disk sa nezmení. Pred odstránením sa urobí záloha knižnice.",
                 Produkt.Nazov, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
         {

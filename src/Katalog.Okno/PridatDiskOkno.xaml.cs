@@ -22,6 +22,8 @@ public partial class PridatDiskOkno : Window
     internal PridatDiskOkno(IReadOnlyList<KatalogKniznice> katalogy, IReadOnlyList<Disk> disky, IZvazky zvazky, long? predvolenyKatalog)
     {
         InitializeComponent();
+        // checked only now: during InitializeComponent the controls its handler touches do not exist yet
+        VolbaZvazok.IsChecked = true;
         _disky = disky;
         _zvazky = zvazky;
         Katalogy.ItemsSource = katalogy.Append(NovyKatalogVolba).ToList();

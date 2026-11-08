@@ -97,6 +97,7 @@
                         <TextBlock x:Name="ZiadnyDisk" Text="Zatiaľ žiadny disk. Pridaj prvý tlačidlom „Pridať disk“."
                                    Margin="12,2,12,4" Style="{StaticResource TichyText}" />
                         <TreeView x:Name="StromDiskov" BorderThickness="0" Background="Transparent" Margin="4,0,4,0"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   SelectedItemChanged="StromDiskov_SelectedItemChanged"
                                   PreviewMouseRightButtonDown="StromDiskov_PreviewMouseRightButtonDown">
                             <TreeView.ItemContainerStyle>
@@ -111,8 +112,8 @@
                                         <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center"
                                                    Margin="0,0,8,0" />
                                         <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Nazov}" />
-                                            <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7"
+                                            <TextBlock Text="{Binding Nazov}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"
                                                        Visibility="{Binding MaPopis, Converter={StaticResource BoolNaViditelnost}}" />
                                         </StackPanel>
                                         <Ellipse Width="8" Height="8" Fill="#2EA043" Margin="8,0,0,0" VerticalAlignment="Center"
@@ -175,7 +176,7 @@
                 </Grid.RowDefinitions>
                 <TextBlock x:Name="NadpisPriecinka" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                 <TextBlock Grid.Row="1" x:Name="PopisPriecinka" Margin="0,2,0,0" Style="{StaticResource TichyText}" />
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,8">
+                <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,8">
                     <Button x:Name="TlacidloHore" Padding="10,5" Click="Hore_Click" ToolTip="O priečinok vyššie">
                         <TextBlock Text="&#xE74A;" FontFamily="{StaticResource Ikony}" />
                     </Button>
@@ -185,13 +186,14 @@
                             Click="OtvoritVPrieskumnikovi_Click" />
                     <CheckBox x:Name="AjZmazane" Content="Ukázať aj zmazané" Margin="16,0,0,0" VerticalAlignment="Center"
                               Checked="AjZmazane_Changed" Unchecked="AjZmazane_Changed" />
-                </StackPanel>
+                </WrapPanel>
                 <ListView Grid.Row="3" x:Name="ZoznamSuborov" SelectionMode="Single"
                           VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                          SelectionChanged="ZoznamSuborov_SelectionChanged" MouseDoubleClick="ZoznamSuborov_MouseDoubleClick">
+                          SelectionChanged="ZoznamSuborov_SelectionChanged" MouseDoubleClick="ZoznamSuborov_MouseDoubleClick"
+                          SizeChanged="ZoznamSuborov_SizeChanged">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Názov" Width="420">
+                            <GridViewColumn x:Name="StlpecNazov" Header="Názov" Width="300">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Opacity="{Binding Priehladnost}">
@@ -201,9 +203,9 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="Veľkosť" Width="100" DisplayMemberBinding="{Binding VelkostText}" />
-                            <GridViewColumn Header="Zmenené" Width="140" DisplayMemberBinding="{Binding ZmeneneText}" />
-                            <GridViewColumn Header="Typ" Width="90" DisplayMemberBinding="{Binding Typ}" />
+                            <GridViewColumn x:Name="StlpecVelkost" Header="Veľkosť" Width="90" DisplayMemberBinding="{Binding VelkostText}" />
+                            <GridViewColumn x:Name="StlpecZmenene" Header="Zmenené" Width="130" DisplayMemberBinding="{Binding ZmeneneText}" />
+                            <GridViewColumn x:Name="StlpecTyp" Header="Typ" Width="80" DisplayMemberBinding="{Binding Typ}" />
                         </GridView>
                     </ListView.View>
                 </ListView>
