@@ -422,6 +422,8 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                 <ContextMenu>
                                     <MenuItem Header="Exportovať zoznam…" Click="ExportovatKniznicu_Click" ToolTip="Tituly do Excelu, CSV, HTML alebo PDF" />
                                     <MenuItem Header="Tlačiť zoznam…" Click="TlacitKniznicu_Click" />
+                                    <MenuItem Header="Webový katalóg…" Click="WebovyKatalog_Click"
+                                              ToolTip="Súkromné stránky celej knižnice do priečinka, zašifrované heslom" />
                                     <MenuItem Header="Štítky titulov…" Click="StitkyTitulov_Click"
                                               ToolTip="Štítky s QR kódom na obaly: vybraný titul, inak všetky zobrazené" />
                                 </ContextMenu>

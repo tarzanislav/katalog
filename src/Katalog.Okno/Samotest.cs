@@ -192,6 +192,7 @@ internal static class Samotest
         await VystupyAsync(okno, nastavenia);
         await PlaylistyAsync(okno);
         await ServerAsync(okno);
+        await WebAsync(okno);
 
         App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
@@ -749,6 +750,28 @@ internal static class Samotest
         App.NastavMotiv("Light");
         okno.VyberDisk(serverId);
         await SnimkaAsync(okno, "server-svetle.png");
+    }
+
+    /// <summary>
+    /// The private web catalogue (stage E9): written into a folder, encrypted; opened again here as the page opens it (the
+    /// same AES-GCM and PBKDF2), with fewer key rounds so the self-test stays quick.
+    /// </summary>
+    private static async Task WebAsync(HlavneOkno okno)
+    {
+        var web = Path.Combine(_vystup, "web");
+        if (Directory.Exists(web))
+        {
+            Directory.Delete(web, recursive: true);
+        }
+
+        var vysledok = await okno.VytvorWebAsync(web, "Vymyslená videotéka", "samotest-heslo", plagaty: true, cesty: true, null, iteracie: 1000);
+        Over(vysledok.Titulov >= 3 && vysledok.Plagatov >= 1, $"webový katalóg: {vysledok}");
+        var dataJs = File.ReadAllText(Path.Combine(web, "data.js"));
+        Over(!dataJs.Contains("Vymyslen", StringComparison.Ordinal), "údaje webu len zašifrované");
+        var data = Vystupy.WebovyKatalog.OdsifrujObsah(Convert.FromBase64String(dataJs[14..^3]), "samotest-heslo", out _, out _);
+        var text = System.Text.Encoding.UTF8.GetString(data);
+        Over(text.Contains("Vymyslený Šťastný film", StringComparison.Ordinal) && text.Contains("\"disky\"", StringComparison.Ordinal), "web: tituly a disky po odšifrovaní");
+        Over(File.Exists(Path.Combine(web, "index.html")) && Directory.GetFiles(Path.Combine(web, "plagaty"), "*.js").Length >= 1, "web: stránka a plagáty");
     }
 
     /// <summary>An invented poster (a colour and the title), drawn here: no picture comes from the internet.</summary>

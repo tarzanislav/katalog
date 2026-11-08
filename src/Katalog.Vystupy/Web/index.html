@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; img-src blob: data:; object-src 'none'; base-uri 'none'">
+<meta name="generator" content="{{PROGRAM}}">
+<title>Katalóg</title>
+<style>
+:root { color-scheme: light dark; --pozadie: #f6f6f7; --plocha: #fff; --text: #1b1b1f; --tlmene: #6b6b75; --ciara: #e2e2e6;
+  --akcent: #2f6fde; --akcent-text: #fff; --dlazdica: #e9e9ee; --tien: 0 1px 3px rgba(0,0,0,.12); }
+@media (prefers-color-scheme: dark) {
+  :root { --pozadie: #141416; --plocha: #1e1e22; --text: #ececf0; --tlmene: #9a9aa6; --ciara: #33333a; --akcent: #6b9cff;
+    --akcent-text: #0d1424; --dlazdica: #2a2a30; --tien: 0 1px 3px rgba(0,0,0,.5); }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--pozadie); color: var(--text); font: 15px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.skryte { display: none !important; }
+#prihlasenie { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+#prihlasenie form { background: var(--plocha); padding: 28px; border-radius: 12px; box-shadow: var(--tien); width: min(380px, 100%); }
+#prihlasenie h1 { margin: 0 0 4px; font-size: 22px; }
+#prihlasenie p { margin: 0 0 16px; color: var(--tlmene); }
+#prihlasenie input { width: 100%; padding: 10px 12px; border: 1px solid var(--ciara); border-radius: 8px; background: var(--pozadie); }
+#prihlasenie button { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--akcent); color: var(--akcent-text); font-weight: 600; }
+#chyba { color: #d6453d; min-height: 1.4em; margin-top: 8px; }
+header { position: sticky; top: 0; z-index: 5; background: var(--plocha); border-bottom: 1px solid var(--ciara); padding: 10px 16px; }
+.riadok { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+header h1 { font-size: 18px; margin: 0 12px 0 0; }
+#suhrn { color: var(--tlmene); font-size: 13px; }
+#hladaj { flex: 1 1 220px; min-width: 0; padding: 7px 10px; border: 1px solid var(--ciara); border-radius: 8px; background: var(--pozadie); }
+nav { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+nav button, .tlacidlo, select { padding: 6px 12px; border: 1px solid var(--ciara); border-radius: 8px; background: var(--plocha); }
+nav button[aria-pressed="true"] { background: var(--akcent); color: var(--akcent-text); border-color: var(--akcent); }
+label.prepinac { display: inline-flex; gap: 6px; align-items: center; color: var(--tlmene); font-size: 14px; }
+main { padding: 16px; }
+#stena { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+.dlazdica { background: none; border: 0; padding: 0; text-align: left; }
+.plagat { aspect-ratio: 2 / 3; border-radius: 8px; background: var(--dlazdica); overflow: hidden; display: grid; place-items: center; box-shadow: var(--tien); position: relative; }
+.plagat img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.plagat span.nahrada { padding: 10px; text-align: center; color: var(--tlmene); font-size: 13px; }
+.znak { position: absolute; top: 6px; left: 6px; background: rgba(20,20,24,.82); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
+.dlazdica b { display: block; margin-top: 6px; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dlazdica small { color: var(--tlmene); font-size: 12px; }
+#viac { display: block; margin: 20px auto; }
+#prazdne { color: var(--tlmene); text-align: center; padding: 40px 0; }
+table { border-collapse: collapse; width: 100%; background: var(--plocha); border-radius: 8px; overflow: hidden; box-shadow: var(--tien); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--ciara); vertical-align: top; }
+td.c, th.c { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--pozadie); }
+.obal-tabulky { overflow-x: auto; }
+dialog { border: 0; border-radius: 12px; padding: 0; width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); background: var(--plocha); color: var(--text); box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+dialog::backdrop { background: rgba(0,0,0,.5); }
+.detail { display: grid; grid-template-columns: 200px 1fr; gap: 20px; padding: 20px; }
+.detail .plagat { width: 200px; }
+.detail h2 { margin: 0 0 4px; }
+.detail .pod { color: var(--tlmene); margin-bottom: 10px; }
+.detail dl { margin: 12px 0 0; }
+.detail dt { color: var(--tlmene); font-size: 12px; margin-top: 10px; }
+.detail dd { margin: 0; }
+.verzia { font-size: 13px; padding: 6px 0; border-top: 1px solid var(--ciara); word-break: break-word; }
+.zavriet { position: sticky; top: 0; float: right; margin: 10px 10px 0 0; }
+@media (max-width: 560px) {
+  .detail { grid-template-columns: 1fr; }
+  .detail .plagat { width: 160px; }
+  #stena { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+}
+</style>
+</head>
+<body>
+<section id="prihlasenie">
+  <form id="formular" autocomplete="off">
+    <h1>Súkromný katalóg</h1>
+    <p>Obsah je zašifrovaný. Zadaj heslo, ktoré si zvolil pri jeho vytvorení v programe {{PROGRAM}}.</p>
+    <input id="heslo" type="password" placeholder="Heslo" autofocus required>
+    <button type="submit" id="otvorit">Otvoriť</button>
+    <div id="chyba" role="alert"></div>
+  </form>
+</section>
+
+<div id="aplikacia" class="skryte">
+  <header>
+    <div class="riadok">
+      <h1 id="nazov">Katalóg</h1>
+      <span id="suhrn"></span>
+    </div>
+    <div class="riadok" style="margin-top:8px">
+      <input id="hladaj" type="search" placeholder="Hľadať názov, herca, žáner, disk…" aria-label="Hľadať">
+      <select id="zaner" aria-label="Žáner"><option value="">Všetky žánre</option></select>
+      <select id="poradie" aria-label="Poradie">
+        <option value="nazov">Podľa názvu</option>
+        <option value="rok">Najnovšie</option>
+        <option value="hodnotenie">Najlepšie hodnotené</option>
+      </select>
+      <label class="prepinac"><input type="checkbox" id="nevidene"> len nevidené</label>
+      <button class="tlacidlo" id="nahodne" type="button" title="Vyber mi niečo">🎲 Náhodne</button>
+    </div>
+    <nav id="karty">
+      <button type="button" data-karta="filmy" aria-pressed="true">Filmy</button>
+      <button type="button" data-karta="serialy" aria-pressed="false">Seriály</button>
+      <button type="button" data-karta="zelane" aria-pressed="false">Zoznam želaní</button>
+      <button type="button" data-karta="disky" aria-pressed="false">Disky</button>
+    </nav>
+  </header>
+  <main>
+    <div id="stena"></div>
+    <button class="tlacidlo skryte" id="viac" type="button">Zobraziť ďalšie</button>
+    <div id="prazdne" class="skryte">Nič nezodpovedá hľadaniu.</div>
+    <div id="disky" class="obal-tabulky skryte"></div>
+  </main>
+</div>
+
+<dialog id="dialog"><button class="tlacidlo zavriet" type="button" id="zavriet">Zavrieť</button><div id="obsahDialogu"></div></dialog>
+
+<script>
+"use strict";
+(() => {
+  const NA_STRANU = 120;
+  let sifraDat = null, kluc = null, katalog = null, diskPodlaId = new Map();
+  const cakajuceBaliky = new Map(), plagaty = new Map(), nacitaneBaliky = new Map();
+  const stav = { karta: "filmy", hladaj: "", zaner: "", poradie: "nazov", nevidene: false, disk: null, zobrazene: 0, zoznam: [] };
+  const $ = id => document.getElementById(id);
+
+  // the data and the poster packs arrive as scripts (a page opened from the disk may load scripts, not read files)
+  window.KATALOG = {
+    data(b64) { sifraDat = bajty(b64); },
+    plagaty(cislo, b64) {
+      const hotovo = cakajuceBaliky.get(cislo);
+      if (hotovo) hotovo(b64);
+    },
+  };
+
+  function bajty(b64) {
+    const s = atob(b64), b = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return b;
+  }
+
+  async function odsifruj(sifra) {
+    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: sifra.slice(0, 12) }, kluc, sifra.slice(12)));
+  }
+
+  async function otvor(heslo) {
+    if (!sifraDat) throw new Error("Chýba súbor data.js vedľa tejto stránky.");
+    if (sifraDat[0] !== 1) throw new Error("Neznámy formát katalógu.");
+    const sol = sifraDat.slice(1, 17);
+    const kola = new DataView(sifraDat.buffer, 17, 4).getUint32(0, false);
+    const zaklad = await crypto.subtle.importKey("raw", new TextEncoder().encode(heslo), "PBKDF2", false, ["deriveKey"]);
+    kluc = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: sol, iterations: kola, hash: "SHA-256" }, zaklad,
+      { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    let data;
+    try { data = await odsifruj(sifraDat.slice(21)); }
+    catch { kluc = null; throw new Error("Nesprávne heslo."); }
+    return JSON.parse(new TextDecoder().decode(data));
+  }
+
+  // one load per pack; every tile of the pack waits for the same promise
+  function balik(cislo) {
+    if (!nacitaneBaliky.has(cislo)) nacitaneBaliky.set(cislo, nacitajBalik(cislo));
+    return nacitaneBaliky.get(cislo);
+  }
+
+  function nacitajBalik(cislo) {
+    return new Promise(hotovo => {
+      cakajuceBaliky.set(cislo, async b64 => {
+        try {
+          const mapa = JSON.parse(new TextDecoder().decode(await odsifruj(bajty(b64))));
+          for (const [k, jpeg] of Object.entries(mapa)) plagaty.set(k, URL.createObjectURL(new Blob([bajty(jpeg)], { type: "image/jpeg" })));
+        } catch { /* a damaged pack: the tiles keep their names */ }
+        hotovo();
+      });
+      const skript = document.createElement("script");
+      skript.src = "plagaty/" + String(cislo).padStart(3, "0") + ".js";
+      skript.onerror = () => hotovo();
+      document.body.appendChild(skript);
+    });
+  }
+
+  async function plagat(titul, prvok) {
+    if (!titul.pl || !(titul.pl in katalog.balik)) return;
+    await balik(katalog.balik[titul.pl]);
+    const url = plagaty.get(titul.pl);
+    if (url) {
+      const img = document.createElement("img");
+      img.alt = "";
+      img.src = url;
+      prvok.querySelector(".nahrada")?.remove();
+      prvok.prepend(img);
+    }
+  }
+
+  const pozorovatel = "IntersectionObserver" in window ? new IntersectionObserver(zaznamy => {
+    for (const z of zaznamy) {
+      if (z.isIntersecting) {
+        pozorovatel.unobserve(z.target);
+        plagat(z.target._titul, z.target);
+      }
+    }
+  }, { rootMargin: "400px" }) : null;
+
+  const bezDiakritiky = t => (t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const velkost = b => {
+    if (b == null) return "–";
+    const j = ["B", "kB", "MB", "GB", "TB"]; let i = 0, v = b;
+    while (v >= 1024 && i < j.length - 1) { v /= 1024; i++; }
+    return (i === 0 ? v.toFixed(0) : v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : v.toFixed(0)).replace(".", ",") + " " + j[i];
+  };
+  const text = (znacka, obsah, trieda) => { const e = document.createElement(znacka); if (obsah != null) e.textContent = obsah; if (trieda) e.className = trieda; return e; };
+
+  function pripravHladanie(t) {
+    const disky = t.ver.map(v => diskPodlaId.get(v.d)).filter(Boolean).map(d => d.c + " " + d.n);
+    t._hladaj = bezDiakritiky([t.n, t.o, t.r, ...t.z, ...t.rez, ...t.her, ...t.kol, ...t.st, ...disky].join(" "));
+  }
+
+  function filtruj() {
+    const slova = bezDiakritiky(stav.hladaj).split(/\s+/).filter(Boolean);
+    let zoznam = katalog.tituly.filter(t =>
+      (stav.karta === "zelane" ? t.w && !t.mam : t.mam && (stav.karta === "serialy" ? t.s : !t.s)) &&
+      (!stav.nevidene || !t.v) &&
+      (!stav.zaner || t.z.includes(stav.zaner)) &&
+      (stav.disk == null || t.ver.some(v => v.d === stav.disk)) &&
+      slova.every(s => t._hladaj.includes(s)));
+    const porovnaj = new Intl.Collator("sk", { sensitivity: "base", numeric: true }).compare;
+    if (stav.poradie === "rok") zoznam.sort((a, b) => (b.r || 0) - (a.r || 0) || porovnaj(a.n, b.n));
+    else if (stav.poradie === "hodnotenie") zoznam.sort((a, b) => ((b.m || b.h || 0) - (a.m || a.h || 0)) || porovnaj(a.n, b.n));
+    else zoznam.sort((a, b) => porovnaj(a.n, b.n) || (a.r || 0) - (b.r || 0));
+    return zoznam;
+  }
+
+  function dlazdica(t) {
+    const b = text("button", null, "dlazdica");
+    b.type = "button";
+    const p = text("div", null, "plagat");
+    p.appendChild(text("span", t.n, "nahrada"));
+    if (t.v) p.appendChild(text("span", "Videné", "znak"));
+    p._titul = t;
+    b.appendChild(p);
+    b.appendChild(text("b", t.n));
+    b.appendChild(text("small", [t.r, t.s ? (t.ep ? t.ep + " epizód" : "seriál") : null, t.q].filter(Boolean).join(" · ")));
+    b.addEventListener("click", () => detail(t));
+    if (pozorovatel) pozorovatel.observe(p); else plagat(t, p);
+    return b;
+  }
+
+  function vykresli(znova) {
+    const stena = $("stena");
+    if (znova) { stena.textContent = ""; stav.zoznam = filtruj(); stav.zobrazene = 0; }
+    const kus = stav.zoznam.slice(stav.zobrazene, stav.zobrazene + NA_STRANU);
+    const fragment = document.createDocumentFragment();
+    kus.forEach(t => fragment.appendChild(dlazdica(t)));
+    stena.appendChild(fragment);
+    stav.zobrazene += kus.length;
+    $("viac").classList.toggle("skryte", stav.zobrazene >= stav.zoznam.length);
+    $("prazdne").classList.toggle("skryte", stav.zoznam.length > 0);
+    const disk = stav.disk != null ? diskPodlaId.get(stav.disk) : null;
+    $("suhrn").textContent = stav.zoznam.length + (stav.zoznam.length === 1 ? " titul" : stav.zoznam.length < 5 && stav.zoznam.length > 1 ? " tituly" : " titulov") +
+      (disk ? " na disku " + disk.c + " " + disk.n : "") + " · vytvorené " + new Date(katalog.vytvorene).toLocaleDateString("sk");
+  }
+
+  function detail(t) {
+    const o = $("obsahDialogu");
+    o.textContent = "";
+    const d = text("div", null, "detail");
+    const p = text("div", null, "plagat");
+    p.appendChild(text("span", t.n, "nahrada"));
+    plagat(t, p);
+    d.appendChild(p);
+    const info = text("div");
+    info.appendChild(text("h2", t.n));
+    info.appendChild(text("div", [t.o && t.o !== t.n ? t.o : null, t.r, t.s ? "seriál" : "film", t.z.join(", "),
+      t.h ? "hodnotenie " + String(t.h).replace(".", ",") : null, t.m ? "moje " + t.m : null, t.v ? "videné" : null].filter(Boolean).join(" · "), "pod"));
+    if (t.dej) info.appendChild(text("p", t.dej));
+    const dl = text("dl");
+    const riadok = (popis, hodnota) => { if (hodnota) { dl.appendChild(text("dt", popis)); dl.appendChild(text("dd", hodnota)); } };
+    riadok(t.s ? "Tvorcovia" : "Réžia", t.rez.join(", "));
+    riadok("Hrajú", t.her.join(", "));
+    riadok("Kolekcia", t.kol.join(", "));
+    riadok("Štítky", t.st.join(", "));
+    if (t.ver.length) {
+      dl.appendChild(text("dt", "Kde je"));
+      const dd = text("dd");
+      for (const v of t.ver) {
+        const disk = diskPodlaId.get(v.d);
+        dd.appendChild(text("div", [(v.s != null ? "S" + String(v.s).padStart(2, "0") + "E" + String(v.e).padStart(2, "0") + " · " : "") +
+          (disk ? disk.c + " " + disk.n : "?"), velkost(v.b), v.q, disk && disk.lez ? "leží: " + disk.lez : null].filter(Boolean).join(" · ") + "\n" + v.p, "verzia"));
+      }
+      dd.querySelectorAll(".verzia").forEach(e => e.style.whiteSpace = "pre-line");
+      dl.appendChild(dd);
+    }
+    info.appendChild(dl);
+    d.appendChild(info);
+    o.appendChild(d);
+    if (!$("dialog").open) $("dialog").showModal();
+  }
+
+  function disky() {
+    const kontajner = $("disky");
+    kontajner.textContent = "";
+    const t = text("table"), hlava = text("thead"), riadok = text("tr");
+    [["Disk"], ["Názov"], ["Katalóg"], ["Druh"], ["Kapacita", "c"], ["Voľné", "c"], ["Súbory", "c"], ["Tituly", "c"], ["Leží"]].forEach(([n, c]) => riadok.appendChild(text("th", n, c)));
+    hlava.appendChild(riadok);
+    t.appendChild(hlava);
+    const telo = text("tbody");
+    for (const d of katalog.disky) {
+      const r = text("tr");
+      [[d.c], [d.n], [d.k], [d.d], [velkost(d.vel), "c"], [velkost(d.vol), "c"], [d.sub.toLocaleString("sk"), "c"], [d.tit.toLocaleString("sk"), "c"], [d.lez || ""]]
+        .forEach(([h, c]) => r.appendChild(text("td", h, c)));
+      r.title = "Tituly na tomto disku";
+      r.addEventListener("click", () => { stav.disk = d.id; prepni("filmy"); });
+      telo.appendChild(r);
+    }
+    t.appendChild(telo);
+    kontajner.appendChild(t);
+    $("suhrn").textContent = katalog.disky.length + " diskov";
+  }
+
+  function prepni(karta) {
+    stav.karta = karta;
+    document.querySelectorAll("#karty button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.karta === karta)));
+    const naDiskoch = karta === "disky";
+    $("stena").classList.toggle("skryte", naDiskoch);
+    $("disky").classList.toggle("skryte", !naDiskoch);
+    $("viac").classList.add("skryte");
+    $("prazdne").classList.add("skryte");
+    if (naDiskoch) { stav.disk = null; disky(); } else vykresli(true);
+  }
+
+  function spusti(data) {
+    katalog = data;
+    document.title = data.nazov;
+    $("nazov").textContent = data.nazov;
+    data.disky.forEach(d => diskPodlaId.set(d.id, d));
+    data.tituly.forEach(pripravHladanie);
+    const zanre = [...new Set(data.tituly.flatMap(t => t.z))].sort(new Intl.Collator("sk").compare);
+    zanre.forEach(z => { const o = text("option", z); o.value = z; $("zaner").appendChild(o); });
+    $("prihlasenie").classList.add("skryte");
+    $("aplikacia").classList.remove("skryte");
+    let odklad;
+    $("hladaj").addEventListener("input", e => { clearTimeout(odklad); odklad = setTimeout(() => { stav.hladaj = e.target.value; if (stav.karta === "disky") prepni("filmy"); else vykresli(true); }, 150); });
+    $("zaner").addEventListener("change", e => { stav.zaner = e.target.value; vykresli(true); });
+    $("poradie").addEventListener("change", e => { stav.poradie = e.target.value; vykresli(true); });
+    $("nevidene").addEventListener("change", e => { stav.nevidene = e.target.checked; vykresli(true); });
+    $("viac").addEventListener("click", () => vykresli(false));
+    $("nahodne").addEventListener("click", () => {
+      if (stav.karta === "disky") prepni("filmy");
+      if (stav.zoznam.length) detail(stav.zoznam[Math.floor(Math.random() * stav.zoznam.length)]);
+    });
+    document.querySelectorAll("#karty button").forEach(b => b.addEventListener("click", () => { stav.disk = null; prepni(b.dataset.karta); }));
+    $("zavriet").addEventListener("click", () => $("dialog").close());
+    $("dialog").addEventListener("click", e => { if (e.target === $("dialog")) $("dialog").close(); });
+    prepni("filmy");
+  }
+
+  $("formular").addEventListener("submit", async e => {
+    e.preventDefault();
+    $("chyba").textContent = "";
+    $("otvorit").disabled = true;
+    $("otvorit").textContent = "Otváram…";
+    try {
+      const heslo = $("heslo").value;
+      $("heslo").value = "";
+      spusti(await otvor(heslo));
+    } catch (chyba) {
+      $("chyba").textContent = chyba.message || String(chyba);
+    } finally {
+      $("otvorit").disabled = false;
+      $("otvorit").textContent = "Otvoriť";
+    }
+  });
+})();
+</script>
+<script src="data.js"></script>
+</body>
+</html>

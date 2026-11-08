@@ -1,0 +1,51 @@
+<Window x:Class="Katalog.Okno.WebKatalogOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Webový katalóg"
+        Icon="Zdroje/katalog.ico"
+        SizeToContent="Height" Width="560" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock Text="Súkromný webový katalóg" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}"
+                   Text="Stránky do priečinka: otvoríš ich v prehliadači alebo ich nahráš, kam chceš (NAS, vlastný web). Všetko je zašifrované heslom (AES-256) – bez hesla v nich nikto nič neprečíta. Heslo sa nikam neukladá; keď ho zabudneš, katalóg vytvoríš znova." />
+
+        <TextBlock Text="Priečinok" Margin="0,16,0,4" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="Priecinok" Padding="8,5" IsReadOnly="True" />
+            <Button Grid.Column="1" Content="Vybrať…" Margin="8,0,0,0" Padding="14,5" Click="Vybrat_Click" />
+        </Grid>
+        <TextBlock Text="Názov katalógu na stránke" Margin="0,12,0,4" />
+        <TextBox x:Name="Nazov" Padding="8,5" />
+
+        <Grid Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Heslo (aspoň 8 znakov)" Margin="0,0,0,4" />
+                <PasswordBox x:Name="Heslo" Padding="8,5" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Heslo ešte raz" Margin="0,0,0,4" />
+                <PasswordBox x:Name="Heslo2" Padding="8,5" />
+            </StackPanel>
+        </Grid>
+
+        <CheckBox x:Name="Plagaty" Content="Plagáty (zmenšené)" Margin="0,14,0,0" IsChecked="True" />
+        <CheckBox x:Name="Cesty" Content="Priečinky a názvy súborov (kde presne film leží)" Margin="0,8,0,0" IsChecked="True" />
+
+        <TextBlock x:Name="Sprava" Margin="0,12,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button x:Name="TlacidloOtvorit" Content="Otvoriť v prehliadači" Padding="16,6" Margin="0,0,8,0" Click="Otvorit_Click" Visibility="Collapsed" />
+            <Button x:Name="TlacidloVytvorit" Content="Vytvoriť" IsDefault="True" Padding="20,6" MinWidth="90" Click="Vytvorit_Click" />
+            <Button Content="Zavrieť" IsCancel="True" Padding="20,6" MinWidth="80" Margin="8,0,0,0" />
+        </StackPanel>
+    </StackPanel>
+</Window>

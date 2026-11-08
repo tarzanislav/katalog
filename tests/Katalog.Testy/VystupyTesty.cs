@@ -275,4 +275,72 @@ public sealed class VystupyTesty
             "#EXTINF:-1,Vymyslený seriál S01E02\r\nF:\\Seriál\\S01E02.mkv\r\n",
             text, "M3U");
     }
+
+    private static ObsahWebu UkazkaWebu() => new(
+        "Vymyslená videotéka",
+        "2026-11-08T19:00:00Z",
+        "KATALOG",
+        [
+            new TitulWebu(1, false, "Vymyslený film", "Invented Film", 2001, "Dej o diskoch.", ["Komédia"], ["Vymyslený Režisér"], ["Vymyslená Herečka"],
+                ["Vymyslená sága"], ["Vianoce"], 7.5, 8, true, false, true, "FHD", 0,
+                [new VerziaWebu(1, "Filmy/Vymyslený film (2001).mkv", 4_000_000_000, "FHD", null, null)], "t1"),
+            new TitulWebu(2, true, "Vymyslený seriál", null, 2020, null, [], [], [], [], [], null, null, false, false, true, "HD", 10,
+                [new VerziaWebu(1, "Seriály/S01E01.mkv", 700_000_000, null, 1, 1)], null),
+        ],
+        [new DiskWebu(1, "D001", "Vymyslený disk", "Domov", "USB disk", 2_000_000_000_000, 500_000_000_000, 320, 2, "skriňa", "2026-11-08")]);
+
+    [Test]
+    public void WebovyKatalogSifrovanie()
+    {
+        var obsah = System.Text.Encoding.UTF8.GetBytes("{\"a\":\"ľščťžý\"}");
+        var sifra = WebovyKatalog.ZasifrujObsah(obsah, "vymyslené heslo", out var kluc, iteracie: 1000);
+        Over.Pravda(sifra.Length == 1 + 16 + 4 + 12 + obsah.Length + 16, "hlavička, nonce, šifra a značka");
+        Over.Postupnost(obsah, WebovyKatalog.OdsifrujObsah(sifra, "vymyslené heslo", out var kluc2, out _ ), "odšifrované");
+        Over.Postupnost(kluc, kluc2, "ten istý kľúč");
+        Over.Vyhodi<System.Security.Cryptography.CryptographicException>(() => WebovyKatalog.OdsifrujObsah(sifra, "iné heslo", out _, out _), "zlé heslo");
+        sifra[^1] ^= 1;
+        Over.Vyhodi<System.Security.Cryptography.CryptographicException>(() => WebovyKatalog.OdsifrujObsah(sifra, "vymyslené heslo", out _, out _), "zmenený obsah");
+        Over.Pravda(!WebovyKatalog.Zasifruj(obsah, kluc).SequenceEqual(WebovyKatalog.Zasifruj(obsah, kluc)), "každé šifrovanie s novým nonce");
+        // the standard vector of PBKDF2-HMAC-SHA256 (RFC 7914: "passwd", "salt", 1 round, first 32 bytes)
+        Over.Rovne("55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc",
+            Convert.ToHexStringLower(WebovyKatalog.Kluc("passwd", System.Text.Encoding.ASCII.GetBytes("salt"), 1)), "PBKDF2");
+    }
+
+    [Test]
+    public void WebovyKatalogPriecinok()
+    {
+        using var priecinok = new DocasnyPriecinok();
+        var web = priecinok.Subor("web");
+        var plagaty = Enumerable.Range(0, 45).Select(i => new PlagatWebu("t" + i, [0xFF, 0xD8, (byte)i, 0xFF, 0xD9])).ToList();
+        var vysledok = WebovyKatalog.Vytvor(web, UkazkaWebu(), plagaty, "vymyslené heslo", iteracie: 1000);
+        Over.Rovne((2, 45, 2), (vysledok.Titulov, vysledok.Plagatov, vysledok.Balikov), "tituly, plagáty, balíky po 40");
+        Over.Pravda(File.Exists(Path.Combine(web, "index.html")) && File.Exists(Path.Combine(web, "plagaty", "001.js")), "stránka a balíky");
+
+        // data.js opened as the page does: header, salt and rounds, then AES-GCM
+        var dataJs = File.ReadAllText(Path.Combine(web, "data.js"));
+        Over.Pravda(dataJs.StartsWith("KATALOG.data(\"", StringComparison.Ordinal) && !dataJs.Contains("Vymyslen", StringComparison.Ordinal), "údaje len zašifrované");
+        var data = WebovyKatalog.OdsifrujObsah(Convert.FromBase64String(dataJs[14..^3]), "vymyslené heslo", out var kluc, out var iteracie);
+        Over.Rovne(1000, iteracie, "kolá v hlavičke");
+        using var json = System.Text.Json.JsonDocument.Parse(data);
+        var koren = json.RootElement;
+        Over.Rovne("Vymyslený film", koren.GetProperty("tituly")[0].GetProperty("n").GetString(), "názov titulu");
+        Over.Rovne(1, koren.GetProperty("balik").GetProperty("t44").GetInt32(), "plagát 45 v druhom balíku");
+        Over.Pravda(!koren.GetProperty("tituly")[1].TryGetProperty("o", out _), "prázdne hodnoty sa nepíšu");
+
+        var balik = File.ReadAllText(Path.Combine(web, "plagaty", "001.js"));
+        Over.Pravda(balik.StartsWith("KATALOG.plagaty(1,\"", StringComparison.Ordinal), "balík volá stránku");
+        var mapa = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(WebovyKatalog.Odsifruj(Convert.FromBase64String(balik[19..^3]), kluc))!;
+        Over.Postupnost(["t40", "t41", "t42", "t43", "t44"], mapa.Keys.Order(StringComparer.Ordinal), "päť plagátov v druhom balíku");
+
+        var stranka = File.ReadAllText(Path.Combine(web, "index.html"));
+        Over.Pravda(stranka.Contains("crypto.subtle", StringComparison.Ordinal) && !stranka.Contains("http://", StringComparison.Ordinal) &&
+                    !stranka.Contains("https://", StringComparison.Ordinal) && !stranka.Contains("{{", StringComparison.Ordinal), "stránka bez cudzích adries");
+
+        // written again into its own folder: old packs go
+        WebovyKatalog.Vytvor(web, UkazkaWebu(), plagaty.Take(3).ToList(), "iné vymyslené heslo", iteracie: 1000);
+        Over.Rovne(1, Directory.GetFiles(Path.Combine(web, "plagaty")).Length, "staré balíky preč");
+        File.WriteAllText(priecinok.Subor("cudzi.txt"), "x");
+        Over.Vyhodi<IOException>(() => WebovyKatalog.Vytvor(priecinok.Cesta, UkazkaWebu(), [], "vymyslené heslo", iteracie: 1000), "cudzí priečinok");
+        Over.Vyhodi<ArgumentException>(() => WebovyKatalog.Vytvor(priecinok.Subor("iny"), UkazkaWebu(), [], "kratke", iteracie: 1000), "krátke heslo");
+    }
 }

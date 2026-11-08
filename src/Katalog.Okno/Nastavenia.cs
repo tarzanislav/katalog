@@ -60,6 +60,15 @@ public sealed class Nastavenia
     /// <summary>How labels were printed last time (format, QR, frame, shift of the printer), used again next time.</summary>
     public Vystupy.MoznostiStitkov Stitky { get; set; } = new();
 
+    /// <summary>The private web catalogue (E9): its folder, the name on its page and what it shows. Never the password.</summary>
+    public string PriecinokWebu { get; set; } = "";
+
+    public string NazovWebu { get; set; } = "";
+
+    public bool PlagatyNaWebe { get; set; } = true;
+
+    public bool CestyNaWebe { get; set; } = true;
+
     /// <summary>A version the user chose to skip ("Túto verziu vynechať").</summary>
     public string? VynechanaVerzia { get; set; }
 

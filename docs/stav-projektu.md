@@ -215,6 +215,24 @@ Hotové (rozhodnutie vlastníka 8. 11. 2026: servery cez nainštalovaný WinSCP,
 - Testy proti vymyslenému serveru, ktorý odpovedá ako záznam WinSCP (úrovne, dávky, chyby, úvodzovky, lokality z
   WinSCP.ini); samotest pridá, naskenuje a rozpozná disk vymysleného servera.
 
+## Etapa E9 – webový katalóg (8. 11. 2026, vetva vyvoj/etapa9)
+
+Hotové (rozhodnutie vlastníka 8. 11. 2026: stránky do priečinka, s plagátmi):
+
+- **Súkromný webový katalóg**: Export a tlač → Webový katalóg… vytvorí do priečinka statické stránky – otvoria sa priamo
+  z disku v prehliadači (aj v mobile), alebo ich vlastník nahrá, kam chce. Žiadna adresa na internete, žiadna knižnica
+  z cudzieho servera.
+- **Všetko zašifrované heslom**: AES-256-GCM, kľúč z hesla cez PBKDF2-SHA-256 (600 000 kôl) – to isté počíta prehliadač
+  vlastným Web Crypto. Bez hesla sú v priečinku len náhodné bajty; heslo sa nikam neukladá. Údaje a plagáty sú skripty
+  (data.js, plagaty/NNN.js), lebo stránka otvorená z disku smie načítať skript, nie súbor.
+- **Stránka**: filmy, seriály, zoznam želaní, disky; hľadanie bez diakritiky v názvoch, hercoch, réžii, žánroch,
+  štítkoch, kolekciách aj diskoch; žáner, poradie, len nevidené, náhodný výber; detail s dejom, ľuďmi a tým, kde titul
+  leží (disk, priečinok, veľkosť, kvalita); disky s obsadenosťou a miestom, kde ležia. Svetlý aj tmavý vzhľad.
+- **Plagáty** zmenšené na 240 bodov, po 40 v balíku; stránka načíta len balíky dlaždíc, ktoré ukazuje.
+- Prepísať sa dá len prázdny priečinok alebo ten, kam sa katalóg uložil predtým (značka katalog-web.txt).
+- Testy: šifrovanie (aj vektor PBKDF2 z RFC 7914), zápis priečinka, balíky, zlé heslo, zmenený obsah; stránka overená
+  v prehliadači Chromium (heslo, plagáty, hľadanie, detail, disky, mobil). Samotest vytvorí web a odšifruje ho.
+
 Otvorené:
 
 - **Logo TMDB** v okne O programe: podmienky TMDB ho chcú pri upozornení; oficiálny súbor loga sa tu nedal stiahnuť –
@@ -228,4 +246,4 @@ Otvorené:
 **Vydania** (so súhlasom vlastníka – schválenie v Review deployments; podpis zoznamu súčtov a súčet inštalátora
 overené): **0.1.0**, **0.2.0**, **0.4.0**, **0.5.0** a **0.6.0** 8. 11. 2026.
 
-Ďalšia etapa: **E9 – webový katalóg** (súkromné webové stránky katalógu, verzia 1.0).
+Všetky etapy E0 – E9 sú hotové.

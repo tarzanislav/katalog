@@ -118,6 +118,14 @@ public sealed class PlaylistyTesty
         Over.Pravda(navrhy.Any(n => n is { Nazov: "Nevidené filmy", Titulov: 3 }), "návrh: nevidené filmy");
         Over.Pravda(navrhy.All(n => n.Titulov >= 2), "len návrhy s aspoň dvoma titulmi");
 
+        // what the web catalogue is made of (stage E9)
+        var web = PodkladyWebu.Tituly(c, nikto);
+        Over.Rovne(4, web.Count, "štyri tituly pre web");
+        var filmNaWebe = web.Single(t => t.Titul.Id == film);
+        Over.Postupnost(["Zálohy/Vymyslený film (2001)/Vymyslený film (2001) - EN FHD H264 SMALL.mkv", "MOVIES/Vymyslený film (2001)/Vymyslený film (2001) - EN FHD H264 SMALL.mkv"],
+            filmNaWebe.Verzie.Select(v => v.Cesta).Order(StringComparer.Ordinal).Reverse(), "cesty verzií filmu");
+        Over.Pravda(web.Single(t => t.Titul.Id == serial) is { Epizod: 2, Verzie.Count: 2 } s2 && s2.Verzie.All(v => v.Seria == 1), "epizódy seriálu");
+
         await kniznica.Zapis.ZapisAsync(s => Playlisty.Zmaz(s, rucny));
         Over.Rovne(2, Playlisty.Zoznam(c).Count, "playlist zmazaný");
     }

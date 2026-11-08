@@ -8,6 +8,9 @@
     <InternalsVisibleTo Include="Katalog.Testy" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Web\index.html" LogicalName="Katalog.Vystupy.Web.index.html" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Katalog.Jadro\Katalog.Jadro.csproj" />
   </ItemGroup>
 </Project>
