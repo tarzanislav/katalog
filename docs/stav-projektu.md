@@ -246,4 +246,4 @@ Otvorené:
 **Vydania** (so súhlasom vlastníka – schválenie v Review deployments; podpis zoznamu súčtov a súčet inštalátora
 overené): **0.1.0**, **0.2.0**, **0.4.0**, **0.5.0** a **0.6.0** 8. 11. 2026.
 
-Všetky etapy E0 – E9 sú hotové.
+Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.
