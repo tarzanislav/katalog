@@ -94,13 +94,47 @@ Hotové:
 - Testy čítajú skutočné vymyslené video, ktoré urobí ffmpeg (Linux aj Windows); samotest používa FFmpeg nainštalovaný
   s KATALOGOM.
 
+## Etapa E4 – knižnica, HISTRA a kolekcie (8. 11. 2026, vetva vyvoj/etapa4)
+
+Hotové:
+
+- **Rozpoznanie filmov a seriálov z názvov** súborov a priečinkov, bez internetu a aj z nepripojených diskov: knižnica
+  UNIVERSUM (`MOVIES`, `TVSHOWS\…\Season 01`, `[tmdbid-…]`) presne, ostatné názvy (release mená, `S01E04`, `1x04`,
+  `Díl 4`, priečinky sérií, špeciály) ako návrh. CD1 a CD2 sú jedna verzia, BDMV a VIDEO_TS tiež; ukážky a extra sa
+  odložia. Rovnaký titul pod rôznymi menami (s diakritikou aj bez, slovenský aj originálny názov) je jeden titul.
+- **Dátový model knižnice** (schéma v4): verzie na diskoch, epizódy aj viacepizódne súbory, kandidáti zdrojov,
+  súbory mimo knižnice, kľúče názvov. Pôvod každého poľa a zámky (A5): tvoja úprava sa nikdy neprepíše, dá sa vrátiť
+  zdrojom; zlúčenie dvoch záznamov toho istého titulu so všetkým, čo k nim patrí.
+- **Zdroje údajov** s jedným rozhraním (A6): **TMDB** (slovenské, inak české názvy a dej, žánre, osoby, plagáty,
+  všetky epizódy, kolekcie), **HISTRA** (hľadanie titulov a tvoje zoznamy – len čítanie) a **Jellyfin** (kolekcie a
+  pozreté, nepovinné). Posiela sa len hľadaný názov a rok. Titul sa vezme sám len pri jednoznačnom názve s rokom (R5),
+  inak čaká **Na potvrdenie** s návrhmi vedľa seba.
+- **Kľúče** (vlastník 8. 11. 2026): prevezmú sa z UNIVERSUM (Nastavenia píšu „Momentálne prepojené na … z UNIVERSUM“),
+  vlastný kľúč má prednosť; bez kľúčov v UNIVERSUM sú len polia na nové. Ukladajú sa mimo knižnice, šifrované
+  ochranou údajov Windows (A8).
+- **Plagáty a údaje sa ukladajú lokálne** (R7) – knižnica funguje offline; plagát sa uloží raz podľa obsahu.
+- **Okno knižnice**: stena plagátov (riadky sa kreslia len viditeľné) aj zoznam – Filmy, Seriály, Na potvrdenie,
+  Zoznam želaní, Kolekcie (aj diely, ktoré nemáš), Zoznamy HISTRA (mám / nemám). Detail titulu: plagát, dej, žánre,
+  réžia, herci, verzie na diskoch, série s chýbajúcimi epizódami, kolekcie; prehranie (seriál ako playlist),
+  videné, želané, moje hodnotenie, poznámka, ručná úprava, „Hľadať inak…“, „Nie je to film ani seriál“.
+- **Dotazovací jazyk** (A4): `rok`, `zaner`, `hodnotenie`, `moje`, `herec`, `rezia`, `kolekcia`, `videne`, `mam`,
+  `zelane`, `kniznica` – v hľadaní súborov aj vo filtri knižnice (tam platia aj podmienky súborov ako `kvalita:4k`).
+- O programe: upozornenie TMDB; zdroje v THIRD-PARTY-NOTICES.
+- **Výkon** (GitHub Actions): 10 000 titulov – stena filmov okolo 40 ms, filter okolo 50 ms, rozpoznanie 14 000 videí
+  pár sekúnd (merané aj lokálne).
+- Samotest: vymyslený zdroj namiesto TMDB (nič nejde na internet), plagáty nakreslené samotestom, potvrdenie návrhu,
+  kolekcia s chýbajúcim dielom, prehranie seriálu, snímky steny, zoznamu, seriálu, Na potvrdenie, kolekcií a Nastavení.
+
 Otvorené:
 
+- **Logo TMDB** v okne O programe: podmienky TMDB ho chcú pri upozornení; oficiálny súbor loga sa tu nedal stiahnuť –
+  doplní sa, keď ho vlastník priloží (zatiaľ je tam text upozornenia).
+- Fotky hercov a pozadia (prídu s webovým katalógom E9, plagáty v troch veľkostiach tiež).
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
 
-**Vydanie 0.1.0** zverejnené 8. 11. 2026 so súhlasom vlastníka; podpis zoznamu súčtov a súčet inštalátora overené.
-Poznámky k vydaniu 0.2.0 (E3) sú pripravené; vydá sa len so súhlasom vlastníka.
+**Vydania** (so súhlasom vlastníka, podpis zoznamu súčtov a súčet inštalátora overené): **0.1.0** a **0.2.0**
+8. 11. 2026. Poznámky k vydaniu 0.3.0 (E4) sú pripravené; vydá sa len so súhlasom vlastníka.
 
-Ďalšia etapa: **E4 – knižnica, HISTRA a kolekcie**: rozpoznanie filmov a seriálov z názvov, údaje a plagáty z TMDB
-a HISTRA, verzie titulu na rôznych diskoch, knižnica s plagátmi, kolekcie.
+Ďalšia etapa: **E5 – duplicity, zdravie diskov, prehľady**: duplicitné tituly a súbory, tituly len na jednom disku
+(N1), zdravie diskov (SMART), prehľad diskov a knižnice.
