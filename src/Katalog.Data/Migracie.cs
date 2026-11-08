@@ -19,10 +19,10 @@ public static class Migracie
     /// <summary>SQL of one step (for tests and the documentation).</summary>
     public static string Sql(int verzia) => Citaj(Kroky.Single(k => k.Verzia == verzia).Zdroj);
 
-    /// <summary>Raises the library from <paramref name="odVerzie"/> to <see cref="Posledna"/>.</summary>
-    internal static void Vykonaj(SqliteConnection spojenie, int odVerzie)
+    /// <summary>Raises the library from <paramref name="odVerzie"/> to <paramref name="doVerzie"/> (default: the latest).</summary>
+    internal static void Vykonaj(SqliteConnection spojenie, int odVerzie, int? doVerzie = null)
     {
-        foreach (var (verzia, zdroj) in Kroky.Where(k => k.Verzia > odVerzie))
+        foreach (var (verzia, zdroj) in Kroky.Where(k => k.Verzia > odVerzie && k.Verzia <= (doVerzie ?? Posledna)))
         {
             var sql = Citaj(zdroj);
             Kniznica.Vykonaj(spojenie, "BEGIN IMMEDIATE");

@@ -39,7 +39,20 @@ public sealed class Kniznica : IAsyncDisposable
         Kontrola = kontrola;
         ZalohaPredMigraciou = zaloha;
         Zapis = new ZapisovaciaFronta(retazec);
+        if (verziaSchemy >= 1)
+        {
+            using var spojenie = OtvorSpojenie(retazec);
+            _poslednyPriecinok = Convert.ToInt64(Skalar(spojenie, "SELECT coalesce(max(id), 0) FROM priecinok"), CultureInfo.InvariantCulture);
+        }
     }
+
+    private long _poslednyPriecinok;
+
+    /// <summary>
+    /// A new folder id. Folders get their ids here, before they are written, so a scan can go on into a new folder at once
+    /// without waiting for the writer; two scans of different disks never collide.
+    /// </summary>
+    public long NovyIdPriecinka() => Interlocked.Increment(ref _poslednyPriecinok);
 
     public string Cesta { get; }
 

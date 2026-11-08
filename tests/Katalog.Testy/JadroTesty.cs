@@ -3,6 +3,7 @@ using System.Text;
 using Katalog.Jadro;
 using Katalog.Jadro.Aktualizacie;
 using Katalog.Jadro.Model;
+using Katalog.Jadro.Rozhrania;
 
 namespace Katalog.Testy;
 
@@ -31,6 +32,42 @@ public sealed class JadroTesty
         }
 
         Over.Pravda(Enum.GetValues<DruhHladania>().All(d => (int)d is > 0 and < KlucHladania.Nasobok), "druhy sa zmestia do násobku");
+    }
+
+    [Test]
+    public void RozdielPriecinkaRozlisiNoveZmeneneVrateneAZmazane()
+    {
+        UlozenaPolozka[] ulozene =
+        [
+            new(1, "Rovnaký.mkv", false, 10, 100, false),
+            new(2, "Väčší.mkv", false, 10, 100, false),
+            new(3, "Preč.mkv", false, 10, 100, false),
+            new(4, "Späť.mkv", false, 10, 100, true),
+            new(5, "Priečinok", true, 0, 0, false),
+            new(6, "Zmizol", true, 0, 0, false),
+            new(7, "Vrátený", true, 0, 0, true),
+        ];
+        PolozkaUloziska[] najdene =
+        [
+            new("Rovnaký.mkv", false, 10, 100, null, 0),
+            new("Väčší.mkv", false, 11, 100, null, 0),
+            new("Späť.mkv", false, 10, 100, null, 0),
+            new("Nový.mkv", false, 1, 1, null, 0),
+            new("Priečinok", true, 0, 5, null, 0),
+            new("Vrátený", true, 0, 5, null, 0),
+            new("Nový priečinok", true, 0, 5, null, 0),
+        ];
+        var r = RozdielPriecinka.Porovnaj(ulozene, najdene);
+        Over.Postupnost(["Nový.mkv"], r.NoveSubory.Select(s => s.Nazov), "nové súbory");
+        Over.Postupnost([2L], r.ZmeneneSubory.Select(s => s.Id), "zmenené súbory");
+        Over.Postupnost([4L], r.VrateneSubory.Select(s => s.Id), "vrátené súbory");
+        Over.Postupnost([3L], r.ZmazaneSubory, "zmazané súbory");
+        Over.Postupnost(["Nový priečinok"], r.NovePriecinky.Select(p => p.Nazov), "nové priečinky");
+        Over.Postupnost([5L, 7L], r.ExistujucePriecinky.Select(p => p.Id), "existujúce priečinky");
+        Over.Postupnost([7L], r.VratenePriecinky, "vrátené priečinky");
+        Over.Postupnost([6L], r.ZmazanePriecinky, "zmazané priečinky");
+        Over.Pravda(!r.JeBezZmeny, "sú zmeny");
+        Over.Pravda(RozdielPriecinka.Porovnaj(ulozene.Take(2).ToList(), najdene.Take(1).Append(new("Väčší.mkv", false, 10, 100, null, 0)).ToList()).JeBezZmeny, "bez zmeny");
     }
 
     [Test]

@@ -85,6 +85,44 @@ public sealed class VykonTesty
         Over.Pravda(velkostMb < 400, $"knižnica do 400 MB pri milióne súborov (bola {velkostMb:F0} MB)");
     }
 
+    [Test]
+    public async Task SkenStoTisicSuborov()
+    {
+        if (Environment.GetEnvironmentVariable("KATALOG_VYKON") != "1")
+        {
+            Over.Preskoc("len s KATALOG_VYKON=1");
+        }
+
+        using var priecinok = new DocasnyPriecinok();
+        var disk = Path.Combine(priecinok.Cesta, "disk");
+        for (var p = 0; p < 1000; p++)
+        {
+            var cesta = Path.Combine(disk, string.Create(CultureInfo.InvariantCulture, $"Priečinok {p / 100}"), string.Create(CultureInfo.InvariantCulture, $"Podpriečinok {p}"));
+            Directory.CreateDirectory(cesta);
+            for (var s = 0; s < 100; s++)
+            {
+                File.Create(Path.Combine(cesta, string.Create(CultureInfo.InvariantCulture, $"Vymyslený súbor {p}-{s}.mkv"))).Dispose();
+            }
+        }
+
+        await using var kniznica = await Kniznica.OtvorAsync(priecinok.Subor("Sken.katalog"));
+        var katalog = await kniznica.Zapis.ZapisAsync(s => KatalogyADisky.VytvorKatalog(s, "Výkon"));
+        var koren = kniznica.NovyIdPriecinka();
+        var identita = new Katalog.Jadro.Rozhrania.IdentitaZvazku(Katalog.Jadro.Model.DruhDisku.Interny, null, null, null, null, null, null, disk);
+        var diskId = await kniznica.Zapis.ZapisAsync(s => KatalogyADisky.PridajDisk(s, new NovyDisk(katalog, "Vymyslený", identita, "", null), koren));
+        var ulozisko = new Katalog.Skenovanie.LokalneUlozisko(disk, Katalog.Jadro.Model.DruhDisku.Interny, Katalog.Skenovanie.Zvazky.Systemove);
+
+        var prvy = await Katalog.Ulohy.SkenovanieDisku.SpustiAsync(kniznica, diskId, ulozisko, null, CancellationToken.None);
+        var druhy = await Katalog.Ulohy.SkenovanieDisku.SpustiAsync(kniznica, diskId, ulozisko, null, CancellationToken.None);
+        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            $"::notice title=Výkon skenovania (100 000 súborov)::prvý sken {prvy.Trvanie.TotalSeconds:F1} s, sken bez zmien {druhy.Trvanie.TotalSeconds:F1} s"));
+
+        Over.Rovne(100_000, prvy.Zmeny.Pridane, "prvý sken pridal všetky súbory");
+        Over.Rovne(new PocetZmien(0, 0, 0), druhy.Zmeny, "sken bez zmien nič nezapísal");
+        Over.Pravda(prvy.Trvanie < TimeSpan.FromMinutes(1), $"prvý sken do 1 min (bol {prvy.Trvanie.TotalSeconds:F1} s)");
+        Over.Pravda(druhy.Trvanie < TimeSpan.FromSeconds(10), $"sken bez zmien do 10 s (bol {druhy.Trvanie.TotalSeconds:F1} s)");
+    }
+
     private static async Task<TimeSpan> ZapisSuboryAsync(Kniznica kniznica, Random nahoda, int od, int po)
     {
         const int vDavke = 10_000;
@@ -93,7 +131,8 @@ public sealed class VykonTesty
         for (var zaciatok = od; zaciatok < po; zaciatok += vDavke)
         {
             var riadky = Enumerable.Range(zaciatok, Math.Min(vDavke, po - zaciatok))
-                .Select(i => (Priecinok: 2 + (i % PocetPriecinkov), Nazov: string.Create(CultureInfo.InvariantCulture,
+                // a scan writes folder by folder, so the files of one folder come together
+                .Select(i => (Priecinok: 2 + (int)((long)i * PocetPriecinkov / PocetSuborov), Nazov: string.Create(CultureInfo.InvariantCulture,
                     $"{Slova[nahoda.Next(Slova.Length)]} {Slova[nahoda.Next(Slova.Length)]} {i} ({1950 + (i % 75)}).mkv"), Velkost: (long)i * 1000))
                 .ToList();
             zapisy.Add(kniznica.Zapis.ZapisAsync(s =>

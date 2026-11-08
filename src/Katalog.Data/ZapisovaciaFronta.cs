@@ -58,6 +58,8 @@ public sealed class ZapisovaciaFronta : IAsyncDisposable
     private async Task BehAsync()
     {
         await using var spojenie = await Kniznica.OtvorSpojenieAsync(_retazec, CancellationToken.None).ConfigureAwait(false);
+        // the writer keeps more of the library in memory (128 MB): a scan of a big disk then rarely waits for the disk
+        Kniznica.Vykonaj(spojenie, "PRAGMA cache_size = -131072");
         var davka = new List<Praca>(NajviacVDavke);
         while (await _fronta.Reader.WaitToReadAsync().ConfigureAwait(false))
         {

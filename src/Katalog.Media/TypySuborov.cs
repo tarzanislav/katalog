@@ -23,9 +23,5 @@ public static class TypySuborov
         nazovPriecinka.Equals("BDMV", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Extension of a file name, lower case without the dot ("" when there is none).</summary>
-    public static string Pripona(string nazov)
-    {
-        var bodka = nazov.LastIndexOf('.');
-        return bodka <= 0 || bodka == nazov.Length - 1 ? "" : nazov[(bodka + 1)..].ToLowerInvariant();
-    }
+    public static string Pripona(string nazov) => Katalog.Jadro.Model.NazovSuboru.Pripona(nazov);
 }
