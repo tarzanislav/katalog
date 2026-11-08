@@ -55,6 +55,8 @@ public sealed class Dotaz
         ["verzie"] = PoleDotazu.Verzie, ["verzii"] = PoleDotazu.Verzie,
         ["zalohovane"] = PoleDotazu.Zalohovane, ["zalohovany"] = PoleDotazu.Zalohovane, ["zaloha"] = PoleDotazu.Zalohovane,
         ["duplikat"] = PoleDotazu.Duplikat, ["duplikaty"] = PoleDotazu.Duplikat, ["kopia"] = PoleDotazu.Duplikat,
+        ["pozicane"] = PoleDotazu.Pozicane, ["pozicany"] = PoleDotazu.Pozicane, ["vypozicane"] = PoleDotazu.Pozicane, ["komu"] = PoleDotazu.Pozicane,
+        ["stitok"] = PoleDotazu.Stitok, ["stitky"] = PoleDotazu.Stitok, ["tag"] = PoleDotazu.Stitok,
     };
 
     private Dotaz(string text, IReadOnlyList<Podmienka> podmienky, IReadOnlyList<string> upozornenia)
@@ -165,6 +167,8 @@ public sealed class Dotaz
         PoleDotazu.Verzie => "verzie",
         PoleDotazu.Zalohovane => "zalohovane",
         PoleDotazu.Duplikat => "duplikat",
+        PoleDotazu.Pozicane => "pozicane",
+        PoleDotazu.Stitok => "stitok",
         _ => "zmazane",
     };
 
@@ -374,6 +378,24 @@ public sealed class Dotaz
             case PoleDotazu.Duplikat:
                 return AnoNie(h) is { } duplikat ? new Duplikat(duplikat != zaporny) : null;
 
+            case PoleDotazu.Pozicane:
+                if (AnoNie(h) is { } pozicane)
+                {
+                    return new Pozicane([], zaporny == pozicane);
+                }
+
+                var komu = Zoznam(h).Select(Normalizacia.Nazov).Where(k => k.Length >= 2).Distinct().ToList();
+                return komu.Count == 0 ? null : new Pozicane(komu, zaporny);
+
+            case PoleDotazu.Stitok:
+                if (AnoNie(h) is { } stitkovany)
+                {
+                    return new Stitkovane([], zaporny == stitkovany);
+                }
+
+                var stitky = Zoznam(h).Select(Normalizacia.Nazov).Where(k => k.Length > 0).Distinct().ToList();
+                return stitky.Count == 0 ? null : new Stitkovane(stitky, zaporny);
+
             default:
                 return BezDiakritiky(h) switch
                 {
@@ -418,6 +440,8 @@ public sealed class Dotaz
         PoleDotazu.Verzie => "verzie:>1 (duplicity)",
         PoleDotazu.Zalohovane => "zalohovane:nie (tituly len na jednom disku)",
         PoleDotazu.Duplikat => "duplikat:ano (presné kópie súborov)",
+        PoleDotazu.Pozicane => "pozicane:ano alebo pozicane:Meno",
+        PoleDotazu.Stitok => "stitok:ano alebo stitok:vianoce,deti",
         _ => "zmazane:aj alebo zmazane:len",
     };
 

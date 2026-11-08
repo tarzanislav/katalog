@@ -146,8 +146,8 @@ public sealed class DotazyTesty
     [Test]
     public void NeznamePoleSaHladaAkoText()
     {
-        var dotaz = Dotaz.Citaj("re:zero stitok:vymyslený C:\\Filmy");
-        Over.Postupnost(["re:zero", "stitok:vymyslený", "C:\\Filmy"], dotaz.Podmienky.Cast<Slovo>().Select(s => s.Text), "ako text");
+        var dotaz = Dotaz.Citaj("re:zero farba:vymyslená C:\\Filmy");
+        Over.Postupnost(["re:zero", "farba:vymyslená", "C:\\Filmy"], dotaz.Podmienky.Cast<Slovo>().Select(s => s.Text), "ako text");
         Over.Rovne(2, dotaz.Upozornenia.Count, "neznáme polia sa ohlásia, cesta nie");
     }
 

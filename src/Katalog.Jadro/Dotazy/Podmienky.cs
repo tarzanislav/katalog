@@ -35,6 +35,8 @@ public enum PoleDotazu
     Verzie = 28,
     Zalohovane = 29,
     Duplikat = 30,
+    Pozicane = 31,
+    Stitok = 32,
 }
 
 /// <summary>Where a file or title stands in the library of titles (kniznica:film, kniznica:potvrdit…).</summary>
@@ -162,6 +164,15 @@ public sealed record PocetVerzii(int? Od, int? Do, bool Zaporna) : TitulovaPodmi
 /// with an episode on one disk only.
 /// </summary>
 public sealed record Zalohovane(bool Hodnota) : TitulovaPodmienka(false);
+
+/// <summary>
+/// pozicane:ano, or pozicane:Jano – lent now (to anyone, or to someone by a part of the name). A title is lent itself or
+/// with a disk of its files; a file with its disk or its title.
+/// </summary>
+public sealed record Pozicane(IReadOnlyList<string> Komu, bool Zaporna) : TitulovaPodmienka(Zaporna);
+
+/// <summary>stitok:ano, or stitok:vianoce,deti – titles with any tag, or with one of these (by a part, without diacritics).</summary>
+public sealed record Stitkovane(IReadOnlyList<string> Nazvy, bool Zaporna) : TitulovaPodmienka(Zaporna);
 
 /// <summary>duplikat:ano – files with an exact copy elsewhere (the same fingerprint: size, first and last megabyte).</summary>
 public sealed record Duplikat(bool Hodnota) : Podmienka(false);

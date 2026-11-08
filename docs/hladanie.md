@@ -75,7 +75,7 @@ niektorý súbor jeho verzie, ktorý je na disku.
 
 Pred pole sa dá dať mínus: `-pripona:srt` sú súbory okrem titulkov, `-zaner:horor` tituly bez hororu. Všetky
 podmienky musia platiť naraz. Čo program nerozumie, ohlási nad výsledkami a vynechá – nikdy nehádže potichu. Neznáme
-pole (napr. `stitok:` pred etapou E6) hľadá ako obyčajný text.
+pole (napr. `farba:modra`) hľadá ako obyčajný text.
 
 ## Príklady
 

@@ -51,8 +51,22 @@ internal static class PodmienkyKniznice
                               AND (SELECT count(DISTINCT sp.disk_id) FROM verzia v JOIN verzia_subor vs ON vs.verzia_id = v.id
                                    JOIN subor sp ON sp.id = vs.subor_id WHERE v.epizoda_id = e.id AND sp.stav = 0) = 1) END)
             """,
+        Pozicane p => $"({t}.id IN (SELECT titul_id FROM vypozicka WHERE do IS NULL AND titul_id IS NOT NULL{Komu(p, parameter)}) " +
+                      $"OR EXISTS (SELECT 1 FROM ({VerzieTitulu(t + ".id")}) vt JOIN verzia_subor vs ON vs.verzia_id = vt.id " +
+                      $"JOIN subor sp ON sp.id = vs.subor_id WHERE sp.stav = 0 AND sp.disk_id IN ({PozicaneDisky(p, parameter)})))",
+        Stitkovane { Nazvy.Count: 0 } => $"{t}.id IN (SELECT titul_id FROM titul_stitok)",
+        Stitkovane st => $"{t}.id IN (SELECT ts.titul_id FROM titul_stitok ts JOIN stitok st ON st.id = ts.stitok_id WHERE " +
+                         string.Join(" OR ", st.Nazvy.Select(n => $"st.kluc LIKE {parameter("%" + Escape(n) + "%")} ESCAPE '\\'")) + ")",
         _ => "1",
     };
+
+    /// <summary>The disks lent now (to the person, if the condition names one).</summary>
+    private static string PozicaneDisky(Pozicane p, Func<object, string> parameter) =>
+        $"SELECT disk_id FROM vypozicka WHERE do IS NULL AND disk_id IS NOT NULL{Komu(p, parameter)}";
+
+    private static string Komu(Pozicane p, Func<object, string> parameter) => p.Komu.Count == 0
+        ? ""
+        : " AND (" + string.Join(" OR ", p.Komu.Select(k => $"kluc LIKE {parameter("%" + Escape(k) + "%")} ESCAPE '\\'")) + ")";
 
     /// <summary>A present version: one of its files is on its disk (the version is <c>v</c>).</summary>
     private const string Pritomna = "EXISTS (SELECT 1 FROM verzia_subor vp JOIN subor sv ON sv.id = vp.subor_id WHERE vp.verzia_id = v.id AND sv.stav = 0)";
@@ -94,6 +108,9 @@ internal static class PodmienkyKniznice
                         $"s.id IN ({Verzie} WHERE v.titul_id IN (SELECT titul_id FROM pozretie WHERE titul_id IS NOT NULL) " +
                         "OR v.epizoda_id IN (SELECT epizoda_id FROM pozretie WHERE epizoda_id IS NOT NULL))",
             Mam m => m.Hodnota ? "s.stav = 0" : "0",
+            // lent: its disk, or the title of its version
+            Pozicane p => $"(s.disk_id IN ({PozicaneDisky(p, parameter)}) OR s.id IN ({Verzie} LEFT JOIN epizoda e ON e.id = v.epizoda_id " +
+                          $"WHERE coalesce(v.titul_id, e.titul_id) IN (SELECT titul_id FROM vypozicka WHERE do IS NULL AND titul_id IS NOT NULL{Komu(p, parameter)})))",
             _ => $"s.id IN ({Verzie} LEFT JOIN epizoda e ON e.id = v.epizoda_id " +
                  $"JOIN titul t ON t.id = coalesce(v.titul_id, e.titul_id) WHERE {PreTitul(podmienka, "t", parameter)})",
         };
@@ -102,7 +119,7 @@ internal static class PodmienkyKniznice
             return sql;
         }
 
-        return podmienka is VKniznici { Stav: StavVKniznici.VKniznici or StavVKniznici.MimoKniznice }
+        return podmienka is VKniznici { Stav: StavVKniznici.VKniznici or StavVKniznici.MimoKniznice } or Pozicane
             ? $"NOT ({sql})"
             : $"NOT ({sql}) AND s.id IN (SELECT subor_id FROM verzia_subor)";
     }

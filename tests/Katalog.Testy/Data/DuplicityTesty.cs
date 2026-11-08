@@ -158,7 +158,7 @@ public sealed class DuplicityTesty
         Over.Postupnost(["D001 prvy 2", "D002 druhy 1"], st.Disky.Select(d => $"{d.Nazov} {d.Pocet}"), "tituly po diskoch");
     }
 
-    private static async Task<long> DiskAsync(Kniznica kniznica, string priecinok, long katalog, string meno, string seriove, IEnumerable<string> subory)
+    internal static async Task<long> DiskAsync(Kniznica kniznica, string priecinok, long katalog, string meno, string seriove, IEnumerable<string> subory)
     {
         var disk = Path.Combine(priecinok, meno);
         foreach (var subor in subory)
