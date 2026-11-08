@@ -346,7 +346,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
                     <TextBlock x:Name="DetailNadpis" Text="Detail titulu" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <Image x:Name="DetailNahlad" Margin="0,10,0,0" MaxHeight="200" Stretch="Uniform" HorizontalAlignment="Left"
+                    <Image x:Name="DetailNahlad" Margin="0,10,10,0" MaxHeight="200" Stretch="Uniform" HorizontalAlignment="Stretch"
                            Visibility="Collapsed" />
                     <TextBlock x:Name="DetailPrazdny" Margin="0,8,0,0" Style="{StaticResource TichyText}"
                                Text="Vyber titul alebo súbor. Tu uvidíš plagát, dej, kde leží (disk, cesta, či je pripojený), technické údaje, zvuk a titulky s jazykmi a ďalšie verzie na iných diskoch." />

@@ -71,12 +71,35 @@ Hotové:
 - Okno Nastavenia (prehrávač, motív, aktualizácie); poznámky k vydaniu 0.1.0 pripravené.
 - Samotest: hľadanie z okna, prehratie súboru aj sezóny (bez spustenia prehrávača), filtre, uložené hľadania, snímky.
 
+## Etapa E3 – technické údaje videa (8. 11. 2026, vetva vyvoj/etapa3)
+
+Hotové:
+
+- **Čítanie technických údajov** každého videa cez ffprobe: kontajner, dĺžka, dátový tok, kodek a rozlíšenie obrazu,
+  trieda kvality (SD, HD, FHD, 4K – rovnaké hranice ako UNIVERSUM), HDR (HDR10, HLG, Dolby Vision), snímky za sekundu,
+  zvukové stopy a titulky s jazykmi, kanálmi a príznakmi (predvolené, vynútené, pre nepočujúcich). Aj **externé
+  titulky** vedľa videa (`Film.sk.forced.srt`). Poškodené súbory sa zapíšu s chybou (N3), program nespadne.
+- **Náhľad** každého videa (ffmpeg, tretina dĺžky, 320 px, asi 15 kB) v priečinku `<knižnica>.obrazky` vedľa knižnice.
+- Číta sa **na pozadí s nízkou prioritou** po skene a po pripojení disku, jeden súbor naraz na disk; zastaviť sa dá
+  v stavovom riadku, spustiť z ponuky disku. Vypnúť sa dá v Nastaveniach.
+- **Trvalá fronta úloh** (A7): sken aj čítanie sú úlohy v knižnici; sken prerušený zatvorením programu pokračuje po
+  ďalšom pripojení disku, čítanie pokračuje tam, kde skončilo (presunuté z E1).
+- **FFmpeg** (vlastník 8. 11. 2026): prednostne z UNIVERSUM alebo z priečinka v Nastaveniach, inak **vlastný FFmpeg
+  9.0.2 v inštalátore** – LGPL, zostavený zo zdrojového kódu, okresaný (ffprobe a ffmpeg po 21 MB), spúšťa sa len keď
+  sedí manifest SHA-256. Zdrojový kód sa prikladá ku každému vydaniu, licencia v THIRD-PARTY-NOTICES.
+- **Hľadanie** podľa technických údajov: `kvalita`, `kodek`, `zvuk`, `titulky`, `hdr`, `dlzka`, `poskodene`;
+  filtre Kvalita, Jazyk zvuku, Jazyk titulkov.
+- Detail videa: obraz, dĺžka, zvuk a titulky s jazykmi, chyby čítania a náhľad.
+- Testy čítajú skutočné vymyslené video, ktoré urobí ffmpeg (Linux aj Windows); samotest používa FFmpeg nainštalovaný
+  s KATALOGOM.
+
 Otvorené:
 
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
 
 **Vydanie 0.1.0** zverejnené 8. 11. 2026 so súhlasom vlastníka; podpis zoznamu súčtov a súčet inštalátora overené.
+Poznámky k vydaniu 0.2.0 (E3) sú pripravené; vydá sa len so súhlasom vlastníka.
 
-Ďalšia etapa: **E3 – technické údaje videa** (ffprobe: rozlíšenie,
-kodeky, zvuk a titulky s jazykmi, HDR, náhľady) s trvalou frontou úloh.
+Ďalšia etapa: **E4 – knižnica, HISTRA a kolekcie**: rozpoznanie filmov a seriálov z názvov, údaje a plagáty z TMDB
+a HISTRA, verzie titulu na rôznych diskoch, knižnica s plagátmi, kolekcie.

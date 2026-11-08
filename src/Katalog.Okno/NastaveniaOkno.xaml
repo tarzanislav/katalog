@@ -25,7 +25,7 @@
             <Button x:Name="TlacidloFfmpegAutomaticky" Content="Nájsť automaticky" Padding="14,5" Margin="8,0,0,0" Click="FfmpegAutomaticky_Click" />
         </StackPanel>
         <CheckBox x:Name="CitatTechnickeUdaje" Margin="0,10,0,0"
-                  Content="Čítať ich samo po skene a po pripojení disku (rozlíšenie, kodeky, zvuk, titulky, HDR)" />
+                  Content="Čítať ich samo po skene a po pripojení disku" />
         <CheckBox x:Name="RobitNahlady" Margin="0,6,0,0" Content="Robiť náhľad každého videa (asi 15 kB, ukladá sa vedľa knižnice)" />
 
         <TextBlock Text="Vzhľad" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,8" />
