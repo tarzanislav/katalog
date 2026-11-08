@@ -720,6 +720,8 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                             <Button Content="Štítky…" Padding="12,4" Margin="0,0,6,6" Click="StitkyTitulu_Click"
                                     ToolTip="Vlastné štítky titulu (napr. Vianoce, Pre deti), oddelené čiarkou" />
                             <Button x:Name="DetailPozicat" Content="Požičať…" Padding="12,4" Margin="0,0,6,6" Click="PozicatTitul_Click" />
+                            <Button x:Name="DetailZmenitPlagat" Content="Plagát…" Padding="12,4" Margin="0,0,6,6" Click="ZmenitPlagat_Click"
+                                    ToolTip="Vybrať iný plagát z TMDB" />
                             <Button x:Name="DetailDoPlaylistu" Content="Do playlistu…" Padding="12,4" Margin="0,0,6,6" Click="DoPlaylistu_Click"
                                     ToolTip="Pridať titul do ručného playlistu (alebo do nového)" />
                         </WrapPanel>
@@ -768,6 +770,10 @@ ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
                                                 <TextBlock FontSize="11" Margin="0,2,0,0" Visibility="{Binding MaOdkaz, Converter={StaticResource BoolNaViditelnost}}"
                                                            ToolTip="{Binding Odkaz}">
                                                     <Hyperlink NavigateUri="{Binding Odkaz}" RequestNavigate="OdkazKandidata_RequestNavigate"><Run Text="{Binding OdkazText, Mode=OneWay}" /></Hyperlink>
+                                                </TextBlock>
+                                                <TextBlock FontSize="11" Margin="0,2,0,0" Visibility="{Binding MaOdkaz, Converter={StaticResource BoolNaViditelnost}}"
+                                                           ToolTip="Vybrať iný plagát z TMDB (slovenský, český, anglický, bez textu)">
+                                                    <Hyperlink Click="InyPlagatKandidata_Click"><Run Text="{Binding PlagatText, Mode=OneWay}" /></Hyperlink>
                                                 </TextBlock>
                                                 <Button Content="Toto je ono" Margin="0,6,0,0" Padding="8,3" Click="VybratKandidata_Click" />
                                             </StackPanel>

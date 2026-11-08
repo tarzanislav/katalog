@@ -292,6 +292,7 @@ internal static class Samotest
             ["/samotest-serial.jpg"] = Plagat("Vymyslený seriál", Color.FromRgb(0x8A, 0x3B, 0x12)),
             ["/samotest-diel2.jpg"] = Plagat("Vymyslený Šťastný film 2", Color.FromRgb(0x1E, 0x6B, 0x3A)),
             ["/samotest-strazca.jpg"] = Plagat("Vymyslený strážca", Color.FromRgb(0x5B, 0x2C, 0x83)),
+            ["/vybrany-plagat.jpg"] = Plagat("Vybraný plagát", Color.FromRgb(0x7A, 0x6A, 0x12)),
         };
         spravca.ZdrojePreSamotest = [new ZdrojSamotestu()];
         spravca.ObrazkyPreSamotest = (adresa, _) => Task.FromResult<Ulohy.ObrazokZdroja?>(plagaty.TryGetValue(adresa.AbsolutePath.Replace("/t/p/w342", "", StringComparison.Ordinal), out var jpeg)
@@ -348,9 +349,16 @@ internal static class Samotest
                 "návrhy TMDB majú odkaz na themoviedb.org");
             await SnimkaAsync(okno, "na-potvrdenie-svetle.png");
             var kandidat = okno.DetailZobrazeny!.Kandidati.First(k => k.Identifikator == "movie/9103");
-            await okno.PotvrdKandidataAsync(strazca.Id, kandidat);
+            await okno.PotvrdKandidataAsync(strazca.Id, kandidat, new Uri(Katalog.Zdroje.TmdbZdroj.Obrazky.AbsoluteUri + "/vybrany-plagat.jpg"));
             await okno.ZobrazKnizniciuAsync();
             Over(okno.PolozkySteny.Count == 0, "po výbere nič nečaká na potvrdenie");
+            using (var c = kniznica.OtvorCitanie())
+            using (var prikaz = c.CreateCommand())
+            {
+                prikaz.CommandText = "SELECT count(*) FROM povod_pola p JOIN identifikator i ON i.titul_id = p.objekt_id " +
+                                     "WHERE p.druh = 1 AND p.pole = 'plagat_id' AND p.zamknute = 1 AND i.hodnota = 'movie/9103'";
+                Over(Convert.ToInt64(prikaz.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture) == 1, "plagát vybraný pri potvrdení je zamknutý");
+            }
         }
         else
         {

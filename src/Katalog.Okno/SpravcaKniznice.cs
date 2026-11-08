@@ -208,8 +208,19 @@ internal sealed class SpravcaKniznice(Kniznica kniznica, Nastavenia nastavenia, 
     }
 
     /// <summary>The user confirms a candidate for a title; returns the title's id (another one when it merged).</summary>
-    public Task<long> PotvrdAsync(long titulId, Kandidat kandidat) =>
-        Task.Run(() => Doplnenie().PotvrdKandidataAsync(titulId, kandidat, CancellationToken.None));
+    /// A poster the user picked (<paramref name="plagat"/>) replaces the source's own and is locked.
+    public Task<long> PotvrdAsync(long titulId, Kandidat kandidat, Uri? plagat = null) =>
+        Task.Run(() => Doplnenie().PotvrdKandidataAsync(titulId, kandidat, CancellationToken.None, plagat));
+
+    /// <summary>The posters TMDB has for a title (its TMDB identifier), to pick one; empty when TMDB is off.</summary>
+    public async Task<IReadOnlyList<PlagatTitulu>> PlagatyAsync(string tmdbIdentifikator) =>
+        Zdroje().OfType<TmdbZdroj>().FirstOrDefault() is { } tmdb
+            ? await Task.Run(() => tmdb.PlagatyAsync(tmdbIdentifikator, CancellationToken.None)).ConfigureAwait(true)
+            : [];
+
+    /// <summary>The user picked another poster for a confirmed title: downloaded, set and locked.</summary>
+    public Task<bool> VyberPlagatAsync(long titulId, Uri plagat) =>
+        Task.Run(() => Doplnenie().VyberPlagatAsync(titulId, plagat, CancellationToken.None));
 
     /// <summary>The user searches the sources for a title by another name or year: the new candidates are kept with it.</summary>
     public async Task<IReadOnlyList<Kandidat>> HladajAsync(long titulId, DruhTitulu druh, string nazov, int? rok)

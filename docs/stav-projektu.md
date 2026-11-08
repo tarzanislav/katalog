@@ -249,6 +249,8 @@ overené): **0.1.0**, **0.2.0**, **0.4.0**, **0.5.0**, **0.6.0**, **0.7.0** a **
 Po E9 (8. 11. 2026, podľa prvej skúšky vlastníka): titul na potvrdenie sa dá **identifikovať priamo v detaile** –
 pole nad návrhmi berie názov a rok („Carrie 1976“), réžiu (`rezia:Brian De Palma`, s názvom aj bez – tvorba režiséra
 z TMDB) alebo **TMDB ID** (`tmdb:1271`, `tmdb:tv/1973` či odkaz zo stránky themoviedb.org; ID titul hneď potvrdí).
-Pod každým návrhom z TMDB je **odkaz na jeho stránku** na overenie v prehliadači.
+Pod každým návrhom z TMDB je **odkaz na jeho stránku** na overenie v prehliadači. Texty návrhov a riadkov detailu sa dajú
+označiť a skopírovať. **Iný plagát** sa dá vybrať už pri potvrdzovaní návrhu (plagáty titulu z TMDB – slovenské, české,
+anglické, bez textu) aj neskôr tlačidlom „Plagát…“ v detaile; vybraný plagát je zamknutý, zdroje ho neprepíšu.
 
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.

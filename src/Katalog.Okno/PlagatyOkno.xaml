@@ -1,0 +1,42 @@
+<Window x:Class="Katalog.Okno.PlagatyOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Vybrať plagát"
+        Icon="Zdroje/katalog.ico"
+        Width="760" Height="620" MinWidth="420" MinHeight="320"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock x:Name="Co" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Margin="0,2,0,10" Style="{StaticResource TichyText}" FontSize="12" TextWrapping="Wrap"
+                       Text="Plagáty z TMDB – slovenské, české, anglické a bez textu. Klikni na ten, ktorý chceš. Vybraný plagát zdroje už neprepíšu." />
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="Zoznam">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Width="140" Margin="0,0,8,8" Padding="4" Click="Plagat_Click" ToolTip="{Binding Popis}">
+                            <StackPanel>
+                                <Border Height="200" CornerRadius="4" Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                    <Image Source="{Binding Adresa}" Stretch="Uniform" />
+                                </Border>
+                                <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <Button Grid.Row="2" Content="Zrušiť" IsCancel="True" Padding="20,6" MinWidth="80" Margin="0,12,0,0" HorizontalAlignment="Right" />
+    </Grid>
+</Window>

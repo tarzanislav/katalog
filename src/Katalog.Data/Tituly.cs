@@ -765,6 +765,19 @@ public static class Tituly
     }
 
     /// <summary>
+    /// The user picked the poster of a title: it is set and locked, no source changes it any more (until unlocked).
+    /// </summary>
+    public static void VyberPlagat(SqliteConnection spojenie, long titulId, long plagatId, long teraz)
+    {
+        using var prikaz = Kniznica.Prikaz(spojenie, "UPDATE titul SET plagat_id = $p, zmeneny = $teraz WHERE id = $t");
+        prikaz.Parameters.AddWithValue("$p", plagatId);
+        prikaz.Parameters.AddWithValue("$teraz", teraz);
+        prikaz.Parameters.AddWithValue("$t", titulId);
+        prikaz.ExecuteNonQuery();
+        ZapisPovod(spojenie, DruhObjektu.Titul, titulId, "plagat_id", ZdrojUdajov.Pouzivatel, teraz, zamknute: true);
+    }
+
+    /// <summary>
     /// The title a source names (a part of a collection, an entry of a HISTRA list): found by the identifier, else by
     /// the key of its name and year, else created without a version.
     /// </summary>

@@ -129,6 +129,23 @@ public sealed class TitulyTesty
             Over.Pravda(Riadky(c, $"SELECT kluc FROM titul_kluc WHERE titul_id = {strazca}").Contains("1:the invented guardian:2008"), "kľúč originálu");
         }
 
+        // the poster the user picked stays, a source's poster does not overwrite it
+        var obrazky = UlozisteObrazkov.PreKniznicu(kniznica.Cesta);
+        var vybrany = obrazky.Uloz([0xFF, 0xD8, 0xFF, 0x01, 0xD9], DruhObrazka.Plagat, 342, 513);
+        var zoZdroja = obrazky.Uloz([0xFF, 0xD8, 0xFF, 0x02, 0xD9], DruhObrazka.Plagat, 342, 513);
+        var vybranyId = await kniznica.Zapis.ZapisAsync(s =>
+        {
+            var id = UlozisteObrazkov.Zaregistruj(s, vybrany, 31);
+            Tituly.VyberPlagat(s, strazca, id, 31);
+            return id;
+        });
+        await kniznica.Zapis.ZapisAsync(s => Tituly.ZapisUdaje(s, strazca, tmdb, UlozisteObrazkov.Zaregistruj(s, zoZdroja, 32), poradie, 32));
+        using (var c = kniznica.OtvorCitanie())
+        {
+            Over.Rovne(vybranyId.ToString(System.Globalization.CultureInfo.InvariantCulture), Skalar(c, $"SELECT plagat_id FROM titul WHERE id = {strazca}"),
+                "vybraný plagát ostal");
+        }
+
         // a later file named by the original finds the title
         var navrh = new NavrhTitulu(DruhTitulu.Film, "The Invented Guardian", 2008, null, null, [], null, [], TriedaKvality.HD, null, IstotaNavrhu.Pravdepodobny);
         long novySubor;

@@ -105,13 +105,21 @@ public sealed class DoplnenieUdajov(
     /// The user picked a candidate for a title: its data are loaded (from TMDB when the candidate is a TMDB title and TMDB
     /// is on) and the title is confirmed. Returns the title's id (another one when it was merged into a known title).
     /// </summary>
-    public async Task<long> PotvrdKandidataAsync(long titulId, Kandidat kandidat, CancellationToken zrusenie)
+    /// <paramref name="vybranyPlagat"/> is a poster the user picked instead of the source's own; it is then locked.
+    public async Task<long> PotvrdKandidataAsync(long titulId, Kandidat kandidat, CancellationToken zrusenie, Uri? vybranyPlagat = null)
     {
         var udaje = await UdajeKandidataAsync(kandidat, zrusenie).ConfigureAwait(false);
-        var plagat = await PlagatAsync(udaje.Plagat ?? kandidat.Plagat, zrusenie).ConfigureAwait(false);
+        var plagat = await PlagatAsync(vybranyPlagat ?? udaje.Plagat ?? kandidat.Plagat, zrusenie).ConfigureAwait(false);
         var id = await kniznica.Zapis.ZapisAsync(s =>
         {
-            var konecny = Tituly.ZapisUdaje(s, titulId, udaje, Registruj(s, plagat), poradie, Cas.Teraz());
+            var teraz = Cas.Teraz();
+            var plagatId = Registruj(s, plagat);
+            var konecny = Tituly.ZapisUdaje(s, titulId, udaje, plagatId, poradie, teraz);
+            if (vybranyPlagat is not null && plagatId is { } vybrany)
+            {
+                Tituly.VyberPlagat(s, konecny, vybrany, teraz);
+            }
+
             Tituly.Potvrd(s, konecny);
             return konecny;
         }).ConfigureAwait(false);
@@ -250,6 +258,19 @@ public sealed class DoplnenieUdajov(
                 }
             }).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>The user picked another poster for a title (from the source's images): downloaded, set and locked.</summary>
+    public async Task<bool> VyberPlagatAsync(long titulId, Uri adresa, CancellationToken zrusenie)
+    {
+        var plagat = await PlagatAsync(adresa, zrusenie).ConfigureAwait(false);
+        if (plagat is null)
+        {
+            return false;
+        }
+
+        await kniznica.Zapis.ZapisAsync(s => Tituly.VyberPlagat(s, titulId, Registruj(s, plagat)!.Value, Cas.Teraz())).ConfigureAwait(false);
+        return true;
     }
 
     private async Task<UlozenyObrazok?> PlagatAsync(Uri? adresa, CancellationToken zrusenie)

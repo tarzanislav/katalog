@@ -652,6 +652,7 @@ public partial class HlavneOkno
 
         // choosing: waiting for confirmation, or no source knows the title yet but there are candidates
         var tmdb = d.Identifikatory.Any(i => i.Zdroj == ZdrojUdajov.Tmdb);
+        DetailZmenitPlagat.Visibility = tmdb && _kniznicaTitulov?.Zdroje().OfType<Katalog.Zdroje.TmdbZdroj>().Any() == true ? Visibility.Visible : Visibility.Collapsed;
         var vyberat = t.NaPotvrdenie || (!tmdb && d.Kandidati.Count > 0);
         DetailVyber.Visibility = vyberat ? Visibility.Visible : Visibility.Collapsed;
         DetailPotvrdit.Visibility = t.NaPotvrdenie ? Visibility.Visible : Visibility.Collapsed;
@@ -951,12 +952,73 @@ public partial class HlavneOkno
     {
         if (sender is FrameworkElement { DataContext: KartaKandidata karta } && _vybranyTitul is { } id)
         {
-            await PotvrdKandidataAsync(id, karta.Kandidat);
+            await PotvrdKandidataAsync(id, karta.Kandidat, karta.VybranyPlagat);
         }
     }
 
-    /// <summary>The user picks a candidate (the self-test calls it).</summary>
-    internal async Task PotvrdKandidataAsync(long titulId, Kandidat kandidat)
+    /// <summary>Another poster for a candidate before it is confirmed: picked from TMDB's posters of that title.</summary>
+    private async void InyPlagatKandidata_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkContentElement { DataContext: KartaKandidata karta } &&
+            await VyberPlagatAsync(karta.Kandidat.Identifikator, karta.Kandidat.Nazov) is { } plagat)
+        {
+            karta.VybranyPlagat = plagat;
+        }
+    }
+
+    /// <summary>Another poster for a confirmed title (one TMDB knows).</summary>
+    private async void ZmenitPlagat_Click(object sender, RoutedEventArgs e)
+    {
+        if (_detail is not { } d || _kniznicaTitulov is not { } spravca ||
+            d.Identifikatory.FirstOrDefault(i => i.Zdroj == ZdrojUdajov.Tmdb).Hodnota is not { } tmdb)
+        {
+            return;
+        }
+
+        var titulId = d.Polozka.Id;
+        if (await VyberPlagatAsync(tmdb, d.Polozka.Nazov) is not { } plagat)
+        {
+            return;
+        }
+
+        StavUloh.Text = "Sťahujem plagát…";
+        StavUloh.Text = await spravca.VyberPlagatAsync(titulId, plagat) ? "Plagát je zmenený." : "Plagát sa nepodarilo stiahnuť.";
+        await ZobrazKnizniciuAsync(zachovatVyber: true);
+    }
+
+    /// <summary>TMDB's posters of a title in a window; the picked one's address, or null.</summary>
+    private async Task<Uri?> VyberPlagatAsync(string tmdbIdentifikator, string nazov)
+    {
+        if (_kniznicaTitulov is not { } spravca)
+        {
+            return null;
+        }
+
+        StavUloh.Text = $"Načítavam plagáty „{nazov}“…";
+        IReadOnlyList<Katalog.Zdroje.PlagatTitulu> plagaty;
+        try
+        {
+            plagaty = await spravca.PlagatyAsync(tmdbIdentifikator);
+        }
+        catch (ChybaZdroja ex)
+        {
+            StavUloh.Text = "";
+            MessageBox.Show(this, ex.Message, Produkt.Nazov, MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+
+        if (plagaty.Count == 0)
+        {
+            StavUloh.Text = "TMDB pre tento titul nemá ďalšie plagáty (alebo je TMDB vypnutá).";
+            return null;
+        }
+
+        StavUloh.Text = "";
+        return PlagatyOkno.Vyber(this, $"{nazov} – plagáty: {plagaty.Count}", plagaty);
+    }
+
+    /// <summary>The user picks a candidate (the self-test calls it); <paramref name="plagat"/> is a poster picked instead of its own.</summary>
+    internal async Task PotvrdKandidataAsync(long titulId, Kandidat kandidat, Uri? plagat = null)
     {
         if (_kniznicaTitulov is not { } spravca)
         {
@@ -966,7 +1028,7 @@ public partial class HlavneOkno
         try
         {
             StavUloh.Text = $"Načítavam „{kandidat.Nazov}“…";
-            _vybranyTitul = await spravca.PotvrdAsync(titulId, kandidat);
+            _vybranyTitul = await spravca.PotvrdAsync(titulId, kandidat, plagat);
             StavUloh.Text = $"Potvrdené: {kandidat.Nazov}.";
         }
         catch (ChybaZdroja ex)

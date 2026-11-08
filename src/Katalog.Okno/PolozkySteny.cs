@@ -178,8 +178,29 @@ internal sealed class PolozkaSteny : INotifyPropertyChanged
 internal sealed record RiadokSteny(IReadOnlyList<PolozkaSteny> Polozky);
 
 /// <summary>A candidate of a source as the detail of a title offers it.</summary>
-internal sealed record KartaKandidata(Jadro.Rozhrania.Kandidat Kandidat)
+internal sealed class KartaKandidata(Jadro.Rozhrania.Kandidat kandidat) : System.ComponentModel.INotifyPropertyChanged
 {
+    private Uri? _vybranyPlagat;
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    public Jadro.Rozhrania.Kandidat Kandidat { get; } = kandidat;
+
+    /// <summary>A poster the user picked instead of the candidate's own (used when the candidate is confirmed).</summary>
+    public Uri? VybranyPlagat
+    {
+        get => _vybranyPlagat;
+        set
+        {
+            _vybranyPlagat = value;
+            PropertyChanged?.Invoke(this, new(nameof(VybranyPlagat)));
+            PropertyChanged?.Invoke(this, new(nameof(Plagat)));
+            PropertyChanged?.Invoke(this, new(nameof(PlagatText)));
+        }
+    }
+
+    public string PlagatText => VybranyPlagat is null ? "Iný plagát…" : "Vybraný plagát ✓ (zmeniť…)";
+
     public string Nazov => Kandidat.Nazov;
 
     public string Podnadpis => string.Join(" · ", new[]
@@ -190,7 +211,7 @@ internal sealed record KartaKandidata(Jadro.Rozhrania.Kandidat Kandidat)
     }.Where(t => t is not null));
 
     /// <summary>The candidate's poster from the source's image server (shown only while choosing).</summary>
-    public Uri? Plagat => Kandidat.Plagat;
+    public Uri? Plagat => VybranyPlagat ?? Kandidat.Plagat;
 
     /// <summary>The candidate's page on TMDB, to check it in the browser before choosing.</summary>
     public Uri? Odkaz => Kandidat.Zdroj == Jadro.Model.ZdrojUdajov.Tmdb ? new Uri("https://www.themoviedb.org/" + Kandidat.Identifikator) : null;

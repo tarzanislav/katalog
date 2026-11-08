@@ -243,4 +243,24 @@ public sealed class ZdrojeTesty
         Over.Pravda(k[0] is { Nazov: "Vymyslený film", Original: "Invented Film", Rok: 1976, Druh: DruhTitulu.Film } && k[0].Plagat is not null, "film");
         Over.Pravda(k[1] is { Druh: DruhTitulu.Serial, Rok: 2001 }, "seriál");
     }
+
+    [Test]
+    public void TmdbPlagatyTitulu()
+    {
+        using var obrazky = JsonDocument.Parse("""
+            { "id": 9001, "posters": [
+                { "iso_639_1": "en", "file_path": "/en1.jpg", "vote_average": 5.2, "width": 2000, "height": 3000 },
+                { "iso_639_1": null, "file_path": "/bez.jpg", "vote_average": 9.0 },
+                { "iso_639_1": "cs", "file_path": "/cs1.jpg", "vote_average": 3.0 },
+                { "iso_639_1": "en", "file_path": "/en2.jpg", "vote_average": 7.5 },
+                { "iso_639_1": "sk", "file_path": "/sk1.jpg", "vote_average": 1.0 },
+                { "iso_639_1": "en", "file_path": "zly" },
+                { "iso_639_1": "en", "file_path": "/en2.jpg", "vote_average": 7.5 } ] }
+            """);
+        var p = TmdbZdroj.CitajPlagaty(obrazky);
+        Over.Postupnost(["/sk1.jpg", "/cs1.jpg", "/en2.jpg", "/en1.jpg", "/bez.jpg"], p.Select(x => x.Adresa.AbsolutePath[(x.Adresa.AbsolutePath.LastIndexOf('/'))..]),
+            "slovenský, český, anglické podľa hlasov, bez textu; zlá cesta a dvojica vynechané");
+        Over.Pravda(p[3] is { Sirka: 2000, Vyska: 3000, Jazyk: "en" } && p[3].Adresa.AbsoluteUri.StartsWith(TmdbZdroj.Obrazky.AbsoluteUri, StringComparison.Ordinal), "veľkosť a adresa w342");
+        Over.Rovne(0, TmdbZdroj.CitajPlagaty(null).Count, "bez odpovede nič");
+    }
 }

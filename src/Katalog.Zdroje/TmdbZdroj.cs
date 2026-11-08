@@ -129,6 +129,44 @@ public sealed partial class TmdbZdroj(HttpClient http, string? kluc) : IZdrojUda
             .ToList();
     }
 
+    /// <summary>
+    /// The posters TMDB has for a title ("movie/603", "tv/1399"), for the user to pick one: Slovak first, then Czech,
+    /// English and those without text, the best voted first in each language; at most <see cref="NajviacPlagatov"/>.
+    /// </summary>
+    public async Task<IReadOnlyList<PlagatTitulu>> PlagatyAsync(string identifikator, CancellationToken zrusenie)
+    {
+        if (!JeZapnuty || Rozloz(identifikator) is null)
+        {
+            return [];
+        }
+
+        using var dokument = await ZiskajAsync(identifikator + "/images?include_image_language=sk,cs,en,null", zrusenie).ConfigureAwait(false);
+        return CitajPlagaty(dokument);
+    }
+
+    /// <summary>At most this many posters are offered.</summary>
+    public const int NajviacPlagatov = 40;
+
+    internal static List<PlagatTitulu> CitajPlagaty(JsonDocument? dokument)
+    {
+        if (dokument is null)
+        {
+            return [];
+        }
+
+        string[] poradie = ["sk", "cs", "en"];
+        return Web.Pole(dokument.RootElement, "posters")
+            .Select(p => (Jazyk: Web.Text(p, "iso_639_1"), Hlasy: Web.Desatinne(p, "vote_average") ?? 0, Adresa: Plagat(Web.Text(p, "file_path")),
+                Sirka: Web.Cislo(p, "width"), Vyska: Web.Cislo(p, "height")))
+            .Where(p => p.Adresa is not null)
+            .OrderBy(p => p.Jazyk is { } j && Array.IndexOf(poradie, j) is var i and >= 0 ? i : p.Jazyk is null ? poradie.Length : poradie.Length + 1)
+            .ThenByDescending(p => p.Hlasy)
+            .DistinctBy(p => p.Adresa!.AbsoluteUri)
+            .Take(NajviacPlagatov)
+            .Select(p => new PlagatTitulu(p.Adresa!, p.Jazyk, p.Sirka, p.Vyska))
+            .ToList();
+    }
+
     /// <summary>A title by its TMDB identifier ("movie/603", "tv/1399") as a candidate; null when TMDB does not know it.</summary>
     public async Task<Kandidat?> KandidatPodlaIdAsync(string identifikator, CancellationToken zrusenie)
     {
@@ -431,3 +469,6 @@ public sealed partial class TmdbZdroj(HttpClient http, string? kluc) : IZdrojUda
     [GeneratedRegex(@"^tt\d{5,10}$")]
     private static partial Regex ImdbId();
 }
+
+/// <summary>A poster a source offers for a title: its address (w342), language (null = without text) and full size.</summary>
+public sealed record PlagatTitulu(Uri Adresa, string? Jazyk, int? Sirka, int? Vyska);
