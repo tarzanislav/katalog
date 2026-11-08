@@ -103,9 +103,7 @@ public sealed class PodrobnostiSuboru : RichTextBox
             FontSize = 12.5,
             TextAlignment = TextAlignment.Left,
         };
-        var tlmeny = new SolidColorBrush(Color.FromArgb(0xA8, 0x80, 0x80, 0x80));
         var pruh = new SolidColorBrush(Color.FromArgb(0x10, 0x80, 0x80, 0x80));
-        tlmeny.Freeze();
         pruh.Freeze();
         var prva = true;
         foreach (var sekcia in Sekcie ?? [])
@@ -129,7 +127,9 @@ public sealed class PodrobnostiSuboru : RichTextBox
             foreach (var p in sekcia.Polozky)
             {
                 var riadok = new TableRow { Background = i++ % 2 == 1 ? pruh : Brushes.Transparent };
-                riadok.Cells.Add(new TableCell(new Paragraph(new Run(p.Popis)) { Margin = new Thickness(4, 1, 8, 1), Foreground = tlmeny }));
+                var popis = new Paragraph(new Run(p.Popis)) { Margin = new Thickness(4, 1, 8, 1) };
+                popis.SetResourceReference(TextElement.ForegroundProperty, "TextFillColorSecondaryBrush");
+                riadok.Cells.Add(new TableCell(popis));
                 riadok.Cells.Add(new TableCell(new Paragraph(new Run(p.Hodnota))
                 {
                     Margin = new Thickness(0, 1, 4, 1),
