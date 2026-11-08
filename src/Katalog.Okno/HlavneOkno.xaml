@@ -500,7 +500,11 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel>
-                                            <ProgressBar Height="6" Width="150" Maximum="1" Value="{Binding Obsadene}" />
+                                            <Grid Width="150" Height="6" HorizontalAlignment="Left">
+                                                <Border CornerRadius="3" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                                                <Border CornerRadius="3" HorizontalAlignment="Left" Width="{Binding SirkaObsadene}"
+                                                        Background="{DynamicResource AccentFillColorDefaultBrush}" />
+                                            </Grid>
                                             <TextBlock Text="{Binding MiestoText}" FontSize="11" Opacity="0.75" />
                                         </StackPanel>
                                     </DataTemplate>
