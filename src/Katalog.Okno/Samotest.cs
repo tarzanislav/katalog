@@ -439,6 +439,7 @@ internal static class Samotest
             "prehľad: tituly, len tu, zdravie");
         okno.PotrebneMiesto.Text = "1 MB";
         await okno.ZobrazPrehladAsync(new HashSet<long> { _diskId });
+        Zapis("prehľad diskov zobrazený");
         await SnimkaAsync(okno, "prehlad-diskov-svetle.png");
         okno.SpustacZdravia = null;
 
@@ -553,7 +554,9 @@ internal static class Samotest
     private static async Task SnimkaAsync(Window okno, string nazov)
     {
         await Dispatcher.CurrentDispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+        Zapis("vykreslené pre " + nazov);
         await Task.Delay(400);
+        Zapis("kreslím " + nazov);
         if (okno.Content is not FrameworkElement obsah || obsah.ActualWidth < 1)
         {
             Chyba($"snímka {nazov}: nič sa nevykreslilo");
