@@ -762,8 +762,9 @@ ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
                                                 <Border Height="180" CornerRadius="4" Background="{DynamicResource ControlFillColorSecondaryBrush}">
                                                     <Image Source="{Binding Plagat}" Stretch="UniformToFill" />
                                                 </Border>
-                                                <TextBlock Text="{Binding Nazov}" FontWeight="SemiBold" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="40" />
-                                                <TextBlock Text="{Binding Podnadpis}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+                                                <!-- read-only boxes: the name and year can be selected and copied -->
+                                                <TextBox Text="{Binding Nazov, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" FontWeight="SemiBold" Margin="0,4,0,0" MaxHeight="44" />
+                                                <TextBox Text="{Binding Podnadpis, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" FontSize="11" Opacity="0.7" />
                                                 <TextBlock FontSize="11" Margin="0,2,0,0" Visibility="{Binding MaOdkaz, Converter={StaticResource BoolNaViditelnost}}"
                                                            ToolTip="{Binding Odkaz}">
                                                     <Hyperlink NavigateUri="{Binding Odkaz}" RequestNavigate="OdkazKandidata_RequestNavigate"><Run Text="{Binding OdkazText, Mode=OneWay}" /></Hyperlink>
@@ -785,7 +786,7 @@ ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
                             <DataTemplate>
                                 <StackPanel Margin="0,0,0,8">
                                     <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7" />
-                                    <TextBlock Text="{Binding Hodnota}" TextWrapping="Wrap" />
+                                    <TextBox Text="{Binding Hodnota, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

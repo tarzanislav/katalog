@@ -20,6 +20,24 @@
                 <Setter Property="Padding" Value="12,6" />
             </Style>
 
+            <!-- text that looks like a label but can be selected and copied -->
+            <Style x:Key="TextNaKopirovanie" TargetType="TextBox">
+                <Setter Property="IsReadOnly" Value="True" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style x:Key="TichyText" TargetType="TextBlock">
                 <Setter Property="Opacity" Value="0.7" />
                 <Setter Property="TextWrapping" Value="Wrap" />
