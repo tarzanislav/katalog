@@ -84,6 +84,43 @@ public static class PorovnanieVerzii
         return 0;
     }
 
+    /// <summary>Two versions whose sizes differ by at most this share count as the same size.</summary>
+    public const double ToleranciaVelkosti = 0.10;
+
+    /// <summary>
+    /// Two versions are the same (a duplicate, owner 8. 11. 2026) only when nothing tells them apart: the same quality class,
+    /// picture height and codec (when known), HDR, the same languages of sound and subtitles and a size differing by at most
+    /// <see cref="ToleranciaVelkosti"/>. FHD and 4K, a 16 GB and a 4 GB file or other languages are different versions.
+    /// Whether they lie on the same disk (otherwise one is a backup) is decided by the caller.
+    /// </summary>
+    public static bool SuRovnake(VlastnostiVerzie a, VlastnostiVerzie b)
+    {
+        if (!a.Pritomna || !b.Pritomna || a.Trieda != b.Trieda || a.Hdr != b.Hdr)
+        {
+            return false;
+        }
+
+        if (a.Vyska is { } va && b.Vyska is { } vb && va != vb)
+        {
+            return false;
+        }
+
+        if (a.Kodek is { } ka && b.Kodek is { } kb && !string.Equals(ka, kb, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!a.JazykyZvuku.ToHashSet(StringComparer.Ordinal).SetEquals(b.JazykyZvuku) ||
+            !a.JazykyTitulkov.ToHashSet(StringComparer.Ordinal).SetEquals(b.JazykyTitulkov))
+        {
+            return false;
+        }
+
+        var mensia = Math.Min(a.Velkost, b.Velkost);
+        var vacsia = Math.Max(a.Velkost, b.Velkost);
+        return mensia > 0 && vacsia <= mensia * (1 + ToleranciaVelkosti);
+    }
+
     /// <summary>The best present version when there are at least two present ones; null otherwise or when the best ones are equal.</summary>
     public static long? Najlepsia(IEnumerable<VlastnostiVerzie> verzie, IReadOnlyList<KriteriumVerzie> poradie)
     {

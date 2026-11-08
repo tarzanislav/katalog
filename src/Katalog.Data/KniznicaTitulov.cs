@@ -87,6 +87,9 @@ public sealed record DetailTitulu(
     /// <summary>The best present version of the film, or of each episode, when there are more (duplicates, E5).</summary>
     public IReadOnlySet<long> NajlepsieVerzie { get; init; } = new HashSet<long>();
 
+    /// <summary>The versions that are a duplicate of another version of the same film or episode (same file or nothing differs).</summary>
+    public IReadOnlySet<long> DuplicitneVerzie { get; init; } = new HashSet<long>();
+
     /// <summary>What is known about each version for comparing them.</summary>
     public IReadOnlyList<VlastnostiVerzie> Vlastnosti { get; init; } = [];
 }
@@ -162,7 +165,7 @@ public static class KniznicaTitulov
                 hovoriOMam = true;
                 break;
             case PohladKniznice.Duplicity:
-                podmienky.Add(PodmienkyKniznice.PreTitul(new PocetVerzii(2, null, false), "t", Parameter));
+                podmienky.Add($"t.id IN (SELECT value FROM json_each({Parameter("[" + string.Join(",", TitulySDuplicitou(spojenie)) + "]")}))");
                 break;
             case PohladKniznice.Nezalohovane:
                 podmienky.Add(PodmienkyKniznice.PreTitul(new Zalohovane(false), "t", Parameter));
@@ -386,7 +389,90 @@ public static class KniznicaTitulov
         {
             NajlepsieVerzie = najlepsie,
             Vlastnosti = vlastnosti,
+            DuplicitneVerzie = verzie.Count > 1 ? DuplicitneVerzie(spojenie, titulId, vlastnosti) : new HashSet<long>(),
         };
+    }
+
+    /// <summary>
+    /// The versions of a title that are a duplicate of another version of the same film or episode (owner, 8. 11. 2026):
+    /// an exact copy of a file (the same fingerprint) or a version that nothing tells apart (<see cref="PorovnanieVerzii.SuRovnake"/>),
+    /// on any disk. Versions differing in resolution, size, codec or languages are not duplicates.
+    /// </summary>
+    public static IReadOnlySet<long> DuplicitneVerzie(SqliteConnection spojenie, long titulId, IReadOnlyList<VlastnostiVerzie>? vlastnosti = null)
+    {
+        vlastnosti ??= VlastnostiVerzii(spojenie, titulId);
+        var verzie = new Dictionary<long, (long Epizoda, HashSet<string> Odtlacky)>();
+        using (var prikaz = Kniznica.Prikaz(spojenie, $"""
+                   WITH vt AS ({PodmienkyKniznice.VerzieTitulu("$t")})
+                   SELECT v.id, coalesce(v.epizoda_id, 0), lower(hex(s.odtlacok))
+                   FROM vt JOIN verzia v ON v.id = vt.id JOIN verzia_subor vs ON vs.verzia_id = v.id JOIN subor s ON s.id = vs.subor_id AND s.stav = 0
+                   """))
+        {
+            prikaz.Parameters.AddWithValue("$t", titulId);
+            using var c = prikaz.ExecuteReader();
+            while (c.Read())
+            {
+                var id = c.GetInt64(0);
+                if (!verzie.TryGetValue(id, out var v))
+                {
+                    v = (c.GetInt64(1), new HashSet<string>(StringComparer.Ordinal));
+                    verzie[id] = v;
+                }
+
+                if (!c.IsDBNull(2) && c.GetString(2) is { Length: > 0 } odtlacok)
+                {
+                    v.Odtlacky.Add(odtlacok);
+                }
+            }
+        }
+
+        var podlaId = vlastnosti.ToDictionary(v => v.VerziaId);
+        var duplicitne = new HashSet<long>();
+        foreach (var skupina in verzie.GroupBy(v => v.Value.Epizoda).Where(g => g.Count() > 1))
+        {
+            var zoznam = skupina.ToList();
+            for (var i = 0; i < zoznam.Count; i++)
+            {
+                for (var j = i + 1; j < zoznam.Count; j++)
+                {
+                    var (a, b) = (zoznam[i], zoznam[j]);
+                    var kopia = a.Value.Odtlacky.Overlaps(b.Value.Odtlacky);
+                    var rovnake = podlaId.TryGetValue(a.Key, out var va) && podlaId.TryGetValue(b.Key, out var vb) && PorovnanieVerzii.SuRovnake(va, vb);
+                    if (kopia || rovnake)
+                    {
+                        duplicitne.Add(a.Key);
+                        duplicitne.Add(b.Key);
+                    }
+                }
+            }
+        }
+
+        return duplicitne;
+    }
+
+    /// <summary>The titles with a duplicate version (the view Duplicity): only titles with two versions are examined.</summary>
+    public static HashSet<long> TitulySDuplicitou(SqliteConnection spojenie)
+    {
+        var kandidati = new List<long>();
+        using (var prikaz = spojenie.CreateCommand())
+        {
+            var cislo = 0;
+            string Parameter(object hodnota)
+            {
+                var meno = "$d" + (++cislo).ToString(CultureInfo.InvariantCulture);
+                prikaz.Parameters.AddWithValue(meno, hodnota);
+                return meno;
+            }
+
+            prikaz.CommandText = $"SELECT t.id FROM titul t WHERE {PodmienkyKniznice.PreTitul(new PocetVerzii(2, null, false), "t", Parameter)}";
+            using var c = prikaz.ExecuteReader();
+            while (c.Read())
+            {
+                kandidati.Add(c.GetInt64(0));
+            }
+        }
+
+        return kandidati.Where(id => DuplicitneVerzie(spojenie, id).Count > 0).ToHashSet();
     }
 
     /// <summary>
@@ -566,13 +652,17 @@ public static class KniznicaTitulov
         }
 
         prikaz.CommandText = $"""
-            SELECT count(*) FILTER (WHERE {PodmienkyKniznice.PreTitul(new PocetVerzii(2, null, false), "t", Parameter)}),
-                   count(*) FILTER (WHERE {PodmienkyKniznice.PreTitul(new Zalohovane(false), "t", Parameter)})
+            SELECT count(*) FILTER (WHERE {PodmienkyKniznice.PreTitul(new Zalohovane(false), "t", Parameter)})
             FROM titul t
             """;
-        using var c = prikaz.ExecuteReader();
-        c.Read();
-        return (c.GetInt32(0), c.GetInt32(1));
+        int nezalohovane;
+        using (var c = prikaz.ExecuteReader())
+        {
+            c.Read();
+            nezalohovane = c.GetInt32(0);
+        }
+
+        return (TitulySDuplicitou(spojenie).Count, nezalohovane);
     }
 
     /// <summary>How many titles each view has (for the counts next to the views).</summary>

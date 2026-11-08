@@ -142,13 +142,26 @@ public partial class HlavneOkno
             }
 
             var epizoda = v.Seria is { } s && v.Cislo is { } c ? $"S{s:00}E{c:00} · " : "";
-            var nadpis = epizoda + (!v.Potvrdena ? "Verzia čaká na potvrdenie" : d.NajlepsieVerzie.Contains(v.Id) ? "Najlepšia verzia" : "Verzia");
+            var duplicita = d.DuplicitneVerzie.Contains(v.Id);
+            var nadpis = epizoda + (!v.Potvrdena ? "Verzia čaká na potvrdenie" : duplicita ? "Duplicita" : d.NajlepsieVerzie.Contains(v.Id) ? "Najlepšia verzia" : "Verzia");
             var kde = $"{prvy.DiskCislo} {prvy.DiskNazov}" + (pripojene.Contains(prvy.DiskId) ? " (pripojený)" : "") +
                       $" · {Format.Velkost(v.Subory.Sum(x => x.Velkost))}" +
                       (v.Subory.Count > 1 ? $" · {Format.Mnozne(v.Subory.Count, "súbor", "súbory", "súborov")}" : "") +
                       (v.Poznamka is { } poz ? $" · {poz}" : "") +
                       (!v.Pritomna ? " · zmazaná z disku" : "") + "\n" + prvy.Nazov;
             var riadky = new List<RiadokDetailu>();
+            if (duplicita)
+            {
+                var ine = d.Verzie.Where(x => x.Id != v.Id && x.EpizodaId == v.EpizodaId && d.DuplicitneVerzie.Contains(x.Id))
+                    .Select(x => x.Subory.FirstOrDefault(f => !f.Zmazany) ?? x.Subory.FirstOrDefault())
+                    .OfType<SuborVerzie>()
+                    .ToList();
+                var inyDisk = ine.Any(x => x.DiskId != prvy.DiskId);
+                riadky.Add(new RiadokDetailu("Pozor", (inyDisk ? "Rovnaká verzia je aj na inom disku" : "Rovnaká verzia je na tom istom disku viackrát") +
+                    ": " + string.Join(", ", ine.Select(x => $"{x.DiskCislo} {x.DiskNazov}").Distinct()) +
+                    ". Líši sa najviac veľkosťou do 10 % – jedna z nich je zbytočná."));
+            }
+
             if (d.NajlepsieVerzie.Contains(v.Id) && DovodNajlepsej(d, v) is { } dovod)
             {
                 riadky.Add(new RiadokDetailu("Prečo", dovod));

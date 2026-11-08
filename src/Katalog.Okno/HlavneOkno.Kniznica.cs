@@ -336,7 +336,7 @@ public partial class HlavneOkno
             ObsahKniznice.Zelane => "Zoznam želaní je prázdny. Titul doň pridáš v jeho detaile tlačidlom Želané.",
             ObsahKniznice.Kolekcie => "Zatiaľ žiadne kolekcie. Doplnia sa z TMDB (série filmov) a z Jellyfin.",
             ObsahKniznice.ZoznamyHistra => "Zatiaľ žiadne zoznamy. Načítaj ich tlačidlom „Načítať zoznamy z HISTRA“ (potrebuje token HISTRA).",
-            ObsahKniznice.Duplicity => "Žiadny titul nemáš viackrát. Keď bude, ukáže sa tu aj s návrhom, ktorá verzia je lepšia.",
+            ObsahKniznice.Duplicity => "Žiadnu verziu nemáš dvakrát. Duplicita je rovnaký súbor alebo verzia, ktorú nič nerozlišuje (rozlíšenie, kodek, HDR, jazyky, veľkosť do 10 %) – na tom istom aj na inom disku. Rôzne verzie (FHD a 4K, 16 GB a 4 GB, iné jazyky) nájdeš filtrom verzie:>1.",
             ObsahKniznice.Nezalohovane => "Všetky tituly máš aspoň na dvoch diskoch. Výborne – strata jedného disku ťa nepripraví o žiadny film.",
             ObsahKniznice.Playlisty => "Zatiaľ žiadny playlist. Vytvor ho tlačidlom „Nový playlist…“ – ručný, inteligentný (podľa dotazu) alebo náhodný.",
             ObsahKniznice.Playlist => "Playlist je prázdny. Tituly doň pridáš v ich detaile tlačidlom „Do playlistu…“.",

@@ -261,4 +261,11 @@ a **údajmi súboru** (obraz – kodek, rozlíšenie, HDR, snímky/s; dĺžka a 
 6 verzií. Dole **kolekcia** so všetkými titulmi (malé plagáty, klik otvorí titul). Bloky sú farebne odlíšené
 (menu modrasté, detail teplý, kolekcia broskyňová s oranžovým okrajom) – priesvitné, sedia na svetlý aj tmavý motív.
 
+**Duplicity – nová metodika** (vlastník 8. 11. 2026): duplicita nie je „titul viackrát“, ale **verzia, ktorú nič
+nerozlišuje** – presná kópia súboru (rovnaký odtlačok) alebo rovnaká kvalita, výška obrazu a kodek (ak sú známe), HDR,
+rovnaké jazyky zvuku aj titulkov a veľkosť líšiaca sa najviac o 10 %; u seriálov v rámci tej istej epizódy. Platí
+**na tom istom aj na inom disku** – takú kópiu vlastník nechce, karta titulu ju označí „Duplicita“ a povie, kde leží
+druhá. FHD a 4K, 16 GB a 4 GB či iné jazyky sú **rôzne verzie** jedného titulu (jeden plagát, verzie pod ním v detaile),
+nájde ich filter `verzie:>1`. Výkon: 2 000 titulov s dvoma verziami 0,4 s.
+
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.

@@ -409,19 +409,36 @@ internal static class Samotest
             return;
         }
 
-        // a second, bigger copy of the film elsewhere on the disk: a duplicate
-        Subor(Path.Combine(_vystup, "VymyslenyDisk"), @"Zálohy\Vymyslený Šťastný film (2024).mkv", 1500);
+        // another version of the film elsewhere on the disk (another size): two versions, no duplicate (owner, 8. 11. 2026)
+        var vymyslenyDisk = Path.Combine(_vystup, "VymyslenyDisk");
+        Subor(vymyslenyDisk, @"Zálohy\Vymyslený Šťastný film (2024).mkv", 1500);
         await okno.SkenujAsync(_diskId);
         await okno.DoplnKnizniciuAsync();
 
         App.NastavMotiv("Light");
         okno.NavigaciaDuplicity.IsSelected = true;
         await okno.ZobrazKnizniciuAsync();
-        Over(okno.PolozkySteny.Count == 1 && okno.PolozkySteny[0].Nazov == "Vymyslený Šťastný film", "duplicity: film dvakrát");
+        Over(okno.PolozkySteny.Count == 0, "iná verzia filmu (iná veľkosť, bez údajov) nie je duplicita");
+
+        // an exact copy of the film: a duplicate
+        var original = Path.Combine(vymyslenyDisk, @"MOVIES\Vymyslený Šťastný film (2024)\Vymyslený Šťastný film (2024) - CZ EN FHD H264 SMALL.mkv");
+        if (File.Exists(original))
+        {
+            var kopia = Path.Combine(vymyslenyDisk, @"Kópie\Vymyslený Šťastný film (2024) - CZ EN FHD H264 SMALL.mkv");
+            Directory.CreateDirectory(Path.GetDirectoryName(kopia)!);
+            File.Copy(original, kopia, overwrite: true);
+            await okno.SkenujAsync(_diskId);
+            await okno.CitajAsync(_diskId, pouzivatel: true);
+            await okno.DoplnKnizniciuAsync();
+        }
+
+        await okno.ZobrazKnizniciuAsync();
+        Over(okno.PolozkySteny.Count == 1 && okno.PolozkySteny[0].Nazov == "Vymyslený Šťastný film", "duplicity: presná kópia filmu");
         if (okno.PolozkySteny.FirstOrDefault() is { } film)
         {
             await okno.VyberPolozkuAsync(film);
-            Over(okno.DetailZobrazeny is { Verzie.Count: 2, NajlepsieVerzie.Count: 1 }, "detail: dve verzie, jedna najlepšia");
+            Over(okno.DetailZobrazeny is { Verzie.Count: 3, DuplicitneVerzie.Count: 2 }, "detail: tri verzie, dve z nich duplicita");
+            Over(okno.DetailVerzie.Items.OfType<BlokVerzie>().Count(b => b.Nadpis == "Duplicita") == 2, "karta: duplicitné verzie označené");
             await SnimkaAsync(okno, "duplicity-svetle.png");
         }
 

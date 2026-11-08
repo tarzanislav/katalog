@@ -221,7 +221,7 @@ public sealed class VykonTesty
         rozpoznanie.Stop();
         Over.Rovne(12_000 + 2_000, vysledok.Verzie, "verzie filmov a epizód");
 
-        double stena, filter, pocty;
+        double stena, filter, pocty, duplicity;
         await using (var c = await kniznica.OtvorCitanieAsync())
         {
             var kontext = new KontextHladania([1L], DateTime.Now);
@@ -237,13 +237,17 @@ public sealed class VykonTesty
             cas.Restart();
             KniznicaTitulov.Pocty(c);
             pocty = cas.Elapsed.TotalMilliseconds;
+            cas.Restart();
+            KniznicaTitulov.PoctyZbierok(c);
+            duplicity = cas.Elapsed.TotalMilliseconds;
         }
 
         await kniznica.DisposeAsync();
         Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-            $"::notice title=Výkon knižnice (10 000 titulov)::rozpoznanie 14 000 videí {rozpoznanie.Elapsed.TotalSeconds:F1} s, stena filmov {stena:F0} ms, filter {filter:F0} ms, počty {pocty:F0} ms"));
+            $"::notice title=Výkon knižnice (10 000 titulov)::rozpoznanie 14 000 videí {rozpoznanie.Elapsed.TotalSeconds:F1} s, stena filmov {stena:F0} ms, filter {filter:F0} ms, počty {pocty:F0} ms, duplicity {duplicity:F0} ms"));
         Over.Pravda(stena < 1000, $"stena 10 000 filmov do 1 s (bola {stena:F0} ms)");
         Over.Pravda(filter < 1000, $"filter knižnice do 1 s (bol {filter:F0} ms)");
+        Over.Pravda(duplicity < 3000, $"duplicity 2 000 titulov s dvoma verziami do 3 s (boli {duplicity:F0} ms)");
         Over.Pravda(rozpoznanie.Elapsed < TimeSpan.FromMinutes(1), $"rozpoznanie 14 000 videí do 1 min (bolo {rozpoznanie.Elapsed.TotalSeconds:F1} s)");
     }
 

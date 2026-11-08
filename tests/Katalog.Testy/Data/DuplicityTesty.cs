@@ -35,6 +35,20 @@ public sealed class DuplicityTesty
         Over.Rovne<long?>(null, PorovnanieVerzii.Najlepsia([hevc, hevc with { VerziaId = 6, Velkost = 4_050_000_000 }], poradie), "rovnaké verzie – žiadna lepšia");
         Over.Rovne<long?>(null, PorovnanieVerzii.Najlepsia([hevc], poradie), "jedna verzia nie je duplicita");
         Over.Postupnost(PorovnanieVerzii.Predvolene, PorovnanieVerzii.ZTextu("x,9,,1,1"), "zlé poradie dá predvolené");
+
+        // duplicates (owner, 8. 11. 2026): only versions nothing tells apart
+        var bluray = V(10, TriedaKvality.FHD, ["cs", "sk", "en"], "h264", 16_567_927_830);
+        var medium = V(11, TriedaKvality.FHD, ["cs", "sk", "en"], "h264", 4_208_914_310);
+        Over.Pravda(!PorovnanieVerzii.SuRovnake(bluray, medium), "FHD 16 GB a FHD 4 GB nie sú duplicita");
+        Over.Pravda(!PorovnanieVerzii.SuRovnake(bluray, V(12, TriedaKvality.UHD4K, ["cs", "sk", "en"], "h264", 16_567_927_830)), "FHD a 4K nie");
+        Over.Pravda(!PorovnanieVerzii.SuRovnake(bluray, bluray with { VerziaId = 13, JazykyZvuku = ["en"] }), "iné jazyky zvuku nie");
+        Over.Pravda(!PorovnanieVerzii.SuRovnake(bluray, bluray with { VerziaId = 14, JazykyTitulkov = ["cs"] }), "iné titulky nie");
+        Over.Pravda(!PorovnanieVerzii.SuRovnake(bluray, bluray with { VerziaId = 15, Kodek = "hevc" }), "iný kodek nie");
+        Over.Pravda(!PorovnanieVerzii.SuRovnake(bluray, bluray with { VerziaId = 16, Hdr = true }), "HDR nie");
+        Over.Pravda(PorovnanieVerzii.SuRovnake(bluray, bluray with { VerziaId = 17, Velkost = 17_500_000_000, JazykyZvuku = ["en", "sk", "cs"] }),
+            "rovnaká verzia (veľkosť do 10 %, jazyky v inom poradí) je duplicita");
+        Over.Pravda(PorovnanieVerzii.SuRovnake(bluray, bluray with { VerziaId = 18, Kodek = null, Vyska = null }), "neznámy kodek a výška nerozhodujú");
+        Over.Pravda(!PorovnanieVerzii.SuRovnake(bluray, bluray with { VerziaId = 19, Pritomna = false }), "zmazaná verzia nie");
         Over.Rovne("1,2,3,4,5", PorovnanieVerzii.NaText(PorovnanieVerzii.Predvolene), "uloženie poradia");
     }
 
@@ -109,6 +123,16 @@ public sealed class DuplicityTesty
         var detail = KniznicaTitulov.Detail(c, film.Id)!;
         Over.Rovne(2, detail.Vlastnosti.Count, "vlastnosti dvoch verzií");
         Over.Rovne(0, detail.NajlepsieVerzie.Count, "rovnaké verzie (bez technických údajov) – žiadna lepšia");
+        Over.Rovne(2, detail.DuplicitneVerzie.Count, "obe verzie filmu sú duplicita (rovnaký súbor aj na inom disku)");
+
+        // the second episode file is another version (four times bigger): the series is no duplicate any more
+        await kniznica.Zapis.ZapisAsync(s => Vykonaj(s, "UPDATE subor SET velkost = velkost * 4 + 4000 WHERE nazov = 'Vymyslený seriál S01E01.mkv'"));
+        using var c2 = kniznica.OtvorCitanie();
+        Over.Postupnost(["Vymyslený film"], KniznicaTitulov.Najdi(c2, Dotaz.Citaj(""), nikto, PohladKniznice.Duplicity).Select(t => t.Nazov),
+            "iná veľkosť epizódy – nie duplicita");
+        Over.Postupnost(["Vymyslený film", "Vymyslený seriál"], KniznicaTitulov.Najdi(c2, Dotaz.Citaj("verzie:>1"), nikto, PohladKniznice.Vsetko).Select(t => t.Nazov),
+            "viac verzií ostáva");
+        Over.Rovne((1, 2), KniznicaTitulov.PoctyZbierok(c2), "počty zbierok po zmene");
     }
 
     [Test]
