@@ -484,7 +484,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                 <ListView Grid.Row="3" x:Name="ZoznamPrehladu" SelectionChanged="ZoznamPrehladu_SelectionChanged">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Disk" Width="210">
+                            <GridViewColumn Header="Disk" Width="180">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
@@ -495,8 +495,8 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="Katalóg" Width="120" DisplayMemberBinding="{Binding Katalog}" />
-                            <GridViewColumn Header="Obsadené" Width="170">
+                            <GridViewColumn Header="Katalóg" Width="100" DisplayMemberBinding="{Binding Katalog}" />
+                            <GridViewColumn Header="Obsadené" Width="160">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel>
@@ -510,10 +510,10 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="Súbory" Width="80" DisplayMemberBinding="{Binding SuboryText}" />
-                            <GridViewColumn Header="Tituly" Width="70" DisplayMemberBinding="{Binding TitulyText}" />
-                            <GridViewColumn Header="Len tu" Width="70" DisplayMemberBinding="{Binding LenTuText}" />
-                            <GridViewColumn Header="Posledný sken" Width="120" DisplayMemberBinding="{Binding SkenText}" />
+                            <GridViewColumn Header="Súbory" Width="70" DisplayMemberBinding="{Binding SuboryText}" />
+                            <GridViewColumn Header="Tituly" Width="60" DisplayMemberBinding="{Binding TitulyText}" />
+                            <GridViewColumn Header="Len tu" Width="60" DisplayMemberBinding="{Binding LenTuText}" />
+                            <GridViewColumn Header="Posledný sken" Width="110" DisplayMemberBinding="{Binding SkenText}" />
                             <GridViewColumn Header="Zdravie" Width="170" DisplayMemberBinding="{Binding ZdravieText}" />
                         </GridView>
                     </ListView.View>
@@ -535,7 +535,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                             <DataTemplate>
                                                 <Grid Margin="0,1">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="170" />
+                                                        <ColumnDefinition Width="160" />
                                                         <ColumnDefinition Width="*" />
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Text="{Binding Nazov}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />

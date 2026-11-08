@@ -316,7 +316,7 @@ public partial class HlavneOkno
         static SekciaStatistik Sekcia(string nadpis, IReadOnlyList<PolozkaStatistiky> polozky)
         {
             var najviac = Math.Max(1, polozky.Count == 0 ? 1 : polozky.Max(p => p.Pocet));
-            return new SekciaStatistik(nadpis, polozky.Select(p => new StlpecStatistiky(p.Nazov, p.Pocet, Math.Max(2, 320.0 * p.Pocet / najviac))).ToList());
+            return new SekciaStatistik(nadpis, polozky.Select(p => new StlpecStatistiky(p.Nazov, p.Pocet, Math.Max(2, 200.0 * p.Pocet / najviac))).ToList());
         }
 
         SekcieStatistik.ItemsSource = new[]
