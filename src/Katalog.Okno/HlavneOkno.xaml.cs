@@ -20,6 +20,8 @@ public partial class HlavneOkno : Window
         _nastavenia = nastavenia;
         _cestaKniznice = cestaKniznice;
         InitializeComponent();
+        // selected only now: during InitializeComponent the other list does not exist yet
+        NavigaciaKniznica.SelectedIndex = 0;
         Title = Produkt.Nazov;
         StavVerzie.Text = Produkt.Nazov + " " + Produkt.VerziaText;
         Loaded += async (_, _) => await PoNacitaniAsync();

@@ -59,7 +59,7 @@
                         <TextBlock Text="KNIŽNICA" Style="{StaticResource NadpisSekcie}" />
                         <ListBox x:Name="NavigaciaKniznica" BorderThickness="0" Background="Transparent"
                                  SelectionChanged="Navigacia_SelectionChanged">
-                            <ListBoxItem Content="Filmy" Style="{StaticResource PolozkaNavigacie}" IsSelected="True" />
+                            <ListBoxItem Content="Filmy" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Seriály" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Na potvrdenie" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Zoznam želaní" Style="{StaticResource PolozkaNavigacie}" />
