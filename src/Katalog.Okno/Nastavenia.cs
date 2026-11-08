@@ -37,6 +37,20 @@ public sealed class Nastavenia
         ? Jadro.Prehravanie.Prehravac.Predvoleny
         : Jadro.Prehravanie.Prehravac.ZProgramu(Prehravac);
 
+    /// <summary>TMDB is asked for names, plots, posters and collections (with its key: own, else UNIVERSUM's).</summary>
+    public bool PouzivatTmdb { get; set; } = true;
+
+    /// <summary>HISTRA's catalogue is searched and the user's lists can be read (with its token: own, else UNIVERSUM's).</summary>
+    public bool PouzivatHistra { get; set; } = true;
+
+    /// <summary>The user's Jellyfin server: collections and what was watched there (address and user; the key is a secret).</summary>
+    public bool PouzivatJellyfin { get; set; }
+
+    public string JellyfinAdresa { get; set; } = "";
+
+    /// <summary>The user's name on the server; empty when the server has one user.</summary>
+    public string JellyfinPouzivatel { get; set; } = "";
+
     /// <summary>A version the user chose to skip ("Túto verziu vynechať").</summary>
     public string? VynechanaVerzia { get; set; }
 

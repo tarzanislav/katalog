@@ -432,6 +432,55 @@ public static class KniznicaTitulov
         return (c.GetInt32(0), c.GetInt32(1), c.GetInt32(2), c.GetInt32(3));
     }
 
+    /// <summary>
+    /// What playing a version plays: its files in order, or for a Blu-ray or DVD structure the folder that holds BDMV or
+    /// VIDEO_TS (players open it as a disc). Subor is null for a folder.
+    /// </summary>
+    public static IReadOnlyList<(long DiskId, long PriecinokId, string? Subor, string Pripona)> CielVerzie(SqliteConnection spojenie, long verziaId)
+    {
+        var subory = new List<(long DiskId, long PriecinokId, string Subor, string Pripona)>();
+        using (var prikaz = Kniznica.Prikaz(spojenie, """
+                   SELECT s.disk_id, s.priecinok_id, s.nazov, s.pripona FROM verzia_subor vs JOIN subor s ON s.id = vs.subor_id
+                   WHERE vs.verzia_id = $v AND s.stav = 0 ORDER BY vs.poradie, s.nazov
+                   """))
+        {
+            prikaz.Parameters.AddWithValue("$v", verziaId);
+            using var c = prikaz.ExecuteReader();
+            while (c.Read())
+            {
+                subory.Add((c.GetInt64(0), c.GetInt64(1), c.GetString(2), c.GetString(3)));
+            }
+        }
+
+        if (subory.Count == 0)
+        {
+            return [];
+        }
+
+        using var rodic = Kniznica.Prikaz(spojenie, "SELECT rodic_id, nazov FROM priecinok WHERE id = $id");
+        var id = rodic.Parameters.Add("$id", SqliteType.Integer);
+        for (long? priecinok = subory[0].PriecinokId; priecinok is { } p; )
+        {
+            id.Value = p;
+            using var c = rodic.ExecuteReader();
+            if (!c.Read())
+            {
+                break;
+            }
+
+            long? vyssi = c.IsDBNull(0) ? null : c.GetInt64(0);
+            var nazov = c.GetString(1);
+            if (nazov.Equals("BDMV", StringComparison.OrdinalIgnoreCase) || nazov.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase))
+            {
+                return [(subory[0].DiskId, vyssi ?? p, null, "")];
+            }
+
+            priecinok = vyssi;
+        }
+
+        return subory.Select(s => (s.DiskId, s.PriecinokId, (string?)s.Subor, s.Pripona)).ToList();
+    }
+
     /// <summary>The title a file belongs to (through its version), for jumping from a file to its title.</summary>
     public static long? TitulSuboru(SqliteConnection spojenie, long suborId)
     {

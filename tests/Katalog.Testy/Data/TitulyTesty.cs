@@ -58,6 +58,11 @@ public sealed class TitulyTesty
                 WHERE t.nazov = 'Vymyslený Blu-ray'
                 """), "celý BDMV je jedna verzia");
             Over.Postupnost(["1:1", "1:2", "1:3"], Riadky(c, "SELECT seria || ':' || cislo FROM epizoda ORDER BY seria, cislo"), "epizódy");
+            var bluray = long.Parse(Skalar(c, "SELECT v.id FROM verzia v JOIN titul t ON t.id = v.titul_id WHERE t.nazov = 'Vymyslený Blu-ray'"), System.Globalization.CultureInfo.InvariantCulture);
+            var ciel = KniznicaTitulov.CielVerzie(c, bluray).Single();
+            Over.Pravda(ciel.Subor is null && Skalar(c, $"SELECT nazov FROM priecinok WHERE id = {ciel.PriecinokId}") == "Vymyslený Blu-ray (2012)", "Blu-ray sa prehrá ako priečinok");
+            var epos = long.Parse(Skalar(c, "SELECT v.id FROM verzia v JOIN titul t ON t.id = v.titul_id WHERE t.nazov = 'Vymyslený epos'"), System.Globalization.CultureInfo.InvariantCulture);
+            Over.Postupnost(["Vymyslený epos (1975) CD1.avi", "Vymyslený epos (1975) CD2.avi"], KniznicaTitulov.CielVerzie(c, epos).Select(x => x.Subor!), "CD1, CD2 ako playlist");
             Over.Rovne("1", Skalar(c, "SELECT count(*) FROM verzia_dalsia_epizoda"), "S01E02E03 patrí aj tretej epizóde");
             Over.Rovne("tv/77", Skalar(c, "SELECT hodnota FROM identifikator WHERE zdroj = 3 AND druh = 1 AND titul_id = (SELECT id FROM titul WHERE druh = 2)"), "TMDB seriálu");
 
@@ -211,6 +216,10 @@ public sealed class TitulyTesty
                 FROM histra_polozka p WHERE p.zoznam_id = {zoznam} ORDER BY p.nazov
                 """), "mám / nemám");
         }
+
+        // watched in Jellyfin: written once
+        Over.Rovne(1, await kniznica.Zapis.ZapisAsync(s => Tituly.ZapisPozretia(s, [(DruhTitulu.Film, 101, null, null, 5L), (DruhTitulu.Film, 999, null, null, 5L)])), "pozretie z Jellyfin");
+        Over.Rovne(0, await kniznica.Zapis.ZapisAsync(s => Tituly.ZapisPozretia(s, [(DruhTitulu.Film, 101, null, null, 6L)])), "druhý raz nie");
 
         // the list shrinks: the entry goes, its title too (nobody needs it)
         await kniznica.Zapis.ZapisAsync(s => Tituly.ZapisZoznamHistra(s, "42", "Chcem vidieť", polozky.Take(1).ToList(), 30));

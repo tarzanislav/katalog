@@ -3,9 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Nastavenia"
         Icon="Zdroje/katalog.ico"
-        Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        Width="600" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <StackPanel Margin="20">
+    <TabControl x:Name="Karty">
+    <TabItem Header="Všeobecné">
+    <StackPanel Margin="4,12,4,4">
         <TextBlock Text="Prehrávač" FontSize="16" FontWeight="SemiBold" />
         <TextBlock Margin="0,4,0,8" Style="{StaticResource TichyText}"
                    Text="Ním sa prehrávajú filmy, playlisty aj priečinky Blu-ray a DVD. Predvolený prehrávač Windows priečinky Blu-ray a DVD zvyčajne nevie otvoriť." />
@@ -38,6 +41,69 @@
 
         <TextBlock Text="Aktualizácie" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,8" />
         <CheckBox x:Name="AutomatickeAktualizacie" Content="Raz denne zistiť, či je nová verzia (na GitHube; nič o tebe sa neposiela)" />
+    </StackPanel>
+    </TabItem>
+
+    <TabItem Header="Zdroje údajov" x:Name="KartaZdroje">
+    <StackPanel Margin="4,12,4,4">
+        <TextBlock Margin="0,0,0,4" Style="{StaticResource TichyText}"
+                   Text="Zdroje dopĺňajú knižnicu: slovenské a české názvy, dej, žánre, hercov, plagáty, epizódy a kolekcie. Posiela sa im len hľadaný názov a rok titulu, nikdy názvy súborov ani nič o tebe. Kľúče sa ukladajú zašifrované pre tvoje konto Windows." />
+
+        <TextBlock Text="TMDB" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <CheckBox x:Name="PouzivatTmdb" Content="Používať TMDB (themoviedb.org)" />
+        <TextBlock x:Name="TmdbStav" Margin="0,6,0,0" TextWrapping="Wrap" FontWeight="SemiBold" />
+        <TextBlock x:Name="TmdbPopisPola" Margin="0,8,0,2" Style="{StaticResource TichyText}" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <PasswordBox x:Name="TmdbKluc" Padding="6,4" />
+            <Button Grid.Column="1" x:Name="TlacidloOdstranitTmdb" Content="Odstrániť vlastný" Margin="8,0,0,0" Padding="12,4" Click="OdstranitTmdb_Click" />
+        </Grid>
+        <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}" FontSize="12"
+                   Text="Kľúč dostaneš zadarmo na themoviedb.org: Settings → API (API Key alebo API Read Access Token)." />
+
+        <TextBlock Text="HISTRA" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4" />
+        <CheckBox x:Name="PouzivatHistra" Content="Používať HISTRA (hľadanie titulov a tvoje zoznamy – len čítanie)" />
+        <TextBlock x:Name="HistraStav" Margin="0,6,0,0" TextWrapping="Wrap" FontWeight="SemiBold" />
+        <TextBlock x:Name="HistraPopisPola" Margin="0,8,0,2" Style="{StaticResource TichyText}" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <PasswordBox x:Name="HistraToken" Padding="6,4" />
+            <Button Grid.Column="1" x:Name="TlacidloOdstranitHistra" Content="Odstrániť vlastný" Margin="8,0,0,0" Padding="12,4" Click="OdstranitHistra_Click" />
+        </Grid>
+        <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}" FontSize="12">
+            Token si vytvoríš na <Hyperlink x:Name="OdkazHistra" Click="OdkazHistra_Click">histra.net → Nastavenia → Tracking API</Hyperlink>.
+        </TextBlock>
+
+        <TextBlock Text="Jellyfin (nepovinné)" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4" />
+        <CheckBox x:Name="PouzivatJellyfin" Content="Prevziať kolekcie a pozreté tituly z môjho servera Jellyfin" />
+        <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Adresa servera" VerticalAlignment="Center" Margin="0,0,12,6" />
+            <TextBox Grid.Column="1" x:Name="JellyfinAdresa" Padding="6,4" Margin="0,0,0,6" />
+            <TextBlock Grid.Row="1" x:Name="JellyfinKlucPopis" Text="Kľúč API" VerticalAlignment="Center" Margin="0,0,12,6" />
+            <PasswordBox Grid.Row="1" Grid.Column="1" x:Name="JellyfinKluc" Padding="6,4" Margin="0,0,0,6" />
+            <TextBlock Grid.Row="2" Text="Používateľ" VerticalAlignment="Center" Margin="0,0,12,0" />
+            <TextBox Grid.Row="2" Grid.Column="1" x:Name="JellyfinPouzivatel" Padding="6,4" />
+        </Grid>
+        <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}" FontSize="12"
+                   Text="Napr. https://jellyfin.example.org alebo http://192.168.1.20:8096 (http len v domácej sieti). Kľúč API vytvoríš v Jellyfin: Ovládací panel → Kľúče API. Používateľa zadaj, ak má server viac používateľov." />
+    </StackPanel>
+    </TabItem>
+    </TabControl>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="Uložiť" IsDefault="True" Padding="20,6" MinWidth="80" Click="Ulozit_Click" />

@@ -640,6 +640,39 @@ public static class Tituly
     }
 
     /// <summary>
+    /// Watching from another program (Jellyfin) by TMDB ids: a film, or an episode of a series the library knows; written
+    /// only where the library has no watching yet. Returns how many were written.
+    /// </summary>
+    public static int ZapisPozretia(SqliteConnection spojenie, IEnumerable<(DruhTitulu Druh, int TmdbId, int? Seria, int? Cislo, long Kedy)> pozretia)
+    {
+        var zapisane = 0;
+        foreach (var (druh, tmdb, seria, cislo, kedy) in pozretia)
+        {
+            if (Vlastnik(spojenie, ZdrojUdajov.Tmdb, DruhObjektu.Titul, TmdbIdentifikator(druh, tmdb)) is not { } titulId)
+            {
+                continue;
+            }
+
+            using var prikaz = Kniznica.Prikaz(spojenie, druh == DruhTitulu.Film
+                ? """
+                  INSERT INTO pozretie(titul_id, kedy) SELECT $t, $k WHERE NOT EXISTS (SELECT 1 FROM pozretie WHERE titul_id = $t)
+                  """
+                : """
+                  INSERT INTO pozretie(epizoda_id, kedy)
+                  SELECT e.id, $k FROM epizoda e WHERE e.titul_id = $t AND e.seria = $s AND e.cislo = $c
+                    AND NOT EXISTS (SELECT 1 FROM pozretie p WHERE p.epizoda_id = e.id)
+                  """);
+            prikaz.Parameters.AddWithValue("$t", titulId);
+            prikaz.Parameters.AddWithValue("$k", kedy);
+            prikaz.Parameters.AddWithValue("$s", (object?)seria ?? DBNull.Value);
+            prikaz.Parameters.AddWithValue("$c", (object?)cislo ?? DBNull.Value);
+            zapisane += prikaz.ExecuteNonQuery();
+        }
+
+        return zapisane;
+    }
+
+    /// <summary>
     /// Writes a collection from a source with all its parts: parts the library does not know become titles without a
     /// version (A2 – the missing parts). Returns the collection's id.
     /// </summary>

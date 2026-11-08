@@ -145,6 +145,23 @@ public sealed class ZdrojeTesty
     }
 
     [Test]
+    public void KluceZUniversa()
+    {
+        using var priecinok = new DocasnyPriecinok();
+        var subor = priecinok.Subor("settings.json");
+        File.WriteAllText(subor, """{ "TmdbKeyProtected": "chraneny-tmdb", "HistraTokenProtected": "", "TmdbEnabled": false }""");
+        var (tmdb, histra) = KluceZdrojov.Universum(subor, chraneny => chraneny == "chraneny-tmdb" ? "vymysleny-kluc" : null);
+        Over.Rovne(("vymysleny-kluc", (string?)null), (tmdb, histra), "kľúč TMDB z UNIVERSUM, token HISTRA tam nie je");
+        Over.Rovne(((string?)null, (string?)null), KluceZdrojov.Universum(priecinok.Subor("neexistuje.json"), _ => "x"), "bez UNIVERSUM");
+        File.WriteAllText(subor, "{ pokazené");
+        Over.Rovne(((string?)null, (string?)null), KluceZdrojov.Universum(subor, _ => "x"), "pokazené nastavenia");
+
+        Over.Rovne(new KlucZdroja("vlastny", PovodKluca.Vlastny), KluceZdrojov.Vyber(" vlastny ", "universum"), "vlastný má prednosť");
+        Over.Rovne(new KlucZdroja("universum", PovodKluca.Universum), KluceZdrojov.Vyber("", "universum"), "inak z UNIVERSUM");
+        Over.Rovne(KlucZdroja.Ziadny, KluceZdrojov.Vyber(null, " "), "žiadny");
+    }
+
+    [Test]
     public async Task WebOpakujeAStrazAdresu()
     {
         Web.MierkaCakania = 0.001;
