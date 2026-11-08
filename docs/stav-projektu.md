@@ -116,7 +116,7 @@ Hotové:
 - **Okno knižnice**: stena plagátov (riadky sa kreslia len viditeľné) aj zoznam – Filmy, Seriály, Na potvrdenie,
   Zoznam želaní, Kolekcie (aj diely, ktoré nemáš), Zoznamy HISTRA (mám / nemám). Detail titulu: plagát, dej, žánre,
   réžia, herci, verzie na diskoch, série s chýbajúcimi epizódami, kolekcie; prehranie (seriál ako playlist),
-  videné, želané, moje hodnotenie, poznámka, ručná úprava, „Hľadať inak…“, „Nie je to film ani seriál“.
+  videné, želané, moje hodnotenie, poznámka, ručná úprava, hľadanie inak (názov a rok, `rezia:Meno` alebo `tmdb:ID`), „Nie je to film ani seriál“.
 - **Dotazovací jazyk** (A4): `rok`, `zaner`, `hodnotenie`, `moje`, `herec`, `rezia`, `kolekcia`, `videne`, `mam`,
   `zelane`, `kniznica` – v hľadaní súborov aj vo filtri knižnice (tam platia aj podmienky súborov ako `kvalita:4k`).
 - O programe: upozornenie TMDB; zdroje v THIRD-PARTY-NOTICES.
@@ -245,5 +245,10 @@ Otvorené:
 
 **Vydania** (so súhlasom vlastníka – schválenie v Review deployments; podpis zoznamu súčtov a súčet inštalátora
 overené): **0.1.0**, **0.2.0**, **0.4.0**, **0.5.0**, **0.6.0**, **0.7.0** a **0.8.0** 8. 11. 2026.
+
+Po E9 (8. 11. 2026, podľa prvej skúšky vlastníka): titul na potvrdenie sa dá **identifikovať priamo v detaile** –
+pole nad návrhmi berie názov a rok („Carrie 1976“), réžiu (`rezia:Brian De Palma`, s názvom aj bez – tvorba režiséra
+z TMDB) alebo **TMDB ID** (`tmdb:1271`, `tmdb:tv/1973` či odkaz zo stránky themoviedb.org; ID titul hneď potvrdí).
+Pod každým návrhom z TMDB je **odkaz na jeho stránku** na overenie v prehliadači.
 
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.

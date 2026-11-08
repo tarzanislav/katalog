@@ -343,6 +343,9 @@ internal static class Samotest
         {
             await okno.VyberPolozkuAsync(naPotvrdenie);
             Over(okno.DetailZobrazeny?.Kandidati.Count == 2 && okno.DetailVyber.Visibility == Visibility.Visible, "na potvrdenie: dva návrhy vedľa seba");
+            Over(okno.DetailHladanie.Text.Length > 0, "pole na hľadanie inak je vyplnené názvom: " + okno.DetailHladanie.Text);
+            Over(okno.DetailKandidati.Items.OfType<KartaKandidata>().All(k => k.Kandidat.Zdroj != ZdrojUdajov.Tmdb || k.Odkaz?.Host == "www.themoviedb.org"),
+                "návrhy TMDB majú odkaz na themoviedb.org");
             await SnimkaAsync(okno, "na-potvrdenie-svetle.png");
             var kandidat = okno.DetailZobrazeny!.Kandidati.First(k => k.Identifikator == "movie/9103");
             await okno.PotvrdKandidataAsync(strazca.Id, kandidat);

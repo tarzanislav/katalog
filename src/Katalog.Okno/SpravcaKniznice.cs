@@ -236,6 +236,55 @@ internal sealed class SpravcaKniznice(Kniznica kniznica, Nastavenia nastavenia, 
         return zoradeni;
     }
 
+    /// <summary>
+    /// Identifies a title by what the user wrote: a TMDB identifier gives that title for certain; a director gives the
+    /// titles they made (narrowed by the name and year, when written); else the sources are searched by name and year.
+    /// The candidates are kept for the detail; returns them best first and the certain one, if any.
+    /// </summary>
+    public async Task<(IReadOnlyList<Kandidat> Kandidati, Kandidat? Isty)> IdentifikujAsync(long titulId, DruhTitulu druh, IdentifikaciaTitulu co)
+    {
+        var tmdb = Zdroje().OfType<TmdbZdroj>().FirstOrDefault();
+        if (co.TmdbIdentifikator is { } id)
+        {
+            var kandidat = tmdb is null
+                ? throw new ChybaZdroja("Hľadanie podľa TMDB ID potrebuje zapnuté TMDB (Nastavenia → Zdroje údajov).")
+                : await tmdb.KandidatPodlaIdAsync(id, CancellationToken.None).ConfigureAwait(true)
+                  ?? throw new ChybaZdroja($"TMDB nepozná titul {id}.");
+            return ([kandidat], kandidat);
+        }
+
+        if (co.Rezia is { } rezia)
+        {
+            if (tmdb is null)
+            {
+                throw new ChybaZdroja("Hľadanie podľa réžie potrebuje zapnuté TMDB (Nastavenia → Zdroje údajov).");
+            }
+
+            var tvorba = await tmdb.FilmyRezisera(rezia, CancellationToken.None).ConfigureAwait(true);
+            var hladanie = new HladanieTitulu(co.Nazov ?? "", co.Rok, null);
+            var zoradeni = tvorba
+                .Where(k => co.Rok is not { } r || k.Rok is { } kr && Math.Abs(kr - r) <= 1)
+                .Select(k => k with { Zhoda = co.Nazov is null ? (k.Rok == co.Rok ? 1 : 0.8) : ZhodaKandidata.Urci(hladanie, k) })
+                .Where(k => co.Nazov is null || k.Zhoda >= 0.4)
+                .OrderByDescending(k => k.Zhoda).ThenByDescending(k => k.Druh == druh).ThenByDescending(k => k.Rok)
+                .Take(24)
+                .ToList();
+            await UlozKandidatovAsync(titulId, zoradeni).ConfigureAwait(true);
+            return (zoradeni, null);
+        }
+
+        return (await HladajAsync(titulId, druh, co.Nazov ?? "", co.Rok).ConfigureAwait(true), null);
+    }
+
+    private Task UlozKandidatovAsync(long titulId, IReadOnlyList<Kandidat> kandidati) =>
+        kniznica.Zapis.ZapisAsync(s =>
+        {
+            foreach (var skupina in kandidati.GroupBy(k => k.Zdroj))
+            {
+                Tituly.UlozKandidatov(s, titulId, skupina.Key, skupina.ToList());
+            }
+        });
+
     /// <summary>Reads the user's HISTRA lists into the library (mám / nemám); returns how many lists.</summary>
     public async Task<int> NacitajZoznamyHistraAsync(IProgress<string>? priebeh)
     {

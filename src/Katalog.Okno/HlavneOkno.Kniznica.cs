@@ -657,11 +657,16 @@ public partial class HlavneOkno
         DetailPotvrdit.Visibility = t.NaPotvrdenie ? Visibility.Visible : Visibility.Collapsed;
         DetailVyberNadpis.Text = t.NaPotvrdenie ? "Čo je to za titul?" : "Spresniť titul";
         DetailVyberText.Text = d.Kandidati.Count > 0
-            ? "Návrhy zdrojov podľa názvu a roka. Vyber správny – doplnia sa názov, dej a plagát."
+            ? "Návrhy zdrojov. Vyber správny – doplnia sa názov, dej a plagát. Nie je medzi nimi? Hľadaj inak: názov a rok, rezia:Meno alebo tmdb:ID."
             : _kniznicaTitulov?.Zdroje().Count > 0
-                ? "Zdroje zatiaľ nič nenašli. Skús „Hľadať inak…“ s iným názvom alebo rokom."
+                ? "Zdroje zatiaľ nič nenašli. Hľadaj inak: iný názov a rok, rezia:Meno alebo tmdb:ID (TMDB ID titul hneď potvrdí)."
                 : "Zapni TMDB alebo HISTRA v Nastaveniach → Zdroje údajov, alebo titul potvrď tak, ako je.";
-        DetailKandidati.ItemsSource = d.Kandidati.Take(8).Select(k => new KartaKandidata(k)).ToList();
+        DetailKandidati.ItemsSource = d.Kandidati.Take(12).Select(k => new KartaKandidata(k)).ToList();
+        if (DetailHladanie.Tag is not long tag || tag != t.Id)
+        {
+            DetailHladanie.Tag = t.Id;
+            DetailHladanie.Text = t.Rok is { } rokTitulu ? $"{t.Nazov} ({rokTitulu})" : t.Nazov;
+        }
 
         var riadky = new List<RiadokDetailu>();
         if (_detailVypozicka is { } pozicane)
@@ -983,20 +988,45 @@ public partial class HlavneOkno
         }
     }
 
-    private async void HladatInak_Click(object sender, RoutedEventArgs e)
+    /// <summary>The candidate's TMDB page in the user's browser (only https://www.themoviedb.org/ addresses open).</summary>
+    private void OdkazKandidata_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
     {
-        if (_detail is not { } d || _kniznicaTitulov is not { } spravca)
+        e.Handled = true;
+        if (e.Uri is { Scheme: "https", Host: "www.themoviedb.org" } adresa)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(adresa.AbsoluteUri) { UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+            {
+                StavUloh.Text = "Prehliadač sa nepodarilo otvoriť: " + ex.Message;
+            }
+        }
+    }
+
+    private async void HladatKandidatov_Click(object sender, RoutedEventArgs e) => await IdentifikujAsync(DetailHladanie.Text);
+
+    private async void DetailHladanie_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            await IdentifikujAsync(DetailHladanie.Text);
+        }
+    }
+
+    /// <summary>
+    /// Identifies the title in the detail by name and year, by director (rezia:…) or by TMDB ID (tmdb:603, or a link to
+    /// themoviedb.org) – an ID confirms at once, the rest offers candidates (the self-test calls it).
+    /// </summary>
+    internal async Task IdentifikujAsync(string text)
+    {
+        if (_detail is not { } d || _kniznicaTitulov is not { } spravca || string.IsNullOrWhiteSpace(text))
         {
             return;
         }
 
-        var predvolene = d.Polozka.Rok is { } r ? $"{d.Polozka.Nazov} ({r})" : d.Polozka.Nazov;
-        if (VstupOkno.Opytaj(this, "Hľadať inak", "Názov a rok, napr. „Vymyslený film (2001)“:", predvolene) is not { } text)
-        {
-            return;
-        }
-
-        var (nazov, rok) = NazovARok(text);
         if (spravca.Zdroje().Count == 0)
         {
             MessageBox.Show(this, "Žiadny zdroj údajov nie je zapnutý – nastav TMDB alebo HISTRA v Nastaveniach → Zdroje údajov.",
@@ -1004,10 +1034,20 @@ public partial class HlavneOkno
             return;
         }
 
+        var co = IdentifikaciaTitulu.Citaj(text, d.Polozka.Druh);
         try
         {
-            var kandidati = await spravca.HladajAsync(d.Polozka.Id, d.Polozka.Druh, nazov, rok);
-            StavUloh.Text = kandidati.Count == 0 ? $"Pre „{text}“ zdroje nič nenašli." : $"Nájdené návrhy: {kandidati.Count}.";
+            StavUloh.Text = co.TmdbIdentifikator is { } id ? $"Načítavam TMDB {id}…" : co.Rezia is { } r ? $"Hľadám tvorbu: {r}…" : $"Hľadám „{text.Trim()}“…";
+            var (kandidati, isty) = await spravca.IdentifikujAsync(d.Polozka.Id, d.Polozka.Druh, co);
+            if (isty is not null)
+            {
+                await PotvrdKandidataAsync(d.Polozka.Id, isty);
+                return;
+            }
+
+            StavUloh.Text = kandidati.Count == 0
+                ? co.Rezia is { } rezia ? $"TMDB nenašla pre réžiu „{rezia}“ nič, čo by sedelo." : $"Pre „{text.Trim()}“ zdroje nič nenašli."
+                : $"Nájdené návrhy: {kandidati.Count}.";
         }
         catch (ChybaZdroja ex)
         {
@@ -1015,20 +1055,6 @@ public partial class HlavneOkno
         }
 
         await ZobrazDetailTituluAsync(d.Polozka.Id);
-    }
-
-    /// <summary>"Názov (2001)" → ("Názov", 2001); without a year in brackets the whole text is the name.</summary>
-    internal static (string Nazov, int? Rok) NazovARok(string text)
-    {
-        var t = text.Trim();
-        if (t.Length > 7 && t[^1] == ')' && t[^6] == '(' &&
-            int.TryParse(t.AsSpan(t.Length - 5, 4), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var rok) &&
-            rok is >= 1870 and <= 2200)
-        {
-            return (t[..^6].Trim(), rok);
-        }
-
-        return (t, null);
     }
 
     private async void NieJeTitul_Click(object sender, RoutedEventArgs e)

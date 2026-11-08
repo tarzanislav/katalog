@@ -191,4 +191,11 @@ internal sealed record KartaKandidata(Jadro.Rozhrania.Kandidat Kandidat)
 
     /// <summary>The candidate's poster from the source's image server (shown only while choosing).</summary>
     public Uri? Plagat => Kandidat.Plagat;
+
+    /// <summary>The candidate's page on TMDB, to check it in the browser before choosing.</summary>
+    public Uri? Odkaz => Kandidat.Zdroj == Jadro.Model.ZdrojUdajov.Tmdb ? new Uri("https://www.themoviedb.org/" + Kandidat.Identifikator) : null;
+
+    public string OdkazText => Kandidat.Identifikator.StartsWith("tv/", StringComparison.Ordinal) ? "TMDB seriál ↗" : "TMDB film ↗";
+
+    public bool MaOdkaz => Odkaz is not null;
 }

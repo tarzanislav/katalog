@@ -69,6 +69,89 @@ public sealed partial class TmdbZdroj(HttpClient http, string? kluc) : IZdrojUda
         return vysledok;
     }
 
+    /// <summary>
+    /// Titles a director made (films they directed, series they created or directed): the person TMDB finds first for the
+    /// name, with "Directing" as their trade when there are more. Empty when TMDB knows no such person.
+    /// </summary>
+    public async Task<IReadOnlyList<Kandidat>> FilmyRezisera(string meno, CancellationToken zrusenie)
+    {
+        if (!JeZapnuty || string.IsNullOrWhiteSpace(meno))
+        {
+            return [];
+        }
+
+        using var osoby = await ZiskajAsync("search/person?language=sk-SK&include_adult=false&query=" + Uri.EscapeDataString(meno.Trim()), zrusenie).ConfigureAwait(false);
+        if (VyberRezisera(osoby) is not { } osoba)
+        {
+            return [];
+        }
+
+        using var tvorba = await ZiskajAsync($"person/{osoba.ToString(CultureInfo.InvariantCulture)}/combined_credits?language=sk-SK", zrusenie).ConfigureAwait(false);
+        return CitajTvorbuRezisera(tvorba);
+    }
+
+    /// <summary>The id of the person found: the first one whose trade is directing, else the first one.</summary>
+    internal static int? VyberRezisera(JsonDocument? dokument)
+    {
+        if (dokument is null)
+        {
+            return null;
+        }
+
+        var osoby = Web.Pole(dokument.RootElement, "results").ToList();
+        var reziser = osoby.FirstOrDefault(o => Web.Text(o, "known_for_department") == "Directing");
+        return Web.Cislo(reziser.ValueKind == JsonValueKind.Object ? reziser : osoby.FirstOrDefault(), "id");
+    }
+
+    /// <summary>The crew credits of a person as directing (films) or creating/directing (series), each title once.</summary>
+    internal static List<Kandidat> CitajTvorbuRezisera(JsonDocument? dokument)
+    {
+        if (dokument is null)
+        {
+            return [];
+        }
+
+        return Web.Pole(dokument.RootElement, "crew")
+            .Where(c => Web.Text(c, "job") is "Director" or "Creator" or "Series Director" || Web.Text(c, "department") == "Directing")
+            .Select(c =>
+            {
+                var serial = Web.Text(c, "media_type") == "tv";
+                var druh = serial ? DruhTitulu.Serial : DruhTitulu.Film;
+                var nazov = serial ? Web.Text(c, "name") ?? Web.Text(c, "original_name") : Web.Text(c, "title") ?? Web.Text(c, "original_title");
+                var original = serial ? Web.Text(c, "original_name") : Web.Text(c, "original_title");
+                var datum = serial ? Web.Text(c, "first_air_date") : Web.Text(c, "release_date");
+                return Web.Cislo(c, "id") is > 0 and var id && nazov is not null
+                    ? new Kandidat(ZdrojUdajov.Tmdb, Identifikator(druh, id), druh, nazov, original, Web.Rok(datum), 0, Plagat(Web.Text(c, "poster_path")))
+                    : null;
+            })
+            .OfType<Kandidat>()
+            .DistinctBy(k => k.Identifikator)
+            .ToList();
+    }
+
+    /// <summary>A title by its TMDB identifier ("movie/603", "tv/1399") as a candidate; null when TMDB does not know it.</summary>
+    public async Task<Kandidat?> KandidatPodlaIdAsync(string identifikator, CancellationToken zrusenie)
+    {
+        if (!JeZapnuty || Rozloz(identifikator) is not { } rozlozeny)
+        {
+            return null;
+        }
+
+        using var dokument = await ZiskajAsync(identifikator + "?language=sk-SK", zrusenie).ConfigureAwait(false);
+        if (dokument is null)
+        {
+            return null;
+        }
+
+        var d = dokument.RootElement;
+        var serial = rozlozeny.Druh == DruhTitulu.Serial;
+        var nazov = serial ? Web.Text(d, "name") ?? Web.Text(d, "original_name") : Web.Text(d, "title") ?? Web.Text(d, "original_title");
+        return nazov is null
+            ? null
+            : new Kandidat(ZdrojUdajov.Tmdb, identifikator, rozlozeny.Druh, nazov, serial ? Web.Text(d, "original_name") : Web.Text(d, "original_title"),
+                Web.Rok(serial ? Web.Text(d, "first_air_date") : Web.Text(d, "release_date")), 1, Plagat(Web.Text(d, "poster_path")));
+    }
+
     public async Task<UdajeTitulu?> NacitajAsync(string identifikator, CancellationToken zrusenie)
     {
         if (!JeZapnuty || Rozloz(identifikator) is not { } rozlozeny)

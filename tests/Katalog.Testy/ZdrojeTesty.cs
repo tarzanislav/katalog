@@ -202,4 +202,45 @@ public sealed class ZdrojeTesty
             return Task.FromResult(o);
         }
     }
+
+    [Test]
+    public void CitanieIdentifikacie()
+    {
+        IdentifikaciaTitulu C(string t, DruhTitulu d = DruhTitulu.Film) => IdentifikaciaTitulu.Citaj(t, d);
+        Over.Rovne(new IdentifikaciaTitulu("Carrie", 1976, null, null), C("Carrie 1976"), "názov a rok");
+        Over.Rovne(new IdentifikaciaTitulu("Carrie", 1976, null, null), C(" Carrie (1976) "), "rok v zátvorke");
+        Over.Rovne(new IdentifikaciaTitulu("24", null, null, null), C("24"), "číslo ako názov");
+        Over.Rovne(new IdentifikaciaTitulu("1917", null, null, null), C("1917"), "rok sám je názov");
+        Over.Rovne(new IdentifikaciaTitulu("Carrie", null, "Brian De Palma", null), C("Carrie rezia:Brian De Palma"), "názov a réžia");
+        Over.Rovne(new IdentifikaciaTitulu("Carrie", 1976, "De Palma", null), C("Carrie (1976) réžia: De Palma"), "názov, rok a réžia s diakritikou");
+        Over.Rovne(new IdentifikaciaTitulu(null, null, "Vymyslený Režisér", null), C("rezia:\"Vymyslený Režisér\""), "len réžia");
+        Over.Rovne("movie/1271", C("tmdb:1271").TmdbIdentifikator, "TMDB ID filmu");
+        Over.Rovne("tv/1973", C("tmdb 1973", DruhTitulu.Serial).TmdbIdentifikator, "TMDB ID seriálu podľa druhu titulu");
+        Over.Rovne("tv/1973", C("TMDB:tv/1973").TmdbIdentifikator, "druh v ID");
+        Over.Rovne("tv/1973", C("https://www.themoviedb.org/tv/1973-24?language=sk").TmdbIdentifikator, "odkaz zo stránky TMDB");
+        Over.Rovne("movie/603", C("https://www.themoviedb.org/movie/603-the-matrix", DruhTitulu.Serial).TmdbIdentifikator, "odkaz určuje druh");
+    }
+
+    [Test]
+    public void TmdbTvorbaRezisera()
+    {
+        using var osoby = JsonDocument.Parse("""
+            { "results": [ { "id": 1, "name": "Vymyslený Herec", "known_for_department": "Acting" },
+                           { "id": 2, "name": "Vymyslený Režisér", "known_for_department": "Directing" } ] }
+            """);
+        Over.Rovne<int?>(2, TmdbZdroj.VyberRezisera(osoby), "osoba s réžiou");
+        using var len = JsonDocument.Parse("""{ "results": [ { "id": 7, "name": "Ktosi" } ] }""");
+        Over.Rovne<int?>(7, TmdbZdroj.VyberRezisera(len), "inak prvá");
+        using var tvorba = JsonDocument.Parse("""
+            { "cast": [ { "id": 99, "media_type": "movie", "title": "Ako herec" } ],
+              "crew": [ { "id": 10, "media_type": "movie", "job": "Director", "department": "Directing", "title": "Vymyslený film", "original_title": "Invented Film", "release_date": "1976-11-03", "poster_path": "/a.jpg" },
+                        { "id": 10, "media_type": "movie", "job": "Screenplay", "department": "Writing", "title": "Vymyslený film" },
+                        { "id": 11, "media_type": "movie", "job": "Producer", "department": "Production", "title": "Len produkcia" },
+                        { "id": 20, "media_type": "tv", "job": "Creator", "department": "Creator", "name": "Vymyslený seriál", "first_air_date": "2001-11-06" } ] }
+            """);
+        var k = TmdbZdroj.CitajTvorbuRezisera(tvorba);
+        Over.Postupnost(["movie/10", "tv/20"], k.Select(x => x.Identifikator), "réžia a tvorba seriálu, každý raz");
+        Over.Pravda(k[0] is { Nazov: "Vymyslený film", Original: "Invented Film", Rok: 1976, Druh: DruhTitulu.Film } && k[0].Plagat is not null, "film");
+        Over.Pravda(k[1] is { Druh: DruhTitulu.Serial, Rok: 2001 }, "seriál");
+    }
 }

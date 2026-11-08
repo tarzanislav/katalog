@@ -732,6 +732,22 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                         <StackPanel x:Name="DetailVyber" Visibility="Collapsed" Margin="0,14,0,0">
                             <TextBlock x:Name="DetailVyberNadpis" Text="Čo je to za titul?" FontWeight="SemiBold" />
                             <TextBlock x:Name="DetailVyberText" Margin="0,2,0,6" Style="{StaticResource TichyText}" FontSize="12" />
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="DetailHladanie" Padding="6,4" VerticalContentAlignment="Center" KeyDown="DetailHladanie_KeyDown"
+                                         ToolTipService.ShowDuration="60000">
+                                    <TextBox.ToolTip>
+                                        <TextBlock xml:space="preserve">Názov a rok:        Carrie 1976   alebo   Carrie (1976)
+Réžia:              rezia:Brian De Palma   (aj s názvom: Carrie rezia:De Palma)
+TMDB ID:            tmdb:1271   tmdb:tv/1973   alebo odkaz zo stránky themoviedb.org
+ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
+                                    </TextBox.ToolTip>
+                                </TextBox>
+                                <Button Grid.Column="1" Content="Hľadať" Padding="10,3" Margin="6,0,0,0" Click="HladatKandidatov_Click" />
+                            </Grid>
                             <ItemsControl x:Name="DetailKandidati">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -748,6 +764,10 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                                 </Border>
                                                 <TextBlock Text="{Binding Nazov}" FontWeight="SemiBold" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="40" />
                                                 <TextBlock Text="{Binding Podnadpis}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+                                                <TextBlock FontSize="11" Margin="0,2,0,0" Visibility="{Binding MaOdkaz, Converter={StaticResource BoolNaViditelnost}}"
+                                                           ToolTip="{Binding Odkaz}">
+                                                    <Hyperlink NavigateUri="{Binding Odkaz}" RequestNavigate="OdkazKandidata_RequestNavigate"><Run Text="{Binding OdkazText, Mode=OneWay}" /></Hyperlink>
+                                                </TextBlock>
                                                 <Button Content="Toto je ono" Margin="0,6,0,0" Padding="8,3" Click="VybratKandidata_Click" />
                                             </StackPanel>
                                         </Border>
@@ -756,7 +776,6 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                             </ItemsControl>
                             <WrapPanel Orientation="Horizontal">
                                 <Button x:Name="DetailPotvrdit" Content="Potvrdiť, ako je" Padding="10,3" Margin="0,0,6,6" Click="PotvrditTitul_Click" />
-                                <Button Content="Hľadať inak…" Padding="10,3" Margin="0,0,6,6" Click="HladatInak_Click" />
                                 <Button Content="Nie je to film ani seriál" Padding="10,3" Margin="0,0,6,6" Click="NieJeTitul_Click" />
                             </WrapPanel>
                         </StackPanel>
