@@ -168,6 +168,25 @@ internal static class Samotest
             Over(podrobnosti.Any(s => s.Nazov == "Video") && podrobnosti.Any(s => s.Nazov.StartsWith("Zvuk", StringComparison.Ordinal)),
                 "vlastná čítačka MKV: podrobnosti Všeobecné, Video, Zvuk (" + string.Join(", ", podrobnosti.Select(s => s.Nazov)) + ")");
             Over(PodrobnostiSuboru.Text(podrobnosti).Contains("Formát", StringComparison.Ordinal), "podrobnosti ako text na kopírovanie");
+            if (podrobnosti.Count > 0)
+            {
+                foreach (var motiv in new[] { "Light", "Dark" })
+                {
+                    App.NastavMotiv(motiv);
+                    var okienko = new Window
+                    {
+                        Width = 560,
+                        Height = 760,
+                        Content = new System.Windows.Controls.Border { Padding = new Thickness(16), Child = new PodrobnostiSuboru { Sekcie = podrobnosti } },
+                        ShowInTaskbar = false,
+                        WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                    };
+                    okienko.SetResourceReference(Window.BackgroundProperty, "ApplicationBackgroundBrush");
+                    okienko.Show();
+                    await SnimkaAsync(okienko, motiv == "Light" ? "podrobnosti-suboru-svetle.png" : "podrobnosti-suboru-tmave.png");
+                    okienko.Close();
+                }
+            }
             Over(Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("poskodene:ano"), nikto).Polozky.Count == 1, "poškodený súbor sa dá nájsť");
             Over(UlohyKniznice.Cakajuce(c).Count == 0, "fronta úloh je po skene a čítaní prázdna");
         }
