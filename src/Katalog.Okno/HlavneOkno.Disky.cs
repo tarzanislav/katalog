@@ -202,6 +202,7 @@ public partial class HlavneOkno
     {
         var diskId = VybranyDisk();
         var jeDisk = diskId is not null;
+        PonukaPrehrat.IsEnabled = jeDisk;
         PonukaAktualizovat.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true && _skeny?.Bezi(diskId.Value) == false;
         PonukaOtvorit.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true;
         PonukaUpravit.IsEnabled = jeDisk;
@@ -233,8 +234,7 @@ public partial class HlavneOkno
         NadpisStredu.Text = nadpis;
         PrazdnyNadpis.Text = hlavny;
         PrazdnyText.Text = text;
-        PanelSuborov.Visibility = Visibility.Collapsed;
-        PanelPrazdny.Visibility = Visibility.Visible;
+        UkazStred(PanelPrazdny);
         ZobrazDetail(null);
     }
 
@@ -269,8 +269,7 @@ public partial class HlavneOkno
         TlacidloHore.IsEnabled = cesta.Length > 0;
         TlacidloOtvorit.IsEnabled = pripojeny is not null;
         TlacidloAktualizovatDisk.IsEnabled = pripojeny is not null && _skeny?.Bezi(diskId) == false;
-        PanelPrazdny.Visibility = Visibility.Collapsed;
-        PanelSuborov.Visibility = Visibility.Visible;
+        UkazStred(PanelSuborov);
 
         if (polozky.Count == 0)
         {
@@ -310,39 +309,44 @@ public partial class HlavneOkno
         }
     }
 
-    private void ZoznamSuborov_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private async void ZoznamSuborov_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (ZoznamSuborov.SelectedItem is not PolozkaZoznamu polozka || _zobrazenyDisk is not { } diskId)
+        if (e.OriginalSource is DependencyObject zdroj && ItemsControl.ContainerFromElement(ZoznamSuborov, zdroj) is ListViewItem)
         {
-            return;
-        }
-
-        if (polozka.JePriecinok)
-        {
-            ZobrazPriecinok(diskId, polozka.Id);
-            return;
-        }
-
-        // a file opens in the program Windows has for it (players come in stage E2)
-        if (CestaSuboru(diskId, polozka) is { } cesta && File.Exists(cesta))
-        {
-            Process.Start(new ProcessStartInfo(cesta) { UseShellExecute = true });
-        }
-        else
-        {
-            MessageBox.Show(this, PripojDisk(diskId), Produkt.Nazov, MessageBoxButton.OK, MessageBoxImage.Information);
+            await OtvorVZoznameSuborovAsync();
         }
     }
 
-    private string? CestaSuboru(long diskId, PolozkaZoznamu polozka)
+    private async void ZoznamSuborov_KeyDown(object sender, KeyEventArgs e)
     {
-        if (Kniznica is not { } kniznica || _stav?.Cesta(diskId) is not { } koren || _zobrazenyPriecinok is not { } priecinok)
+        if (e.Key == Key.Enter)
         {
-            return null;
+            e.Handled = true;
+            await OtvorVZoznameSuborovAsync();
         }
+        else if (e.Key == Key.Back && TlacidloHore.IsEnabled)
+        {
+            e.Handled = true;
+            Hore_Click(this, new RoutedEventArgs());
+        }
+    }
 
-        using var c = kniznica.OtvorCitanie();
-        return Path.Combine(PlnaCesta(koren, KatalogyADisky.Cesta(c, priecinok)), polozka.Nazov);
+    /// <summary>A folder opens (unless several are selected to play), videos play, other files open in their program.</summary>
+    private async Task OtvorVZoznameSuborovAsync()
+    {
+        var ciele = VybraneCiele();
+        if (ciele.Count == 1 && ciele[0].JePriecinok && _zobrazenyDisk is { } diskId)
+        {
+            ZobrazPriecinok(diskId, ciele[0].PriecinokId);
+        }
+        else if (ciele.Count > 0 && ciele.All(c => c.DaSaPrehrat))
+        {
+            await PrehrajAsync(ciele);
+        }
+        else if (ciele.Count == 1)
+        {
+            OtvorSubor(ciele[0]);
+        }
     }
 
     private string PripojDisk(long diskId)
@@ -506,12 +510,25 @@ public partial class HlavneOkno
         };
         StavUloh.Text = text;
         ObnovStrom();
-        if (_zobrazenyDisk == diskId && _zobrazenyPriecinok is { } priecinok)
+        if (_zobrazenyDisk == diskId || PanelVysledkov.Visibility == Visibility.Visible)
         {
-            ZobrazPriecinok(diskId, priecinok);
+            ObnovStred();
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>After a scan or a change of connected disks: the shown folder or search results are read again.</summary>
+    private void ObnovStred()
+    {
+        if (PanelVysledkov.Visibility == Visibility.Visible)
+        {
+            _ = HladajAsync();
+        }
+        else if (PanelSuborov.Visibility == Visibility.Visible && _zobrazenyDisk is { } disk && _zobrazenyPriecinok is { } priecinok)
+        {
+            ZobrazPriecinok(disk, priecinok);
+        }
     }
 
     private void ZobrazPriebehSkenov()
@@ -729,13 +746,18 @@ public partial class HlavneOkno
             uzol.Pripojeny = _stav.Pripojene.ContainsKey(uzol.Id);
         }
 
-        if (_zobrazenyDisk is { } zobrazeny && _zobrazenyPriecinok is { } priecinok)
+        ObnovStred();
+
+        // a disk someone waits for to play is the reason it was connected: it plays, no offer to update it
+        if (await PrehrajCakajuceAsync() || _cakajuce is not null)
         {
-            ZobrazPriecinok(zobrazeny, priecinok);
+            return;
         }
 
         if (oznamit && nove.FirstOrDefault(n => _skeny?.Bezi(n.Disk.Id) == false) is { } prvy)
         {
+            OznamAkcia.Visibility = Visibility.Visible;
+            OznamZavriet.Content = "Neskôr";
             _diskOznamu = prvy.Disk.Id;
             var dalsie = nove.Count > 1 ? $" (pripojené sú aj ďalšie: {nove.Count - 1})" : "";
             OznamText.Text = $"Disk {prvy.Disk.CisloText} – {prvy.Disk.Nazov} je pripojený ({prvy.Cesta}). Aktualizovať jeho obsah v katalógu?{dalsie}";
@@ -752,7 +774,12 @@ public partial class HlavneOkno
         }
     }
 
-    private void OznamZavriet_Click(object sender, RoutedEventArgs e) => Oznam.Visibility = Visibility.Collapsed;
+    private void OznamZavriet_Click(object sender, RoutedEventArgs e)
+    {
+        // "Zrušiť" of waiting for a disk to play
+        _cakajuce = null;
+        Oznam.Visibility = Visibility.Collapsed;
+    }
 
     private void SkryOznam(long diskId)
     {

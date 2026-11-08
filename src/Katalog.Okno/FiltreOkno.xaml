@@ -1,0 +1,99 @@
+<Window x:Class="Katalog.Okno.FiltreOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Filtre hľadania"
+        Icon="Zdroje/katalog.ico"
+        Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock Style="{StaticResource TichyText}"
+                   Text="Filtre sa zapíšu do poľa hľadania (napr. typ:video velkost:>4GB), takže ich vidíš, môžeš ich ručne upraviť aj uložiť ako hľadanie." />
+        <Grid Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.Resources>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                    <Setter Property="Margin" Value="0,8,8,0" />
+                </Style>
+                <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                    <Setter Property="Margin" Value="0,8,0,0" />
+                    <Setter Property="Padding" Value="8,5" />
+                </Style>
+                <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                    <Setter Property="Margin" Value="0,8,0,0" />
+                </Style>
+            </Grid.Resources>
+
+            <TextBlock Text="Čo hľadať" />
+            <ComboBox Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaTypu">
+                <ComboBoxItem Content="Všetko (súbory aj priečinky)" Tag="" />
+                <ComboBoxItem Content="Videá" Tag="video" />
+                <ComboBoxItem Content="Titulky" Tag="titulky" />
+                <ComboBoxItem Content="Zvuk a hudba" Tag="zvuk" />
+                <ComboBoxItem Content="Obrázky" Tag="obrazok" />
+                <ComboBoxItem Content="Dokumenty" Tag="dokument" />
+                <ComboBoxItem Content="Archívy" Tag="archiv" />
+                <ComboBoxItem Content="Len súbory" Tag="subor" />
+                <ComboBoxItem Content="Len priečinky" Tag="priecinok" />
+            </ComboBox>
+
+            <TextBlock Grid.Row="1" Text="Prípona" />
+            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" x:Name="PolePripony" ToolTip="Napríklad mkv alebo mkv,mp4" />
+
+            <TextBlock Grid.Row="2" Text="Veľkosť od" />
+            <TextBox Grid.Row="2" Grid.Column="1" x:Name="VelkostOd" ToolTip="Napríklad 700MB alebo 4GB" />
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="do" Margin="8,8,8,0" />
+            <TextBox Grid.Row="2" Grid.Column="3" x:Name="VelkostDo" ToolTip="Napríklad 20GB" />
+
+            <TextBlock Grid.Row="3" Text="Zmenené" />
+            <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" x:Name="PoleZmenene"
+                     ToolTip="Rok (2024), mesiac (2024-05), deň (1.3.2025), od (>=2024), rozsah (2023..2024) alebo posledné dni (30d)" />
+
+            <TextBlock Grid.Row="4" Text="Pridané do katalógu" />
+            <ComboBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaPridania">
+                <ComboBoxItem Content="Kedykoľvek" Tag="" />
+                <ComboBoxItem Content="Dnes" Tag="dnes" />
+                <ComboBoxItem Content="Za posledných 7 dní" Tag="7d" />
+                <ComboBoxItem Content="Za posledných 30 dní" Tag="30d" />
+                <ComboBoxItem Content="Za posledný rok" Tag="1r" />
+            </ComboBox>
+
+            <TextBlock Grid.Row="5" Text="Disk" />
+            <ComboBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3" x:Name="ZoznamDiskov" DisplayMemberPath="Popis" />
+
+            <TextBlock Grid.Row="6" Text="Katalóg" />
+            <ComboBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3" x:Name="ZoznamKatalogov" DisplayMemberPath="Popis" />
+
+            <TextBlock Grid.Row="7" Text="Zmazané" />
+            <ComboBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaZmazanych">
+                <ComboBoxItem Content="Len to, čo na diskoch je" Tag="" />
+                <ComboBoxItem Content="Aj to, čo z diskov zmizlo (história)" Tag="aj" />
+                <ComboBoxItem Content="Len to, čo z diskov zmizlo" Tag="len" />
+            </ComboBox>
+        </Grid>
+        <CheckBox x:Name="LenPripojene" Content="Len na diskoch, ktoré sú teraz pripojené" Margin="0,14,0,0" />
+
+        <Grid Margin="0,20,0,0">
+            <Button Content="Vymazať filtre" Padding="14,6" HorizontalAlignment="Left" Click="Vymazat_Click" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Použiť" IsDefault="True" Padding="20,6" MinWidth="80" Click="Pouzit_Click" />
+                <Button Content="Zrušiť" IsCancel="True" Padding="20,6" MinWidth="80" Margin="8,0,0,0" />
+            </StackPanel>
+        </Grid>
+    </StackPanel>
+</Window>

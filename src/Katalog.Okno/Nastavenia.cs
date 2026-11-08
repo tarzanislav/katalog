@@ -6,7 +6,7 @@ using Katalog.Jadro;
 namespace Katalog.Okno;
 
 /// <summary>
-/// Settings of this computer's user (not of the library): where the library is, the theme, update checks. Stored as
+/// Settings of this computer's user (not of the library): where the library is, the theme, the player, update checks. Stored as
 /// JSON in %APPDATA%\KATALOG. Keys and passwords never go here (they are encrypted separately, decision A8).
 /// </summary>
 public sealed class Nastavenia
@@ -22,6 +22,14 @@ public sealed class Nastavenia
     public bool AutomatickeAktualizacie { get; set; } = true;
 
     public DateTime? PoslednaKontrolaAktualizaciiUtc { get; set; }
+
+    /// <summary>The player's program (.exe); empty = the program Windows opens videos with.</summary>
+    public string Prehravac { get; set; } = "";
+
+    [JsonIgnore]
+    public Jadro.Prehravanie.Prehravac SkutocnyPrehravac => string.IsNullOrWhiteSpace(Prehravac)
+        ? Jadro.Prehravanie.Prehravac.Predvoleny
+        : Jadro.Prehravanie.Prehravac.ZProgramu(Prehravac);
 
     /// <summary>A version the user chose to skip ("Túto verziu vynechať").</summary>
     public string? VynechanaVerzia { get; set; }

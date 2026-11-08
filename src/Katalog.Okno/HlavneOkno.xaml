@@ -21,28 +21,41 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <TextBox x:Name="PoleHladania" VerticalContentAlignment="Center" Padding="10,6"
-                         TextChanged="PoleHladania_TextChanged"
-                         ToolTip="Hľadanie počas písania príde v etape E2 (napr. zvuk:cs kvalita:4k)" />
-                <TextBlock x:Name="NapovedaHladania" Text="Hľadať: názov, herec, disk, súbor"
+                         TextChanged="PoleHladania_TextChanged" PreviewKeyDown="PoleHladania_PreviewKeyDown"
+                         ToolTipService.ShowDuration="60000">
+                    <TextBox.ToolTip>
+                        <TextBlock xml:space="preserve" FontFamily="Consolas" FontSize="12">Slová: časti názvov súborov a priečinkov (bez ohľadu na diakritiku)
+"presná fráza"   -bez tohto slova
+pripona:mkv,mp4      typ:video | titulky | zvuk | obrazok | priecinok | subor
+velkost:>4GB         velkost:1GB..8GB
+zmenene:2024         zmenene:>=2024-05      pridane:7d
+disk:3   disk:"Názov disku"   katalog:Videotéka
+pripojene:ano        zmazane:aj | len
+Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
+                    </TextBox.ToolTip>
+                </TextBox>
+                <TextBlock x:Name="NapovedaHladania" Text="Hľadať súbory a priečinky, napr. šťastný film typ:video"
                            Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                            Style="{StaticResource TichyText}" />
             </Grid>
-            <Button Grid.Column="1" Content="Filtre" Margin="8,0,0,0" Padding="14,6" IsEnabled="False"
-                    ToolTip="Filtre prídu v etape E2" />
+            <Button Grid.Column="1" x:Name="TlacidloFiltre" Content="Filtre" Margin="8,0,0,0" Padding="14,6" Click="Filtre_Click"
+                    ToolTip="Typ, veľkosť, dátum, disk, katalóg – zapíšu sa do poľa hľadania" />
             <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0">
                 <RadioButton x:Name="ZobrazeniePlagaty" Content="Plagáty" GroupName="Zobrazenie" IsChecked="True"
                              Style="{StaticResource {x:Type ToggleButton}}" Padding="14,6" />
                 <RadioButton x:Name="ZobrazenieZoznam" Content="Zoznam" GroupName="Zobrazenie"
                              Style="{StaticResource {x:Type ToggleButton}}" Padding="14,6" Margin="4,0,0,0" />
             </StackPanel>
-            <Button Grid.Column="4" x:Name="TlacidloAktualizacie" Content="Aktualizácie" Padding="14,6"
-                    Click="TlacidloAktualizacie_Click" />
-            <Button Grid.Column="5" x:Name="TlacidloOPrograme" Content="O programe" Margin="8,0,0,0" Padding="14,6"
-                    Click="TlacidloOPrograme_Click" />
+            <StackPanel Grid.Column="4" Orientation="Horizontal">
+                <Button x:Name="TlacidloNastavenia" Content="Nastavenia" Padding="14,6" Click="TlacidloNastavenia_Click" />
+                <Button x:Name="TlacidloAktualizacie" Content="Aktualizácie" Padding="14,6" Margin="8,0,0,0"
+                        Click="TlacidloAktualizacie_Click" />
+                <Button x:Name="TlacidloOPrograme" Content="O programe" Margin="8,0,0,0" Padding="14,6"
+                        Click="TlacidloOPrograme_Click" />
+            </StackPanel>
         </Grid>
 
         <!-- notice bar: a disk of the library was connected -->
@@ -59,7 +72,7 @@
                 <TextBlock Text="&#xEDA2;" FontFamily="{StaticResource Ikony}" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <TextBlock Grid.Column="1" x:Name="OznamText" VerticalAlignment="Center" TextWrapping="Wrap" />
                 <Button Grid.Column="2" x:Name="OznamAkcia" Content="Aktualizovať" Padding="14,4" Margin="12,0,0,0" Click="OznamAkcia_Click" />
-                <Button Grid.Column="3" Content="Neskôr" Padding="14,4" Margin="8,0,0,0" Click="OznamZavriet_Click" />
+                <Button Grid.Column="3" x:Name="OznamZavriet" Content="Neskôr" Padding="14,4" Margin="8,0,0,0" Click="OznamZavriet_Click" />
             </Grid>
         </Border>
 
@@ -124,6 +137,9 @@
                             </TreeView.ItemTemplate>
                             <TreeView.ContextMenu>
                                 <ContextMenu x:Name="PonukaStromu" Opened="PonukaStromu_Opened">
+                                    <MenuItem x:Name="PonukaPrehrat" Header="Prehrať" Click="PrehratZoStromu_Click"
+                                              ToolTip="Blu-ray alebo DVD v priečinku, inak videá priečinka ako playlist" />
+                                    <Separator />
                                     <MenuItem x:Name="PonukaAktualizovat" Header="Aktualizovať disk" Click="AktualizovatDisk_Click" />
                                     <MenuItem x:Name="PonukaOtvorit" Header="Otvoriť v Prieskumníkovi" Click="OtvoritVPrieskumnikovi_Click" />
                                     <MenuItem x:Name="PonukaUpravit" Header="Upraviť disk…" Click="UpravitDisk_Click" />
@@ -140,7 +156,7 @@
                         <TextBlock Text="ZBIERKY" Style="{StaticResource NadpisSekcie}" />
                         <ListBox x:Name="NavigaciaZbierky" BorderThickness="0" Background="Transparent"
                                  SelectionChanged="Navigacia_SelectionChanged">
-                            <ListBoxItem Content="Uložené hľadania" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaUlozene" Content="Uložené hľadania" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Kolekcie" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Playlisty" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Duplicity" Style="{StaticResource PolozkaNavigacie}" />
@@ -187,10 +203,17 @@
                     <CheckBox x:Name="AjZmazane" Content="Ukázať aj zmazané" Margin="16,0,0,0" VerticalAlignment="Center"
                               Checked="AjZmazane_Changed" Unchecked="AjZmazane_Changed" />
                 </WrapPanel>
-                <ListView Grid.Row="3" x:Name="ZoznamSuborov" SelectionMode="Single"
+                <ListView Grid.Row="3" x:Name="ZoznamSuborov" SelectionMode="Extended"
                           VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                           SelectionChanged="ZoznamSuborov_SelectionChanged" MouseDoubleClick="ZoznamSuborov_MouseDoubleClick"
-                          SizeChanged="ZoznamSuborov_SizeChanged">
+                          KeyDown="ZoznamSuborov_KeyDown" SizeChanged="ZoznamSuborov_SizeChanged">
+                    <ListView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Prehrať" Click="PrehratVybrane_Click" InputGestureText="Enter" />
+                            <MenuItem Header="Otvoriť v Prieskumníkovi" Click="OtvoritVPrieskumnikovi_Click" />
+                            <MenuItem Header="Kopírovať cestu" Click="KopirovatCestu_Click" />
+                        </ContextMenu>
+                    </ListView.ContextMenu>
                     <ListView.View>
                         <GridView>
                             <GridViewColumn x:Name="StlpecNazov" Header="Názov" Width="300">
@@ -209,6 +232,109 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
+            </Grid>
+
+            <!-- center: results of a search -->
+            <Grid Grid.Column="1" x:Name="PanelVysledkov" Margin="20,16,20,8" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="Hľadanie" FontSize="22" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="1" x:Name="PopisVysledkov" Margin="0,2,0,0" Style="{StaticResource TichyText}" />
+                <TextBlock Grid.Row="2" x:Name="UpozorneniaHladania" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed"
+                           Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+                <WrapPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,8">
+                    <Button x:Name="TlacidloPrehrat" Padding="14,5" Click="PrehratVybrane_Click" IsEnabled="False">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE768;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
+                            <TextBlock Text="Prehrať" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Content="Uložiť hľadanie…" Padding="14,5" Margin="8,0,0,0" Click="UlozitHladanie_Click" />
+                    <Button Content="Zavrieť hľadanie" Padding="14,5" Margin="8,0,0,0" Click="ZavrietHladanie_Click" />
+                </WrapPanel>
+                <ListView Grid.Row="4" x:Name="ZoznamVysledkov" SelectionMode="Extended"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                          SelectionChanged="ZoznamVysledkov_SelectionChanged" MouseDoubleClick="ZoznamVysledkov_MouseDoubleClick"
+                          KeyDown="ZoznamVysledkov_KeyDown" SizeChanged="ZoznamVysledkov_SizeChanged">
+                    <ListView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Prehrať" Click="PrehratVybrane_Click" InputGestureText="Enter" />
+                            <MenuItem Header="Ukázať v katalógu" Click="UkazatVKatalogu_Click" />
+                            <MenuItem Header="Otvoriť v Prieskumníkovi" Click="OtvoritVysledokVPrieskumnikovi_Click" />
+                            <MenuItem Header="Kopírovať cestu" Click="KopirovatCestu_Click" />
+                        </ContextMenu>
+                    </ListView.ContextMenu>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn x:Name="VysledokNazov" Header="Názov" Width="300">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Opacity="{Binding Priehladnost}">
+                                            <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding Nazov}" TextDecorations="{Binding Preciarknutie}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn x:Name="VysledokDisk" Header="Disk" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" ToolTip="{Binding DiskPopis}">
+                                            <TextBlock Text="{Binding DiskCislo}" />
+                                            <Ellipse Width="7" Height="7" Fill="#2EA043" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                     Visibility="{Binding Pripojeny, Converter={StaticResource BoolNaViditelnost}}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn x:Name="VysledokCesta" Header="Priečinok" Width="200">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding CestaText}" TextTrimming="CharacterEllipsis" ToolTip="{Binding CestaText}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn x:Name="VysledokVelkost" Header="Veľkosť" Width="90" DisplayMemberBinding="{Binding VelkostText}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <TextBlock Grid.Row="4" x:Name="NicSaNenaslo" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextAlignment="Center" Style="{StaticResource TichyText}" MaxWidth="420" />
+            </Grid>
+
+            <!-- center: saved searches -->
+            <Grid Grid.Column="1" x:Name="PanelUlozenych" Margin="20,16,20,8" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="Uložené hľadania" FontSize="22" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="1" Margin="0,2,0,0" Style="{StaticResource TichyText}"
+                           Text="Hľadanie uložíš tlačidlom „Uložiť hľadanie…“ nad jeho výsledkami. Dvojklik ho spustí." />
+                <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,8">
+                    <Button x:Name="TlacidloSpustitUlozene" Content="Spustiť" Padding="14,5" Click="SpustitUlozene_Click" />
+                    <Button x:Name="TlacidloPremenovatUlozene" Content="Premenovať…" Padding="14,5" Margin="8,0,0,0" Click="PremenovatUlozene_Click" />
+                    <Button x:Name="TlacidloZmazatUlozene" Content="Zmazať" Padding="14,5" Margin="8,0,0,0" Click="ZmazatUlozene_Click" />
+                </WrapPanel>
+                <ListBox Grid.Row="3" x:Name="ZoznamUlozenych" MouseDoubleClick="SpustitUlozene_Click" SelectionChanged="ZoznamUlozenych_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,4">
+                                <TextBlock Text="{Binding Nazov}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Dotaz}" FontFamily="Consolas" FontSize="12" Opacity="0.7" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Grid.Row="3" x:Name="ZiadneUlozene" Text="Zatiaľ žiadne uložené hľadanie." Visibility="Collapsed"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource TichyText}" />
             </Grid>
 
             <Border Grid.Column="2" BorderThickness="1,1,0,0" Padding="16"

@@ -1,0 +1,36 @@
+<Window x:Class="Katalog.Okno.NastaveniaOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Nastavenia"
+        Icon="Zdroje/katalog.ico"
+        Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock Text="Prehrávač" FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Margin="0,4,0,8" Style="{StaticResource TichyText}"
+                   Text="Ním sa prehrávajú filmy, playlisty aj priečinky Blu-ray a DVD. Predvolený prehrávač Windows priečinky Blu-ray a DVD zvyčajne nevie otvoriť." />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ComboBox x:Name="ZoznamPrehravacov" DisplayMemberPath="Popis" />
+            <Button Grid.Column="1" Content="Iný program…" Margin="8,0,0,0" Padding="14,5" Click="InyProgram_Click" />
+        </Grid>
+
+        <TextBlock Text="Vzhľad" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,8" />
+        <ComboBox x:Name="Motiv">
+            <ComboBoxItem Content="Podľa Windows" Tag="System" />
+            <ComboBoxItem Content="Svetlý" Tag="Light" />
+            <ComboBoxItem Content="Tmavý" Tag="Dark" />
+        </ComboBox>
+
+        <TextBlock Text="Aktualizácie" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,8" />
+        <CheckBox x:Name="AutomatickeAktualizacie" Content="Raz denne zistiť, či je nová verzia (na GitHube; nič o tebe sa neposiela)" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Uložiť" IsDefault="True" Padding="20,6" MinWidth="80" Click="Ulozit_Click" />
+            <Button Content="Zrušiť" IsCancel="True" Padding="20,6" MinWidth="80" Margin="8,0,0,0" />
+        </StackPanel>
+    </StackPanel>
+</Window>

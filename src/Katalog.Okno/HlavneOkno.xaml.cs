@@ -22,6 +22,7 @@ public partial class HlavneOkno : Window
         InitializeComponent();
         // selected only now: during InitializeComponent the other list does not exist yet
         NavigaciaKniznica.SelectedIndex = 0;
+        InicializujHladanie();
         Title = Produkt.Nazov;
         StavVerzie.Text = Produkt.Nazov + " " + Produkt.VerziaText;
         Loaded += async (_, _) => await PoNacitaniAsync();
@@ -81,9 +82,6 @@ public partial class HlavneOkno : Window
         }
     }
 
-    private void PoleHladania_TextChanged(object sender, TextChangedEventArgs e) =>
-        NapovedaHladania.Visibility = PoleHladania.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-
     private void Navigacia_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is not ListBox zoznam || zoznam.SelectedItem is not ListBoxItem polozka)
@@ -101,13 +99,29 @@ public partial class HlavneOkno : Window
         }
 
         ZrusVyberVStrome();
+        if (ReferenceEquals(polozka, NavigaciaUlozene))
+        {
+            ZobrazUlozene();
+            return;
+        }
+
         ZobrazPrazdny(polozka.Content as string ?? "", "Táto časť príde v ďalších etapách",
-            "Filmy, seriály a kolekcie s plagátmi prídu v etape E4, uložené hľadania v E2, duplicity a prehľad diskov v E5.");
+            "Filmy, seriály a kolekcie s plagátmi prídu v etape E4, playlisty v E7, duplicity a prehľad diskov v E5. " +
+            "Súbory a priečinky už nájdeš hľadaním hore.");
     }
 
     private async void TlacidloAktualizacie_Click(object sender, RoutedEventArgs e) => await KontrolujAktualizacieAsync(rucne: true);
 
     private void TlacidloOPrograme_Click(object sender, RoutedEventArgs e) => new OProgrameOkno { Owner = this }.ShowDialog();
+
+    private async void TlacidloNastavenia_Click(object sender, RoutedEventArgs e)
+    {
+        var prehravace = await Task.Run(Prehravace.Najdi);
+        if (new NastaveniaOkno(_nastavenia, prehravace) { Owner = this }.ShowDialog() == true)
+        {
+            UlozNastavenia();
+        }
+    }
 
     /// <summary>
     /// Asks GitHub for the latest release (at start once a day, or on the button). Nothing about the user is sent. A release

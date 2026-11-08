@@ -156,6 +156,8 @@ internal static class Samotest
             pridat.Close();
         }
 
+        await HladanieAsync(okno);
+
         App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
         oPrograme.Show();
@@ -165,6 +167,71 @@ internal static class Samotest
         App.NastavMotiv("System");
         okno.Close();
         Over(okno.Kniznica is null, "okno pri zatvorení zavrelo knižnicu");
+    }
+
+    /// <summary>Searching, filters, saved searches and playing from the window (no player starts: the start is only checked).</summary>
+    private static async Task HladanieAsync(HlavneOkno okno)
+    {
+        App.NastavMotiv("Light");
+        okno.PoleHladania.Text = "stastny film";
+        var vysledky = await okno.HladajAsync();
+        Over(vysledky?.Polozky.Count == 2 && vysledky.Polozky[0].Druh == DruhHladania.Priecinok,
+            $"hľadanie z okna bez diakritiky: priečinok a súbor ({vysledky?.Polozky.Count})");
+        Over(okno.PanelVysledkov.Visibility == Visibility.Visible, "výsledky sú v strede okna");
+
+        Jadro.Prehravanie.Spustenie? spustenie = null;
+        okno.SpustacPrehravania = s => spustenie = s;
+        okno.ZoznamVysledkov.SelectedItem = okno.ZoznamVysledkov.Items.OfType<PolozkaVysledku>().FirstOrDefault(p => !p.JePriecinok);
+        await SnimkaAsync(okno, "hladanie-svetle.png");
+        var hra = await okno.PrehrajVybraneAsync();
+        Over(hra && spustenie is { CezShell: true } s1 && s1.Program.EndsWith("Vymyslený Šťastný film (2024) - CZ EN FHD H264 SMALL.mkv", StringComparison.Ordinal) && File.Exists(s1.Program),
+            "prehratie súboru predvoleným prehrávačom (cesta na pripojenom disku)");
+
+        okno.PoleHladania.Text = "season typ:priecinok";
+        await okno.HladajAsync();
+        okno.ZoznamVysledkov.SelectAll();
+        spustenie = null;
+        hra = await okno.PrehrajVybraneAsync();
+        Over(hra && spustenie?.Program.EndsWith("Vymyslený seriál S01E01 - CZ FHD H265 SMALL.mkv", StringComparison.Ordinal) == true,
+            "prehratie priečinka sezóny (zmazaná epizóda sa nehrá)");
+
+        okno.PoleHladania.Text = "typ:video pripojene:ano velkost:>=500B -ukazka";
+        Over((await okno.HladajAsync())?.Polozky.Count == 2, "filtre v dotaze: typ, pripojené, veľkosť, záporné slovo");
+        okno.PoleHladania.Text = "Vymyslen zvuk:cs";
+        await okno.HladajAsync();
+        Over(okno.UpozorneniaHladania.Visibility == Visibility.Visible, "neznáme pole sa ohlási");
+        okno.SpustacPrehravania = null;
+
+        if (okno.Kniznica is { } kniznica)
+        {
+            await kniznica.Zapis.ZapisAsync(s => UlozeneHladania.Uloz(s, "Videá na pripojených diskoch", "typ:video pripojene:ano"));
+            await kniznica.Zapis.ZapisAsync(s => UlozeneHladania.Uloz(s, "Veľké filmy", "typ:video velkost:>20GB"));
+            IReadOnlyList<KatalogKniznice> katalogy;
+            IReadOnlyList<Disk> disky;
+            using (var c = kniznica.OtvorCitanie())
+            {
+                katalogy = KatalogyADisky.Katalogy(c);
+                disky = KatalogyADisky.Disky(c);
+            }
+
+            var filtre = new FiltreOkno("šťastný film typ:video velkost:1GB..20GB zmenene:2024 disk:1 pripojene:ano", katalogy, disky) { Owner = okno };
+            filtre.Show();
+            await SnimkaAsync(filtre, "filtre-svetle.png");
+            filtre.Close();
+        }
+
+        okno.PoleHladania.Text = "";
+        Over(okno.PanelVysledkov.Visibility == Visibility.Collapsed, "prázdne pole hľadania zavrie výsledky");
+
+        App.NastavMotiv("Dark");
+        okno.NavigaciaUlozene.IsSelected = true;
+        Over(okno.ZoznamUlozenych.Items.Count == 2, "uložené hľadania v okne");
+        await SnimkaAsync(okno, "ulozene-hladania-tmave.png");
+
+        var nastavenia = new NastaveniaOkno(Nastavenia.Nacitaj(Path.Combine(_vystup, "nastavenia")), []) { Owner = okno };
+        nastavenia.Show();
+        await SnimkaAsync(nastavenia, "nastavenia-tmave.png");
+        nastavenia.Close();
     }
 
     private static void Subor(string disk, string relativna, int velkost)
