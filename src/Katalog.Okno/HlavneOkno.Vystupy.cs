@@ -137,7 +137,7 @@ public partial class HlavneOkno
         Popis = $"{Produkt.Nazov} · {Format.Cas(Cas.Teraz())}",
     };
 
-    private static DateTime Datum(long tiky) => Cas.NaUtc(tiky).ToLocalTime().DateTime;
+    private static DateTime Datum(long tiky) => Cas.NaUtc(tiky).ToLocalTime();
 
     private IReadOnlyDictionary<long, IReadOnlyList<string>> DiskyTitulov(IEnumerable<long> tituly)
     {
