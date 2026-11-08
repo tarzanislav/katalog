@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/
+TestResults/
+
+# Installer output
+installer/Output/
+
+# Local scratch (never commit a real library)
+*.tmp
+*.katalog
+*.katalog-wal
+*.katalog-shm
+.katalog-scratch/
