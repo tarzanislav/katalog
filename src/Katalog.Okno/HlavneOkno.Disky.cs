@@ -271,7 +271,9 @@ public partial class HlavneOkno
         var pripojeny = _stav?.Cesta(diskId);
         NadpisPriecinka.Text = cesta.Length == 0 ? disk.Nazov : cesta.Split('/')[^1];
         var miesto = cesta.Length == 0 ? "" : " · " + cesta.Replace('/', '\\');
-        PopisPriecinka.Text = pripojeny is not null
+        PopisPriecinka.Text = disk.Druh == DruhDisku.Vzdialeny
+            ? $"Disk {disk.CisloText} · na serveri ({LokalitaServera(disk)}:/{(disk.Koren.Length > 0 ? disk.Koren + "/" : "")}{cesta}) · obsah z posledného skenu ({Format.Cas(disk.PoslednySken)})"
+            : pripojeny is not null
             ? $"Disk {disk.CisloText} · {disk.Nazov} · pripojený ({PlnaCesta(pripojeny, cesta)})"
             : $"Disk {disk.CisloText} · {disk.Nazov}{miesto} · nie je pripojený, obsah je z posledného skenu ({Format.Cas(disk.PoslednySken)})";
         TlacidloHore.IsEnabled = cesta.Length > 0;

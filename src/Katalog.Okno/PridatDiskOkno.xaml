@@ -9,7 +9,7 @@
         <TextBlock Text="Čo chceš pridať do katalógu?" FontSize="16" FontWeight="SemiBold" />
 
         <RadioButton x:Name="VolbaZvazok" Content="Celý pripojený disk" Margin="0,12,0,4" Checked="Volba_Changed" />
-        <ListBox x:Name="ZoznamZvazkov" Height="170" Margin="24,0,0,0" SelectionChanged="ZoznamZvazkov_SelectionChanged">
+        <ListBox x:Name="ZoznamZvazkov" Height="120" Margin="24,0,0,0" SelectionChanged="ZoznamZvazkov_SelectionChanged">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Margin="2,3">
