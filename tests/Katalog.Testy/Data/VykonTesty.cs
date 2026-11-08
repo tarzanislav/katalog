@@ -146,6 +146,107 @@ public sealed class VykonTesty
         Over.Pravda(druhy.Trvanie < TimeSpan.FromSeconds(10), $"sken bez zmien do 10 s (bol {druhy.Trvanie.TotalSeconds:F1} s)");
     }
 
+    /// <summary>
+    /// The library of titles at its target size: 12 000 films (10 000 titles, some on two disks) and 50 series with 40
+    /// episodes – recognised from names, then the poster wall of films and a filter (design target: a wall of 10 000
+    /// titles scrolls smoothly, so its list must come quickly).
+    /// </summary>
+    [Test]
+    public async Task DesatTisicTitulov()
+    {
+        if (Environment.GetEnvironmentVariable("KATALOG_VYKON") != "1")
+        {
+            Over.Preskoc("len s KATALOG_VYKON=1");
+        }
+
+        using var priecinok = new DocasnyPriecinok();
+        var kniznica = await Kniznica.OtvorAsync(priecinok.Subor("Tituly.katalog"));
+        await kniznica.Zapis.ZapisAsync(s => Vykonaj(s, """
+            INSERT INTO katalog(id, nazov, vytvoreny) VALUES (1, 'Výkon', 0);
+            INSERT INTO disk(id, katalog_id, cislo, nazov, pridany) VALUES (1, 1, 1, 'Vymyslený disk', 0);
+            INSERT INTO priecinok(id, disk_id, rodic_id, nazov) VALUES (1, 1, NULL, '');
+            INSERT INTO priecinok(id, disk_id, rodic_id, nazov) VALUES (2, 1, 1, 'MOVIES');
+            INSERT INTO priecinok(id, disk_id, rodic_id, nazov) VALUES (3, 1, 1, 'Filmy');
+            INSERT INTO priecinok(id, disk_id, rodic_id, nazov) VALUES (4, 1, 1, 'TVSHOWS');
+            """));
+        var nahoda = new Random(8112026);
+        await kniznica.Zapis.ZapisAsync(s =>
+        {
+            using var priecinky = s.CreateCommand();
+            priecinky.CommandText = "INSERT INTO priecinok(id, disk_id, rodic_id, nazov) VALUES ($id, 1, $r, $n)";
+            var pid = priecinky.Parameters.Add("$id", SqliteType.Integer);
+            var pr = priecinky.Parameters.Add("$r", SqliteType.Integer);
+            var pn = priecinky.Parameters.Add("$n", SqliteType.Text);
+            using var subory = s.CreateCommand();
+            subory.CommandText = "INSERT INTO subor(priecinok_id, disk_id, nazov, pripona, velkost, zmeneny, prvy_raz) VALUES ($p, 1, $n, 'mkv', 1000, 0, 0)";
+            var sp = subory.Parameters.Add("$p", SqliteType.Integer);
+            var sn = subory.Parameters.Add("$n", SqliteType.Text);
+            var id = 10;
+            for (var i = 0; i < 10_000; i++)
+            {
+                var nazov = string.Create(CultureInfo.InvariantCulture, $"{Slova[nahoda.Next(Slova.Length)]} {Slova[nahoda.Next(Slova.Length)]} {i} ({1950 + (i % 75)})");
+                // films of UNIVERSUM's library, each in its own folder; every fifth also as another file elsewhere
+                pid.Value = ++id;
+                pr.Value = 2;
+                pn.Value = nazov;
+                priecinky.ExecuteNonQuery();
+                sp.Value = id;
+                sn.Value = nazov + " - CZ FHD H264 SMALL.mkv";
+                subory.ExecuteNonQuery();
+                if (i % 5 == 0)
+                {
+                    sp.Value = 3;
+                    sn.Value = nazov.Replace(' ', '.') + ".1080p.mkv";
+                    subory.ExecuteNonQuery();
+                }
+            }
+
+            for (var serial = 0; serial < 50; serial++)
+            {
+                pid.Value = ++id;
+                pr.Value = 4;
+                pn.Value = string.Create(CultureInfo.InvariantCulture, $"Vymyslený seriál {serial} (2020)");
+                priecinky.ExecuteNonQuery();
+                for (var e = 1; e <= 40; e++)
+                {
+                    sp.Value = id;
+                    sn.Value = string.Create(CultureInfo.InvariantCulture, $"Vymyslený seriál {serial} S{1 + e / 11:00}E{e:00} - CZ HD H264 SMALL.mkv");
+                    subory.ExecuteNonQuery();
+                }
+            }
+        });
+
+        var rozpoznanie = Stopwatch.StartNew();
+        var vysledok = await Katalog.Ulohy.RozpoznanieDisku.SpustiAsync(kniznica, 1, "", CancellationToken.None);
+        rozpoznanie.Stop();
+        Over.Rovne(12_000 + 2_000, vysledok.Verzie, "verzie filmov a epizód");
+
+        double stena, filter, pocty;
+        await using (var c = await kniznica.OtvorCitanieAsync())
+        {
+            var kontext = new KontextHladania([1L], DateTime.Now);
+            KniznicaTitulov.Najdi(c, Katalog.Jadro.Dotazy.Dotaz.Citaj(""), kontext, PohladKniznice.Filmy);
+            var cas = Stopwatch.StartNew();
+            var filmy = KniznicaTitulov.Najdi(c, Katalog.Jadro.Dotazy.Dotaz.Citaj(""), kontext, PohladKniznice.Filmy);
+            stena = cas.Elapsed.TotalMilliseconds;
+            Over.Rovne(10_000, filmy.Count, "10 000 filmov (druhé súbory sú verzie)");
+            cas.Restart();
+            var najdene = KniznicaTitulov.Najdi(c, Katalog.Jadro.Dotazy.Dotaz.Citaj("vlak rok:1990..1999 pripona:mkv"), kontext, PohladKniznice.Filmy);
+            filter = cas.Elapsed.TotalMilliseconds;
+            Over.Pravda(najdene.Count > 0, "filter knižnice niečo nájde");
+            cas.Restart();
+            KniznicaTitulov.Pocty(c);
+            pocty = cas.Elapsed.TotalMilliseconds;
+        }
+
+        await kniznica.DisposeAsync();
+        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            $"::notice title=Výkon knižnice (10 000 titulov)::rozpoznanie 14 000 videí {rozpoznanie.Elapsed.TotalSeconds:F1} s, stena filmov {stena:F0} ms, filter {filter:F0} ms, počty {pocty:F0} ms"));
+        Over.Pravda(stena < 1000, $"stena 10 000 filmov do 1 s (bola {stena:F0} ms)");
+        Over.Pravda(filter < 1000, $"filter knižnice do 1 s (bol {filter:F0} ms)");
+        Over.Pravda(rozpoznanie.Elapsed < TimeSpan.FromMinutes(1), $"rozpoznanie 14 000 videí do 1 min (bolo {rozpoznanie.Elapsed.TotalSeconds:F1} s)");
+    }
+
     private static async Task<TimeSpan> ZapisSuboryAsync(Kniznica kniznica, Random nahoda, int od, int po)
     {
         const int vDavke = 10_000;

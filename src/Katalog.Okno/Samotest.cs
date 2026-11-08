@@ -273,7 +273,7 @@ internal static class Samotest
     /// </summary>
     private static async Task KnizniceAsync(HlavneOkno okno)
     {
-        if (okno.KniznicaTitulov is not { } spravca || okno.Kniznica is not { } kniznica)
+        if (okno.SpravcaTitulov is not { } spravca || okno.Kniznica is not { } kniznica)
         {
             Chyba("okno nemá knižnicu titulov");
             return;

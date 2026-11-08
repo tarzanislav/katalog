@@ -268,7 +268,7 @@ internal sealed class SpravcaKniznice(Kniznica kniznica, Nastavenia nastavenia, 
             {
                 var teraz = Cas.Teraz();
                 Tituly.ZapisZoznamHistra(s, zoznam.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), zoznam.Nazov,
-                    polozky.Select(p => new PolozkaZoznamu(p.Titul, p.TmdbId)).ToList(), teraz);
+                    polozky.Select(p => new PolozkaZoznamuHistra(p.Titul, p.TmdbId)).ToList(), teraz);
                 foreach (var p in polozky)
                 {
                     var titulId = Tituly.TitulZoZdroja(s, p.Titul, teraz);

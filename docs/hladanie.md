@@ -47,9 +47,30 @@ nenájdu.
 | `dlzka:>2h` | dlhšie ako 2 hodiny; `dlzka:<30min`, `dlzka:80..100` (holé číslo sú minúty), `dlzka:<=1:30` |
 | `poskodene:ano` | súbory, ktoré ffprobe nevedel prečítať (poškodené, nedokončené) |
 
-Pred pole sa dá dať mínus: `-pripona:srt` sú súbory okrem titulkov. Všetky podmienky musia platiť naraz.
-Čo program nerozumie, ohlási nad výsledkami a vynechá – nikdy nehádže potichu. Neznáme pole (napr. `herec:` pred
-etapou E4) hľadá ako obyčajný text.
+### Knižnica titulov
+
+Platia v poli hľadania (nájdu súbory verzií – filmu, epizódy) aj vo filtri knižnice nad stenou plagátov (nájdu tituly).
+Názvy, žánre a hercov doplnia zdroje údajov (TMDB, HISTRA); bez nich poznajú len to, čo povedia názvy súborov.
+
+| Zápis | Čo nájde |
+| --- | --- |
+| `rok:2001` | rok titulu; `rok:1990..1999`, `rok:>=2020` |
+| `zaner:komedia` | žáner (časť názvu, bez diakritiky); `zaner:komedia,horor` jeden z nich |
+| `hodnotenie:>=7.5` | hodnotenie zdroja (0 – 10); holé číslo znamená aspoň |
+| `moje:>=8` | tvoje vlastné hodnotenie (1 – 10) |
+| `herec:"Meno Priezvisko"` | hrá v ňom (aspoň 3 písmená mena); `rezia:Priezvisko` réžia, pri seriáli tvorcovia |
+| `kolekcia:ano` | patrí do kolekcie; `kolekcia:"Názov"` do kolekcie s týmto názvom; `kolekcia:nie` do žiadnej |
+| `videne:nie` | nevidené (pri súbore jeho film alebo epizóda, pri seriáli žiadna epizóda) |
+| `mam:nie` | tituly, ktoré nemáš: chýbajúce diely kolekcií, zoznamy HISTRA, želania |
+| `zelane:ano` | v zozname želaní |
+| `kniznica:film` | filmy; `kniznica:serial` seriály, `kniznica:potvrdit` čaká na potvrdenie, `kniznica:ano` súbor je verziou titulu, `kniznica:nie` video odložené mimo knižnice |
+
+Vo filtri knižnice platia aj podmienky súborov (`kvalita:4k`, `zvuk:cs`, `disk:3`…): titul ich spĺňa, keď ich má
+niektorý súbor jeho verzie, ktorý je na disku.
+
+Pred pole sa dá dať mínus: `-pripona:srt` sú súbory okrem titulkov, `-zaner:horor` tituly bez hororu. Všetky
+podmienky musia platiť naraz. Čo program nerozumie, ohlási nad výsledkami a vynechá – nikdy nehádže potichu. Neznáme
+pole (napr. `stitok:` pred etapou E6) hľadá ako obyčajný text.
 
 ## Príklady
 
@@ -63,6 +84,9 @@ zmazane:len typ:video                   videá, ktoré z diskov zmizli (ostali v
 kvalita:4k hdr:ano                      4K s HDR
 typ:video -zvuk:sk -titulky:sk          videá bez slovenčiny (ani zvuk, ani titulky)
 kvalita:<=hd typ:video                  kandidáti na lepšiu verziu
+zaner:komedia videne:nie                nevidené komédie (vo filtri knižnice)
+kolekcia:ano mam:nie                    chýbajúce diely kolekcií
+kniznica:serial -zvuk:cs                seriály bez českého zvuku
 ```
 
 Výsledkov je najviac 500; keď ich je viac, program to povie a stačí pridať slovo alebo filter.

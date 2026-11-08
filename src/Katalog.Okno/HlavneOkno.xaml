@@ -36,6 +36,7 @@ disk:3   disk:"Názov disku"   katalog:Videotéka
 pripojene:ano        zmazane:aj | len
 kvalita:4k | >=fhd   kodek:hevc   hdr:ano | dv   dlzka:>2h
 zvuk:sk,cs           titulky:sk | ano | nie      poskodene:ano
+rok:2001   zaner:komedia   herec:"Meno"   kniznica:film | serial | potvrdit   videne:nie
 Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                     </TextBox.ToolTip>
                 </TextBox>

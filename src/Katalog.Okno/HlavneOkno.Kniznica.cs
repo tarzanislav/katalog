@@ -46,7 +46,7 @@ public partial class HlavneOkno
     private bool _plnimDetail;
 
     /// <summary>The library's background work (the self-test gives it stand-in sources).</summary>
-    internal SpravcaKniznice? KniznicaTitulov => _kniznicaTitulov;
+    internal SpravcaKniznice? SpravcaTitulov => _kniznicaTitulov;
 
     /// <summary>The tiles shown now (the self-test reads them).</summary>
     internal IReadOnlyList<PolozkaSteny> PolozkySteny => _polozkySteny;

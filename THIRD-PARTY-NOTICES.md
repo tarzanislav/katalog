@@ -11,6 +11,17 @@ KATALOG je vlastný kód (licencia Apache 2.0). Používa tieto diela tretích s
 | [FFmpeg](https://ffmpeg.org) 9.0.2 (priečinok `ffmpeg`) | technické údaje videí (ffprobe) a náhľady (ffmpeg) | GNU LGPL 2.1 alebo novšia |
 | [zlib](https://zlib.net) (súčasť zostavy FFmpeg) | rozbaľovanie údajov niektorých formátov | zlib |
 
+## Zdroje údajov
+
+KATALOG sa môže pýtať služieb na údaje o filmoch a seriáloch – len ak ich používateľ zapne a dá im svoj vlastný kľúč;
+posiela sa len hľadaný názov a rok titulu. Údaje a obrázky ostávajú majetkom služieb a ich autorov, KATALOG ich
+uchováva len v počítači používateľa.
+
+- **TMDB** (https://www.themoviedb.org): názvy, dej, žánre, osoby, plagáty, epizódy a kolekcie.
+  *This product uses the TMDB API but is not endorsed or certified by TMDB.*
+- **HISTRA** (https://histra.net): hľadanie titulov a zoznamy používateľa (len čítanie).
+- **Jellyfin** (server používateľa): kolekcie a pozreté tituly.
+
 ## FFmpeg (LGPL 2.1 alebo novšia)
 
 KATALOG prednostne použije FFmpeg z UNIVERSUM alebo z priečinka zvoleného v Nastaveniach; vlastná kópia v priečinku

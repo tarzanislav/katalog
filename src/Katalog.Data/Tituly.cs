@@ -819,7 +819,7 @@ public static class Tituly
     /// A list of the user's from HISTRA, compared with the library: each entry points to its title, which is created
     /// without a version when the library does not know it (A2 – "nemám"). Entries no longer in the list go.
     /// </summary>
-    public static long ZapisZoznamHistra(SqliteConnection spojenie, string histraId, string nazov, IReadOnlyList<PolozkaZoznamu> polozky, long teraz)
+    public static long ZapisZoznamHistra(SqliteConnection spojenie, string histraId, string nazov, IReadOnlyList<PolozkaZoznamuHistra> polozky, long teraz)
     {
         using var zoznam = Kniznica.Prikaz(spojenie, """
             INSERT INTO histra_zoznam(histra_id, nazov, synchronizovany) VALUES ($h, $n, $teraz)
@@ -1113,4 +1113,4 @@ public sealed record TitulNaDoplnenie(
     long Id, DruhTitulu Druh, string Nazov, string? Original, int? Rok, string? Tmdb, string? Histra, long? Hladany, long? Nacitany, bool NaPotvrdenie);
 
 /// <summary>An entry of a HISTRA list: the title as HISTRA names it ("movie/123") and its TMDB id when HISTRA gives one.</summary>
-public sealed record PolozkaZoznamu(Kandidat Titul, int? TmdbId);
+public sealed record PolozkaZoznamuHistra(Kandidat Titul, int? TmdbId);

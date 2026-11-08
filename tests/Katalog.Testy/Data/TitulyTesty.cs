@@ -201,7 +201,7 @@ public sealed class TitulyTesty
                 """), "chýbajúce diely");
         }
 
-        var polozky = new List<PolozkaZoznamu>
+        var polozky = new List<PolozkaZoznamuHistra>
         {
             new(new Kandidat(ZdrojUdajov.Histra, "movie/700", DruhTitulu.Film, "Vymyslená sága", "Vymyslená sága", 2001, 1), 101),
             new(new Kandidat(ZdrojUdajov.Histra, "tv/701", DruhTitulu.Serial, "Vymyslený seriál zo zoznamu", null, 2022, 1), null),
