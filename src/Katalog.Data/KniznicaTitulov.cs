@@ -104,7 +104,7 @@ public static class KniznicaTitulov
         """;
 
     private const string Stlpce = """
-        SELECT t.id, t.druh, t.nazov, t.original, t.rok, lower(hex(o.odtlacok)), t.hodnotenie_zdroja, t.moje_hodnotenie,
+        SELECT t.id, t.druh, t.nazov, t.original, t.rok, nullif(lower(hex(o.odtlacok)), ''), t.hodnotenie_zdroja, t.moje_hodnotenie,
                p.titul_id IS NOT NULL, coalesce(p.verzie, 0), coalesce(p.epizody, 0), t.id IN (SELECT titul_id FROM videne),
                coalesce(p.potvrdene, 1) = 0, t.zelany, coalesce(p.kvalita, 0)
         FROM titul t LEFT JOIN pritomne p ON p.titul_id = t.id LEFT JOIN obrazok o ON o.id = t.plagat_id
@@ -372,7 +372,7 @@ public static class KniznicaTitulov
     public static IReadOnlyList<KolekciaKniznice> ZoznamKolekcii(SqliteConnection spojenie, long? titulId = null)
     {
         using var prikaz = Kniznica.Prikaz(spojenie, $"""
-            SELECT k.id, k.nazov, k.dej, lower(hex(o.odtlacok)), count(kt.titul_id),
+            SELECT k.id, k.nazov, k.dej, nullif(lower(hex(o.odtlacok)), ''), count(kt.titul_id),
                    count(kt.titul_id) FILTER (WHERE {PodmienkyKniznice.MaPritomnu("kt.titul_id")})
             FROM kolekcia k LEFT JOIN kolekcia_titul kt ON kt.kolekcia_id = k.id LEFT JOIN obrazok o ON o.id = k.plagat_id
             {(titulId is null ? "" : "WHERE k.id IN (SELECT kolekcia_id FROM kolekcia_titul WHERE titul_id = $t)")}
