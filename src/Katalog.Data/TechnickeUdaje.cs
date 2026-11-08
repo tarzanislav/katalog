@@ -5,19 +5,39 @@ namespace Katalog.Data;
 
 /// <summary>A video whose technical data are still to be read, with what the scan saw (to know it did not change since).</summary>
 /// <param name="MaUdaje">Its technical data are read already; only its fingerprint is missing (stage E5).</param>
-public sealed record VideoNaCitanie(long SuborId, long PriecinokId, string Nazov, long Velkost, long Zmeneny, bool MaUdaje = false);
+/// <param name="BezPodrobnosti">Read by ffprobe before KATALOG had its own reader of MKV and MP4: read once more for the details.</param>
+public sealed record VideoNaCitanie(long SuborId, long PriecinokId, string Nazov, long Velkost, long Zmeneny, bool MaUdaje = false, bool BezPodrobnosti = false);
 
 /// <summary>A preview of a video: the name of its picture file and the time in the video.</summary>
 public sealed record NahladVidea(string Meno, long CasMs, int Sirka, int Vyska);
 
 /// <summary>What the library knows about the technical side of one file.</summary>
-public sealed record TechnickeUdajeSuboru(MedialneUdaje Udaje, IReadOnlyList<Stopa> Stopy, IReadOnlyList<NahladVidea> Nahlady, long Precitane);
+public sealed record TechnickeUdajeSuboru(MedialneUdaje Udaje, IReadOnlyList<Stopa> Stopy, IReadOnlyList<NahladVidea> Nahlady, long Precitane)
+{
+    /// <summary>The details in the way of MediaInfo (KATALOG's own reader of MKV and MP4); empty for other files.</summary>
+    public IReadOnlyList<SekciaMedia> Podrobnosti { get; init; } = [];
+}
 
 /// <summary>Technical data of videos in the library (stage E3): which are still to be read, writing and reading them.</summary>
 public static class TechnickeUdaje
 {
     /// <summary>The extensions of videos as an SQL list (constants of the program, nothing the user wrote).</summary>
     private static readonly string Videa = string.Join(", ", DruhySuborov.Pripony(DruhSuboru.Video).Select(p => "'" + p + "'"));
+
+    /// <summary>The extensions KATALOG's own reader knows (Matroska, MP4): their details are read without ffprobe.</summary>
+    public static readonly IReadOnlySet<string> VlastnaCitacka = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "mkv", "mk3d", "webm", "mp4", "m4v", "mov" };
+
+    private static readonly string Vlastne = string.Join(", ", VlastnaCitacka.Select(p => "'" + p + "'"));
+
+    /// <summary>A present video that waits: no data, no fingerprint, or an MKV/MP4 without the details of the own reader.</summary>
+    private static readonly string Caka =
+        "(s.odtlacok IS NULL OR NOT EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id) " +
+        $"OR (s.pripona IN ({Vlastne}) AND EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id AND m.podrobnosti IS NULL)))";
+
+    private static readonly System.Text.Json.JsonSerializerOptions Json = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>
     /// Videos of a disk without technical data or without a fingerprint (present ones only), in the order of the scan,
@@ -27,9 +47,10 @@ public static class TechnickeUdaje
     {
         using var prikaz = spojenie.CreateCommand();
         prikaz.CommandText = $"""
-            SELECT s.id, s.priecinok_id, s.nazov, s.velkost, s.zmeneny, EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id) FROM subor s
-            WHERE s.disk_id = $disk AND s.stav = 0 AND s.pripona IN ({Videa}) AND s.id > $po
-              AND (s.odtlacok IS NULL OR NOT EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id))
+            SELECT s.id, s.priecinok_id, s.nazov, s.velkost, s.zmeneny, EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id),
+                   s.pripona IN ({Vlastne}) AND EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id AND m.podrobnosti IS NULL)
+            FROM subor s
+            WHERE s.disk_id = $disk AND s.stav = 0 AND s.pripona IN ({Videa}) AND s.id > $po AND {Caka}
             ORDER BY s.id LIMIT $najviac
             """;
         prikaz.Parameters.AddWithValue("$disk", diskId);
@@ -39,7 +60,8 @@ public static class TechnickeUdaje
         var vysledok = new List<VideoNaCitanie>();
         while (citac.Read())
         {
-            vysledok.Add(new VideoNaCitanie(citac.GetInt64(0), citac.GetInt64(1), citac.GetString(2), citac.GetInt64(3), citac.GetInt64(4), citac.GetInt32(5) == 1));
+            vysledok.Add(new VideoNaCitanie(citac.GetInt64(0), citac.GetInt64(1), citac.GetString(2), citac.GetInt64(3), citac.GetInt64(4),
+                citac.GetInt32(5) == 1, citac.GetInt32(6) == 1));
         }
 
         return vysledok;
@@ -50,7 +72,7 @@ public static class TechnickeUdaje
     {
         using var prikaz = spojenie.CreateCommand();
         prikaz.CommandText = $"""
-            SELECT count(*), count(*) FILTER (WHERE s.odtlacok IS NULL OR NOT EXISTS (SELECT 1 FROM medialne_udaje m WHERE m.subor_id = s.id))
+            SELECT count(*), count(*) FILTER (WHERE {Caka})
             FROM subor s WHERE s.disk_id = $disk AND s.stav = 0 AND s.pripona IN ({Videa})
             """;
         prikaz.Parameters.AddWithValue("$disk", diskId);
@@ -78,8 +100,11 @@ public static class TechnickeUdaje
         return prikaz.ExecuteNonQuery() > 0;
     }
 
+    /// <param name="nahlady">Null keeps the previews the video has (a second reading for the details).</param>
+    /// <param name="podrobnosti">The details of the own reader; an empty list = the own reader could not read the file.</param>
     public static bool Zapis(
-        SqliteConnection spojenie, VideoNaCitanie video, MedialneUdaje udaje, IReadOnlyList<Stopa> stopy, IReadOnlyList<(long ObrazokId, long CasMs)> nahlady, long teraz)
+        SqliteConnection spojenie, VideoNaCitanie video, MedialneUdaje udaje, IReadOnlyList<Stopa> stopy, IReadOnlyList<(long ObrazokId, long CasMs)>? nahlady, long teraz,
+        IReadOnlyList<SekciaMedia>? podrobnosti = null)
     {
         using (var kontrola = spojenie.CreateCommand())
         {
@@ -96,11 +121,11 @@ public static class TechnickeUdaje
         using (var prikaz = spojenie.CreateCommand())
         {
             prikaz.CommandText = """
-                INSERT OR REPLACE INTO medialne_udaje(subor_id, kontajner, dlzka_ms, datovy_tok, video_kodek, sirka, vyska, hdr, snimky, trieda_kvality, chyby, precitane)
-                VALUES ($id, $kontajner, $dlzka, $tok, $kodek, $sirka, $vyska, $hdr, $snimky, $trieda, $chyby, $teraz);
+                INSERT OR REPLACE INTO medialne_udaje(subor_id, kontajner, dlzka_ms, datovy_tok, video_kodek, sirka, vyska, hdr, snimky, trieda_kvality, chyby, precitane, podrobnosti)
+                VALUES ($id, $kontajner, $dlzka, $tok, $kodek, $sirka, $vyska, $hdr, $snimky, $trieda, $chyby, $teraz, $podrobnosti);
                 DELETE FROM stopa WHERE subor_id = $id;
-                DELETE FROM nahlad WHERE subor_id = $id;
-                """;
+                """ + (nahlady is null ? "" : "DELETE FROM nahlad WHERE subor_id = $id;");
+            prikaz.Parameters.AddWithValue("$podrobnosti", podrobnosti is null ? DBNull.Value : System.Text.Json.JsonSerializer.Serialize(podrobnosti, Json));
             prikaz.Parameters.AddWithValue("$id", video.SuborId);
             prikaz.Parameters.AddWithValue("$kontajner", (object?)udaje.Kontajner ?? DBNull.Value);
             prikaz.Parameters.AddWithValue("$dlzka", (object?)udaje.DlzkaMs ?? DBNull.Value);
@@ -147,10 +172,10 @@ public static class TechnickeUdaje
             var poradie = prikaz.Parameters.Add("$poradie", SqliteType.Integer);
             var obrazok = prikaz.Parameters.Add("$obrazok", SqliteType.Integer);
             var cas = prikaz.Parameters.Add("$cas", SqliteType.Integer);
-            for (var i = 0; i < nahlady.Count; i++)
+            for (var i = 0; i < (nahlady?.Count ?? 0); i++)
             {
                 poradie.Value = i;
-                obrazok.Value = nahlady[i].ObrazokId;
+                obrazok.Value = nahlady![i].ObrazokId;
                 cas.Value = nahlady[i].CasMs;
                 prikaz.ExecuteNonQuery();
             }
@@ -159,15 +184,27 @@ public static class TechnickeUdaje
         return true;
     }
 
+    /// <summary>
+    /// Marks that the own reader cannot read an MKV/MP4 video read by ffprobe before ('[]'): it is not tried again.
+    /// </summary>
+    public static void BezPodrobnosti(SqliteConnection spojenie, long suborId)
+    {
+        using var prikaz = spojenie.CreateCommand();
+        prikaz.CommandText = "UPDATE medialne_udaje SET podrobnosti = '[]' WHERE subor_id = $id AND podrobnosti IS NULL";
+        prikaz.Parameters.AddWithValue("$id", suborId);
+        prikaz.ExecuteNonQuery();
+    }
+
     /// <summary>The technical data of a file, or null when they were not read (yet).</summary>
     public static TechnickeUdajeSuboru? Citaj(SqliteConnection spojenie, long suborId)
     {
         MedialneUdaje udaje;
         long precitane;
+        IReadOnlyList<SekciaMedia> podrobnosti;
         using (var prikaz = spojenie.CreateCommand())
         {
             prikaz.CommandText = """
-                SELECT kontajner, dlzka_ms, datovy_tok, video_kodek, sirka, vyska, hdr, snimky, chyby, precitane
+                SELECT kontajner, dlzka_ms, datovy_tok, video_kodek, sirka, vyska, hdr, snimky, chyby, precitane, podrobnosti
                 FROM medialne_udaje WHERE subor_id = $id
                 """;
             prikaz.Parameters.AddWithValue("$id", suborId);
@@ -188,6 +225,7 @@ public static class TechnickeUdaje
                 citac.IsDBNull(7) ? null : citac.GetDouble(7),
                 citac.IsDBNull(8) ? null : citac.GetString(8));
             precitane = citac.GetInt64(9);
+            podrobnosti = citac.IsDBNull(10) ? [] : PodrobnostiZJson(citac.GetString(10));
         }
 
         var stopy = new List<Stopa>();
@@ -222,6 +260,18 @@ public static class TechnickeUdaje
             }
         }
 
-        return new TechnickeUdajeSuboru(udaje, stopy, nahlady, precitane);
+        return new TechnickeUdajeSuboru(udaje, stopy, nahlady, precitane) { Podrobnosti = podrobnosti };
+    }
+
+    private static IReadOnlyList<SekciaMedia> PodrobnostiZJson(string json)
+    {
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<SekciaMedia>>(json, Json) ?? [];
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return [];
+        }
     }
 }

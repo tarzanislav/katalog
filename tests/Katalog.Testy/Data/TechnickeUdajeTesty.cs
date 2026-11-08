@@ -33,7 +33,8 @@ public sealed class TechnickeUdajeTesty
         var obrazok = obrazky.Uloz([0xFF, 0xD8, 0xFF, 0xD9], DruhObrazka.Nahlad, 320, 133);
         var video = naCitanie[0];
         var zapisane = await kniznica.Zapis.ZapisAsync(s =>
-            TechnickeUdaje.Zapis(s, video, udaje, stopy, [(UlozisteObrazkov.Zaregistruj(s, obrazok, 1), 2_465_041)], 1));
+            TechnickeUdaje.Zapis(s, video, udaje, stopy, [(UlozisteObrazkov.Zaregistruj(s, obrazok, 1), 2_465_041)], 1,
+                [new SekciaMedia("Všeobecné", [new PolozkaMedia("Formát", "Matroska"), new PolozkaMedia("Názov", "„Vymyslený“ <film> & čeština")])]));
         Over.Pravda(zapisane, "zapísané");
         Over.Pravda(File.Exists(obrazky.Cesta(obrazok.Meno)) && Path.GetFileName(obrazky.Priecinok) == "Kniznica.obrazky", "obrázok vedľa knižnice");
 
@@ -44,6 +45,8 @@ public sealed class TechnickeUdajeTesty
             Over.Rovne(stopy.Count, precitane.Stopy.Count, "stopy sa vrátia");
             Over.Rovne(stopy[0], precitane.Stopy[0], "stopa sa vráti celá");
             Over.Rovne(new NahladVidea(obrazok.Meno, 2_465_041, 320, 133), precitane.Nahlady.Single(), "náhľad");
+            Over.Pravda(precitane.Podrobnosti is [{ Nazov: "Všeobecné", Polozky: [{ Hodnota: "Matroska" }, { Hodnota: "„Vymyslený“ <film> & čeština" }] }],
+                "podrobnosti sa vrátia celé");
             Over.Rovne((1, 1), TechnickeUdaje.Pocty(c, diskId), "čaká ešte odtlačok");
             Over.Pravda(TechnickeUdaje.NaCitanie(c, diskId, 10).Single().MaUdaje, "len odtlačok");
         }

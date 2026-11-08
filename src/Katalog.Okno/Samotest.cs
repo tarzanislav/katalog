@@ -164,6 +164,10 @@ internal static class Samotest
             var film = Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("kvalita:sd zvuk:sk typ:video"), nikto).Polozky;
             Over(film.Count == 1 && TechnickeUdaje.Citaj(c, film[0].Id) is { Nahlady.Count: 1, Udaje.Sirka: 320 },
                 "hľadanie podľa technických údajov a náhľad filmu");
+            var podrobnosti = film.Count == 1 ? TechnickeUdaje.Citaj(c, film[0].Id)?.Podrobnosti ?? [] : [];
+            Over(podrobnosti.Any(s => s.Nazov == "Video") && podrobnosti.Any(s => s.Nazov.StartsWith("Zvuk", StringComparison.Ordinal)),
+                "vlastná čítačka MKV: podrobnosti Všeobecné, Video, Zvuk (" + string.Join(", ", podrobnosti.Select(s => s.Nazov)) + ")");
+            Over(PodrobnostiSuboru.Text(podrobnosti).Contains("Formát", StringComparison.Ordinal), "podrobnosti ako text na kopírovanie");
             Over(Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("poskodene:ano"), nikto).Polozky.Count == 1, "poškodený súbor sa dá nájsť");
             Over(UlohyKniznice.Cakajuce(c).Count == 0, "fronta úloh je po skene a čítaní prázdna");
         }

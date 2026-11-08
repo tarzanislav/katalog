@@ -437,6 +437,8 @@ public partial class HlavneOkno
         DetailNadpis.Visibility = Visibility.Visible;
         DetailKolekcie.Visibility = Visibility.Collapsed;
         DetailKolekcie.ItemsSource = null;
+        DetailPodrobnostiPanel.Visibility = Visibility.Collapsed;
+        DetailPodrobnosti.Sekcie = null;
         _detail = null;
         if (disk is null)
         {

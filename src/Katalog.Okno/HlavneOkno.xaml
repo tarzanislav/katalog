@@ -1,6 +1,7 @@
 <Window x:Class="Katalog.Okno.HlavneOkno"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Katalog.Okno"
         Title="KATALOG"
         Icon="Zdroje/katalog.ico"
         Width="1280" Height="800" MinWidth="960" MinHeight="560"
@@ -862,6 +863,10 @@ ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
+                                            <Expander Header="Všetky podrobnosti súboru" Margin="0,6,0,0" FontWeight="SemiBold"
+                                                      Visibility="{Binding MaPodrobnosti, Converter={StaticResource BoolNaViditelnost}}">
+                                                <local:PodrobnostiSuboru Sekcie="{Binding Podrobnosti}" Margin="0,6,0,0" FontWeight="Normal" />
+                                            </Expander>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -878,6 +883,11 @@ ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <!-- the details of a video file as MediaInfo shows them (KATALOG's own reader of MKV and MP4) -->
+                    <StackPanel x:Name="DetailPodrobnostiPanel" Visibility="Collapsed" Margin="0,4,0,0">
+                        <TextBlock Text="Podrobnosti súboru" Style="{StaticResource NadpisKarty}" FontSize="15" />
+                        <local:PodrobnostiSuboru x:Name="DetailPodrobnosti" />
+                    </StackPanel>
                     <!-- all titles of the title's collections, small posters: a click opens the title (owner, 8. 11. 2026) -->
                     <ItemsControl x:Name="DetailKolekcie" Visibility="Collapsed" Focusable="False">
                         <ItemsControl.ItemTemplate>

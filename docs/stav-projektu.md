@@ -268,4 +268,18 @@ rovnaké jazyky zvuku aj titulkov a veľkosť líšiaca sa najviac o 10 %; u ser
 druhá. FHD a 4K, 16 GB a 4 GB či iné jazyky sú **rôzne verzie** jedného titulu (jeden plagát, verzie pod ním v detaile),
 nájde ich filter `verzie:>1`. Výkon: 2 000 titulov s dvoma verziami 0,4 s.
 
+**Vlastná čítačka MKV a MP4** (vlastník 8. 11. 2026, vlastný kód bez knižníc): Matroska/WebM (EBML – hlavička, Info,
+Tracks a značky so štatistikami stôp podľa SeekHead, aj na konci súboru) a MP4/QuickTime (box moov kdekoľvek v súbore).
+Číta len kilobajty, nie celý film – jeden súbor za zlomok milisekundy namiesto spustenia ffprobe; ostatné formáty
+(AVI, TS, M2TS …) ďalej cez ffprobe, náhľady cez FFmpeg. Zistí: formát a verziu, veľkosť, dĺžku, celkový tok, dátum
+kódovania, aplikáciu a knižnicu; pri videu kodek, profil (napr. Main 10@L4@Main z hvcC/avcC/av1C), rozlíšenie, pomer
+strán, snímkovú frekvenciu a jej režim, farebný priestor, podvzorkovanie, bitovú hĺbku, riadkovanie, farebný rozsah,
+primárne farby, prenos, maticu (aj zo SPS HEVC) a HDR (HDR10, HLG, Dolby Vision s profilom); pri zvuku formát
+a obchodný názov (Dolby Digital Plus, DTS-HD MA/HRA z prvého rámca, TrueHD …), kanály a rozloženie, vzorkovanie;
+pri titulkoch formát a počet prvkov; pri každej stope dátový tok, veľkosť streamu s podielom, jazyk, názov
+a príznaky. Podrobnosti sa ukladajú do knižnice (schéma **v7**, `medialne_udaje.podrobnosti`); MKV a MP4 prečítané
+skôr cez ffprobe sa raz prečítajú znova. V detaile súboru a na karte titulu pri každej verzii („Všetky podrobnosti
+súboru“) ich ukazuje prehľad v štýle MediaInfo – tučné farebné nadpisy sekcií, popisy a hodnoty v dvoch stĺpcoch,
+hlavné hodnoty tučne; dá sa označiť myšou aj klávesnicou a skopírovať (celé ako zarovnaný text).
+
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.

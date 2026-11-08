@@ -63,6 +63,7 @@ public partial class HlavneOkno
     {
         var t = d.Polozka;
         DetailNadpis.Visibility = Visibility.Collapsed;
+        DetailPodrobnostiPanel.Visibility = Visibility.Collapsed;
         DetailOdkazy.ItemsSource = OdkazyTitulu(d);
         var identifikatory = d.Identifikatory
             .Where(i => i.Zdroj is ZdrojUdajov.Histra or ZdrojUdajov.Tmdb or ZdrojUdajov.Imdb)
@@ -177,7 +178,10 @@ public partial class HlavneOkno
                 riadky.Add(new RiadokDetailu("Súbor", "Technické údaje ešte neprečítané – prečítajú sa, keď bude disk pripojený."));
             }
 
-            bloky.Add(new BlokVerzie(nadpis, kde, riadky));
+            bloky.Add(new BlokVerzie(nadpis, kde, riadky)
+            {
+                Podrobnosti = _detailTechnicke.TryGetValue(v.Id, out var t) ? t.Podrobnosti : [],
+            });
         }
 
         return bloky;
@@ -285,7 +289,13 @@ public partial class HlavneOkno
 internal sealed record OdkazTitulu(string Text, Uri Adresa);
 
 /// <summary>A version of a title on the card: where it lies and what its file is.</summary>
-internal sealed record BlokVerzie(string Nadpis, string Kde, IReadOnlyList<RiadokDetailu> Riadky);
+internal sealed record BlokVerzie(string Nadpis, string Kde, IReadOnlyList<RiadokDetailu> Riadky)
+{
+    /// <summary>All details of the version's file (own reader of MKV and MP4), shown on request.</summary>
+    public IReadOnlyList<SekciaMedia> Podrobnosti { get; init; } = [];
+
+    public bool MaPodrobnosti => Podrobnosti.Count > 0;
+}
 
 /// <summary>A collection on the card with all its titles.</summary>
 internal sealed record SkupinaKolekcie(string Nazov, string Pocet, IReadOnlyList<DielKolekcie> Diely);

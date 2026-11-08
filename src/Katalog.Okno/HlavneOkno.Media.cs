@@ -192,6 +192,8 @@ public partial class HlavneOkno
     /// <summary>The lines of the detail panel about the technical side of a video, and its preview.</summary>
     private void PridajTechnickeUdaje(List<RiadokDetailu> riadky, PolozkaZoznamu polozka)
     {
+        DetailPodrobnosti.Sekcie = null;
+        DetailPodrobnostiPanel.Visibility = Visibility.Collapsed;
         DetailNahlad.Source = null;
         DetailNahlad.Visibility = Visibility.Collapsed;
         if (Kniznica is not { } kniznica || polozka.JePriecinok || DruhySuborov.Urci(polozka.Pripona) is not (DruhSuboru.Video or DruhSuboru.Zvuk))
@@ -213,7 +215,21 @@ public partial class HlavneOkno
             return;
         }
 
-        riadky.AddRange(TechnickeRiadky(udaje));
+        if (udaje.Podrobnosti.Count > 0)
+        {
+            // all of it below as MediaInfo shows it; here only what the file itself does not hold
+            DetailPodrobnosti.Sekcie = udaje.Podrobnosti;
+            DetailPodrobnostiPanel.Visibility = Visibility.Visible;
+            var externe = udaje.Stopy.Where(t => t.ExternySubor is not null).Select(PopisStopy).ToList();
+            if (externe.Count > 0)
+            {
+                riadky.Add(new RiadokDetailu("Titulky v samostatných súboroch", string.Join("\n", externe)));
+            }
+        }
+        else
+        {
+            riadky.AddRange(TechnickeRiadky(udaje));
+        }
 
         if (udaje.Nahlady.FirstOrDefault() is { } nahlad && _obrazky is { } obrazky)
         {
