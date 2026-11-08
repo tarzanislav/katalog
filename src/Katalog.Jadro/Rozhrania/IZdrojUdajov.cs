@@ -8,7 +8,9 @@ public sealed record HladanieTitulu(string Nazov, int? Rok = null, DruhTitulu? D
 /// <summary>One candidate a source offers for a searched title (shown side by side for confirmation).</summary>
 /// <param name="Identifikator">The source's own identifier ("movie/603" for TMDB).</param>
 /// <param name="Zhoda">How well it matches the search, 0 to 1.</param>
-public sealed record Kandidat(ZdrojUdajov Zdroj, string Identifikator, DruhTitulu Druh, string Nazov, string? Original, int? Rok, double Zhoda);
+/// <param name="Plagat">Address of its poster, shown next to the other candidates.</param>
+public sealed record Kandidat(
+    ZdrojUdajov Zdroj, string Identifikator, DruhTitulu Druh, string Nazov, string? Original, int? Rok, double Zhoda, Uri? Plagat = null);
 
 /// <summary>An episode as a source describes it.</summary>
 public sealed record UdajeEpizody(int Seria, int Cislo, string? Nazov, DateOnly? Vysielanie, string? Dej);

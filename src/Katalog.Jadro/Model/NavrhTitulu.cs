@@ -43,14 +43,16 @@ public sealed record NavrhTitulu(
     /// The key under which proposals of one title meet: kind, name without diacritics, punctuation and letter case,
     /// and year (a TMDB id wins when known).
     /// </summary>
-    public string Kluc => TmdbId is { } id
-        ? $"{(int)Druh}:tmdb:{id}"
-        : $"{(int)Druh}:{Normalizacia.Nazov(Nazov)}:{Rok?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? ""}";
+    public string Kluc => TmdbId is { } id ? $"{(int)Druh}:tmdb:{id}" : Normalizacia.Kluc(Druh, Nazov, Rok);
 }
 
 /// <summary>Comparing names of titles: "Pán prsteňov: Návrat kráľa" and "pan prstenov navrat krala" are one name.</summary>
 public static class Normalizacia
 {
+    /// <summary>The key of a name of a title: kind, normalised name and year ("1:pan prstenov navrat krala:2003").</summary>
+    public static string Kluc(DruhTitulu druh, string nazov, int? rok) =>
+        $"{(int)druh}:{Nazov(nazov)}:{rok?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? ""}";
+
     public static string Nazov(string nazov)
     {
         var rozlozeny = nazov.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD);
