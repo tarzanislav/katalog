@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Persistent job queue with lanes per disk and priorities. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Katalog.Ulohy</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Katalog.Testy" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Katalog.Jadro\Katalog.Jadro.csproj" />
+    <ProjectReference Include="..\Katalog.Data\Katalog.Data.csproj" />
+  </ItemGroup>
+</Project>

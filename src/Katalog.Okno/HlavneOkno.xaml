@@ -1,0 +1,128 @@
+<Window x:Class="Katalog.Okno.HlavneOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KATALOG"
+        Icon="Zdroje/katalog.ico"
+        Width="1280" Height="800" MinWidth="960" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- top bar: search is the main entry into the program -->
+        <Grid Grid.Row="0" Margin="12,10,12,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="640" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <TextBox x:Name="PoleHladania" VerticalContentAlignment="Center" Padding="10,6"
+                         TextChanged="PoleHladania_TextChanged"
+                         ToolTip="Hľadanie počas písania príde v etape E2 (napr. zvuk:cs kvalita:4k)" />
+                <TextBlock x:Name="NapovedaHladania" Text="Hľadať: názov, herec, disk, súbor"
+                           Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                           Style="{StaticResource TichyText}" />
+            </Grid>
+            <Button Grid.Column="1" Content="Filtre" Margin="8,0,0,0" Padding="14,6" IsEnabled="False"
+                    ToolTip="Filtre prídu v etape E2" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0">
+                <RadioButton x:Name="ZobrazeniePlagaty" Content="Plagáty" GroupName="Zobrazenie" IsChecked="True"
+                             Style="{StaticResource {x:Type ToggleButton}}" Padding="14,6" />
+                <RadioButton x:Name="ZobrazenieZoznam" Content="Zoznam" GroupName="Zobrazenie"
+                             Style="{StaticResource {x:Type ToggleButton}}" Padding="14,6" Margin="4,0,0,0" />
+            </StackPanel>
+            <Button Grid.Column="4" x:Name="TlacidloAktualizacie" Content="Aktualizácie" Padding="14,6"
+                    Click="TlacidloAktualizacie_Click" />
+            <Button Grid.Column="5" x:Name="TlacidloOPrograme" Content="O programe" Margin="8,0,0,0" Padding="14,6"
+                    Click="TlacidloOPrograme_Click" />
+        </Grid>
+
+        <!-- three columns: navigation, library, detail -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" MinWidth="180" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="320" MinWidth="240" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" BorderThickness="0,1,1,0"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="KNIŽNICA" Style="{StaticResource NadpisSekcie}" />
+                        <ListBox x:Name="NavigaciaKniznica" BorderThickness="0" Background="Transparent"
+                                 SelectionChanged="Navigacia_SelectionChanged">
+                            <ListBoxItem Content="Filmy" Style="{StaticResource PolozkaNavigacie}" IsSelected="True" />
+                            <ListBoxItem Content="Seriály" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem Content="Na potvrdenie" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem Content="Zoznam želaní" Style="{StaticResource PolozkaNavigacie}" />
+                        </ListBox>
+
+                        <TextBlock Text="DISKY" Style="{StaticResource NadpisSekcie}" />
+                        <TextBlock Text="Zatiaľ žiadny disk. Pridávanie a skenovanie diskov príde v etape E1."
+                                   Margin="12,2,12,4" Style="{StaticResource TichyText}" />
+
+                        <TextBlock Text="ZBIERKY" Style="{StaticResource NadpisSekcie}" />
+                        <ListBox x:Name="NavigaciaZbierky" BorderThickness="0" Background="Transparent"
+                                 SelectionChanged="Navigacia_SelectionChanged">
+                            <ListBoxItem Content="Uložené hľadania" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem Content="Kolekcie" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem Content="Playlisty" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem Content="Duplicity" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem Content="Prehľad diskov" Style="{StaticResource PolozkaNavigacie}" />
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Grid Grid.Column="1" Margin="20,16,20,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="NadpisStredu" Text="Filmy" FontSize="22" FontWeight="SemiBold" />
+                <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="420">
+                    <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource Ikony}" FontSize="48"
+                               HorizontalAlignment="Center" Opacity="0.6" />
+                    <TextBlock Text="Knižnica je zatiaľ prázdna" FontSize="18" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Margin="0,12,0,6" />
+                    <TextBlock TextAlignment="Center" Style="{StaticResource TichyText}"
+                               Text="Pridávanie diskov a skenovanie príde v etape E1, plagátová stena s filmami a seriálmi v etape E4." />
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Column="2" BorderThickness="1,1,0,0" Padding="16"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                <StackPanel>
+                    <TextBlock Text="Detail titulu" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource TichyText}"
+                               Text="Vyber titul alebo súbor. Tu uvidíš plagát, dej, kde leží (disk, cesta, či je pripojený), technické údaje, zvuk a titulky s jazykmi a ďalšie verzie na iných diskoch." />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- status line: library, background jobs, version -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" Padding="12,6"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StavKniznice" Text="Otváram knižnicu…" Style="{StaticResource TichyText}"
+                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                <TextBlock Grid.Column="1" x:Name="StavUloh" Text="Fronta úloh: prázdna" Margin="16,0"
+                           Style="{StaticResource TichyText}" />
+                <TextBlock Grid.Column="2" x:Name="StavVerzie" Style="{StaticResource TichyText}" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

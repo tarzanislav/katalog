@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Core of KATALOG: data model codes, rules, interfaces of sources and storages, updates.
+       Only the .NET base library is used: the core depends on nothing and is tested on Windows and Linux. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Katalog.Jadro</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Katalog.Testy" />
+  </ItemGroup>
+</Project>

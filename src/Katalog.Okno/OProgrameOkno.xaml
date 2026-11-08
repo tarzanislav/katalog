@@ -1,0 +1,28 @@
+<Window x:Class="Katalog.Okno.OProgrameOkno"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="O programe"
+        Icon="Zdroje/katalog.ico"
+        SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="24" Width="440">
+        <StackPanel Orientation="Horizontal">
+            <Image Source="Zdroje/katalog-256.png" Width="64" Height="64" />
+            <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                <TextBlock x:Name="Nazov" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock x:Name="Verzia" Style="{StaticResource TichyText}" />
+            </StackPanel>
+        </StackPanel>
+        <TextBlock Margin="0,16,0,0" TextWrapping="Wrap"
+                   Text="Súkromný katalóg videotéky a diskov. Raz naskenuje každý disk a potom jeho obsah ukáže a prehľadá aj vtedy, keď disk nie je pripojený." />
+        <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" FontWeight="SemiBold"
+                   Text="Tvoje údaje nikdy neopustia tento počítač." />
+        <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}"
+                   Text="Na internet ide len hľadaný názov titulu do zapnutých zdrojov a kontrola nových verzií na GitHube. Žiadna telemetria." />
+        <TextBlock Margin="0,12,0,0" Style="{StaticResource TichyText}"
+                   Text="Licencia Apache 2.0. Program sa poskytuje bez akejkoľvek záruky. Diela tretích strán sú uvedené v súbore THIRD-PARTY-NOTICES.md v priečinku programu." />
+        <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}" Text="© 2026 tarzanislav" />
+        <Button Content="Zavrieť" HorizontalAlignment="Right" Margin="0,20,0,0" Padding="20,6" IsDefault="True" IsCancel="True"
+                Click="Zavriet_Click" />
+    </StackPanel>
+</Window>

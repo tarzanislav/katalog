@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The library file (SQLite): schema, migrations with backup, integrity check, single writer, full-text index. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Katalog.Data</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Katalog.Testy" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- SQLite (public domain) through Microsoft.Data.Sqlite (MIT), approved by the owner (R2, 8 Nov 2026) -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Schema\*.sql" LogicalName="Katalog.Data.Schema.%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Katalog.Jadro\Katalog.Jadro.csproj" />
+  </ItemGroup>
+</Project>

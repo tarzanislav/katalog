@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Outputs: web catalogue, CSV, HTML, labels and printing, M3U. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Katalog.Vystupy</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Katalog.Testy" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Katalog.Jadro\Katalog.Jadro.csproj" />
+  </ItemGroup>
+</Project>

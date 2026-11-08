@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Own test runner, no third-party test framework. Run: dotnet run --project tests/Katalog.Testy [-- filter]
+       Tests use invented names only: no real file, film or disk of the user ever appears here. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Katalog.Testy</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Katalog.Jadro\Katalog.Jadro.csproj" />
+    <ProjectReference Include="..\..\src\Katalog.Data\Katalog.Data.csproj" />
+    <ProjectReference Include="..\..\src\Katalog.Skenovanie\Katalog.Skenovanie.csproj" />
+    <ProjectReference Include="..\..\src\Katalog.Media\Katalog.Media.csproj" />
+    <ProjectReference Include="..\..\src\Katalog.Zdroje\Katalog.Zdroje.csproj" />
+    <ProjectReference Include="..\..\src\Katalog.Ulohy\Katalog.Ulohy.csproj" />
+    <ProjectReference Include="..\..\src\Katalog.Vystupy\Katalog.Vystupy.csproj" />
+  </ItemGroup>
+</Project>

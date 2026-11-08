@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ffprobe and ffmpeg, recognising names, quality classes, fingerprints. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Katalog.Media</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Katalog.Testy" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Katalog.Jadro\Katalog.Jadro.csproj" />
+  </ItemGroup>
+</Project>

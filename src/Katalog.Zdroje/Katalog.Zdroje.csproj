@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Data sources (TMDB, HISTRA, Jellyfin) behind one interface, merging of their data. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Katalog.Zdroje</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Katalog.Testy" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Katalog.Jadro\Katalog.Jadro.csproj" />
+  </ItemGroup>
+</Project>

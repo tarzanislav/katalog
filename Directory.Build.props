@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <!-- development version; releases pass -p:Version=1.2.3 -->
+    <Version>0.0.0</Version>
+    <Company>tarzanislav</Company>
+    <!-- working name; the displayed name lives only in Katalog.Jadro/Produkt.cs and here -->
+    <Product>KATALOG</Product>
+    <Copyright>© 2026 tarzanislav</Copyright>
+    <NeutralLanguage>sk</NeutralLanguage>
+  </PropertyGroup>
+</Project>

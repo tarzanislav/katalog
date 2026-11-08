@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Katalog.Jadro/Katalog.Jadro.csproj" />
+    <Project Path="src/Katalog.Data/Katalog.Data.csproj" />
+    <Project Path="src/Katalog.Skenovanie/Katalog.Skenovanie.csproj" />
+    <Project Path="src/Katalog.Media/Katalog.Media.csproj" />
+    <Project Path="src/Katalog.Zdroje/Katalog.Zdroje.csproj" />
+    <Project Path="src/Katalog.Ulohy/Katalog.Ulohy.csproj" />
+    <Project Path="src/Katalog.Vystupy/Katalog.Vystupy.csproj" />
+    <Project Path="src/Katalog.Okno/Katalog.Okno.csproj" />
+    <Project Path="src/Katalog.Zdravie/Katalog.Zdravie.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Katalog.Testy/Katalog.Testy.csproj" />
+  </Folder>
+</Solution>

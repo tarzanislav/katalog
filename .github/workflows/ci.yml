@@ -1,0 +1,178 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'vyvoj/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  core-linux:
+    name: Jadro, dáta a testy (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # the runner image's .NET 10 SDK, else the Ubuntu package
+      - name: .NET 10 SDK
+        run: |
+          if ! dotnet --list-sdks 2>/dev/null | grep -q '^10\.'; then sudo apt-get update -q && sudo apt-get install -y -q dotnet-sdk-10.0; fi
+          dotnet --list-sdks
+      - name: Build
+        run: |
+          for p in Jadro Data Skenovanie Media Zdroje Ulohy Vystupy; do
+            dotnet build "src/Katalog.$p/Katalog.$p.csproj" -c Release || exit 1
+          done
+      - name: Tests
+        run: dotnet run --project tests/Katalog.Testy -c Release
+
+  # speed targets of the design on an invented library of 1 million files (section "Výkonové ciele")
+  vykon:
+    name: Výkon (1 milión súborov)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: .NET 10 SDK
+        run: |
+          if ! dotnet --list-sdks 2>/dev/null | grep -q '^10\.'; then sudo apt-get update -q && sudo apt-get install -y -q dotnet-sdk-10.0; fi
+      - name: Speed test
+        env:
+          KATALOG_VYKON: '1'
+        run: dotnet run --project tests/Katalog.Testy -c Release -- VykonTesty
+
+  windows:
+    name: Zostavenie, samotest a inštalátor (Windows)
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # the runner image's .NET 10 SDK, else the official install script
+      - name: .NET 10 SDK
+        shell: pwsh
+        run: |
+          $sdks = & dotnet --list-sdks 2>$null
+          if ($sdks -match '^10\.') { Write-Host "::notice title=.NET 10 SDK::preinstalled on the runner" }
+          else {
+            Write-Host "::warning title=.NET 10 SDK::not preinstalled, installed with dotnet-install"
+            Invoke-WebRequest https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1 -OutFile "$env:RUNNER_TEMP\dotnet-install.ps1"
+            & "$env:RUNNER_TEMP\dotnet-install.ps1" -Channel 10.0 -AzureFeed https://builds.dotnet.microsoft.com/dotnet -InstallDir "$env:ProgramFiles\dotnet"
+          }
+          dotnet --list-sdks
+
+      # development builds are 0.0.N, so a real release (0.1.0 and newer) is always newer than any of them
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $v = "0.0.${{ github.run_number }}"
+          "number=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Version $v"
+
+      - name: Tests
+        run: dotnet run --project tests/Katalog.Testy -c Release
+
+      - name: Publish program
+        shell: pwsh
+        run: |
+          # compiler errors become annotations (job logs are not always available)
+          $output = & dotnet publish src/Katalog.Okno/Katalog.Okno.csproj -c Release -r win-x64 --self-contained true `
+            "-p:Version=${{ steps.version.outputs.number }}" -o publish 2>&1
+          $code = $LASTEXITCODE
+          if ($code -eq 0) {
+            $output += & dotnet publish src/Katalog.Zdravie/Katalog.Zdravie.csproj -c Release -r win-x64 --self-contained true `
+              "-p:Version=${{ steps.version.outputs.number }}" -o publish 2>&1
+            $code = $LASTEXITCODE
+          }
+          $output | ForEach-Object { Write-Host $_ }
+          $output | Where-Object { $_ -match ': (error|warning) [A-Z]+\d+' } | Select-Object -Unique -First 30 | ForEach-Object {
+            $line = "$_" -replace '%', '%25'
+            if ($line -match ': error ') { Write-Host "::error::$line" } else { Write-Host "::warning::$line" }
+          }
+          exit $code
+
+      - name: Self-test
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "selftest"
+          $env:KATALOG_SELFTEST_DIR = $out
+          $p = Start-Process -FilePath "publish\Katalog.exe" -ArgumentList "--samotest" -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(300000)) { $p.Kill(); Write-Host "::error::Self-test did not finish within 5 minutes"; exit 1 }
+          $log = Join-Path $out "selftest.log"
+          if (Test-Path $log) {
+            Get-Content $log
+            Get-Content $log | Where-Object { $_ -match ' ERROR ' } | Select-Object -First 10 | ForEach-Object { Write-Host "::error title=Self-test::$($_ -replace '%', '%25')" }
+          } else {
+            Write-Host "::error::Self-test wrote no log (exit code $($p.ExitCode))"
+          }
+          if ($p.ExitCode -ne 0) { Write-Host "::error::Self-test exit code $($p.ExitCode)"; exit 1 }
+          & publish\Katalog.Zdravie.exe --json
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::Katalog.Zdravie.exe returned $LASTEXITCODE"; exit 1 }
+          Write-Host "::notice::Self-test OK"
+
+      - name: Self-test output (log and screenshots)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: selftest-${{ steps.version.outputs.number }}
+          path: |
+            ${{ runner.temp }}/selftest/*.log
+            ${{ runner.temp }}/selftest/*.png
+          retention-days: 14
+
+      - name: Installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (Test-Path $iscc) { Write-Host "::notice title=Inno Setup::preinstalled on the runner" }
+          else { Write-Host "::warning title=Inno Setup::not preinstalled, installed with choco"; choco install innosetup -y --no-progress | Out-Null }
+          & $iscc "/DAppVersion=${{ steps.version.outputs.number }}" "/DSourceDir=$PWD\publish" installer\katalog.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $file = "installer\Output\KATALOG_Setup_${{ steps.version.outputs.number }}.exe"
+          $hash = (Get-FileHash $file -Algorithm SHA256).Hash
+          Write-Host "::notice title=Installer::KATALOG_Setup_${{ steps.version.outputs.number }}.exe SHA-256 $hash"
+
+      - name: Installer download (14 days)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: KATALOG_Setup_${{ steps.version.outputs.number }}
+          path: installer/Output/KATALOG_Setup_${{ steps.version.outputs.number }}.exe
+          retention-days: 14
+
+  # screenshots and log of the self-test go to the branch "selftest-output" for review of the window (development
+  # branches only; invented data only). Only this small job may write to the repository.
+  selftest-output:
+    name: Snímky samotestu do vetvy
+    needs: windows
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref != 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: selftest-*
+          path: selftest
+          merge-multiple: true
+      - name: Push to selftest-output
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd selftest
+          git init -q -b selftest-output
+          git config user.name "KATALOG CI"
+          git config user.email "ci@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Self-test output of ${{ github.sha }} (${{ github.ref_name }})"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" selftest-output

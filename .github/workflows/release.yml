@@ -1,0 +1,185 @@
+name: Release
+
+# A release is made only with the owner's consent: by the owner's "Run workflow" on main with the version (the tag is
+# created by the release itself, after the approval in "Review deployments"), or by pushing a tag "v1.2.3". It is
+# published only when the checksum list can be signed with the KATALOG release key (secret KATALOG_RELEASE_KEY of the
+# environment "release") and that key matches the public key built into the program – otherwise KATALOG would refuse
+# its own update.
+#
+# Two jobs: "build" compiles, tests and packs with read-only access and no secrets; "publish" (environment "release")
+# only signs and publishes what "build" produced, so nothing built or tested ever runs next to the key.
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Verzia (napr. 0.1.0) – vznikne značka v0.1.0 a vydanie z vetvy main'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  build:
+    name: Zostavenie, testy a balík (len čítanie, bez tajomstiev)
+    runs-on: windows-2025
+    outputs:
+      version: ${{ steps.version.outputs.number }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      # the tag (or the typed version) is checked before it is used anywhere; it reaches scripts only through the
+      # environment; a version typed by the owner is released only from main
+      - name: Version from the tag or the input
+        id: version
+        shell: pwsh
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          TAG: ${{ github.ref_name }}
+          INPUT: ${{ inputs.version }}
+        run: |
+          if ($env:EVENT -eq 'workflow_dispatch') {
+            if ($env:REF -cne 'refs/heads/main') { throw "a release is made only from main" }
+            $tag = "v$($env:INPUT.Trim())"
+          } else {
+            $tag = $env:TAG
+          }
+          if (-not ($tag -cmatch '^v(\d{1,4}\.\d{1,4}\.\d{1,4})$')) { throw "the version is not 1.2.3" }
+          "number=$($Matches[1])" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Release notes
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.number }}
+        run: |
+          if (-not (Test-Path "docs/releases/v$env:VERSION.md")) { throw "release notes docs/releases/v$env:VERSION.md are missing" }
+
+      # nothing is downloaded and run unpinned in a release: the tools must already be on the runner
+      - name: Required tools (preinstalled)
+        shell: pwsh
+        run: |
+          $sdks = & dotnet --list-sdks 2>$null
+          if (-not ($sdks -match '^10\.')) { throw ".NET 10 SDK is not preinstalled on the runner" }
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { throw "Inno Setup 6 is not preinstalled on the runner" }
+
+      - name: Tests
+        run: dotnet run --project tests/Katalog.Testy -c Release
+
+      - name: Publish program
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.number }}
+        run: |
+          dotnet publish src/Katalog.Okno/Katalog.Okno.csproj -c Release -r win-x64 --self-contained true "-p:Version=$env:VERSION" -o publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet publish src/Katalog.Zdravie/Katalog.Zdravie.csproj -c Release -r win-x64 --self-contained true "-p:Version=$env:VERSION" -o publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Self-test
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "selftest"
+          $env:KATALOG_SELFTEST_DIR = $out
+          $p = Start-Process -FilePath "publish\Katalog.exe" -ArgumentList "--samotest" -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(300000)) { $p.Kill(); throw "Self-test did not finish within 5 minutes" }
+          Get-Content (Join-Path $out "selftest.log") -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Self-test exit code $($p.ExitCode)" }
+
+      - name: Installer and checksum list
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.number }}
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$env:VERSION" "/DSourceDir=$PWD\publish" installer\katalog.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $dir = "installer\Output"
+          $file = "KATALOG_Setup_$env:VERSION.exe"
+          $hash = (Get-FileHash (Join-Path $dir $file) -Algorithm SHA256).Hash
+          # the first line names the version, so the signed list cannot be reused for another release
+          [IO.File]::WriteAllText((Join-Path $dir "SHA256SUMS.txt"), "# KATALOG $env:VERSION`n$hash  $file`n")
+          Write-Host "::notice title=Release::$file SHA-256 $hash"
+
+      - name: Keep for signing
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: |
+            installer/Output/KATALOG_Setup_${{ steps.version.outputs.number }}.exe
+            installer/Output/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Podpis a zverejnenie
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: release
+
+      - name: Check, sign and publish
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          TAG: ${{ needs.build.outputs.tag }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+          RELEASE_KEY: ${{ secrets.KATALOG_RELEASE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not ($env:VERSION -cmatch '^\d{1,4}\.\d{1,4}\.\d{1,4}$') -or $env:TAG -cne "v$env:VERSION") { throw "version and tag differ" }
+          if (-not $env:RELEASE_KEY) { throw "The release key (secret KATALOG_RELEASE_KEY) is not set: no unsigned release is published." }
+          $file = "KATALOG_Setup_$env:VERSION.exe"
+          $sums = Join-Path release "SHA256SUMS.txt"
+          $lines = [IO.File]::ReadAllText($sums) -split "`n"
+          $hash = (Get-FileHash (Join-Path release $file) -Algorithm SHA256).Hash
+          if ($lines[0] -cne "# KATALOG $env:VERSION" -or $lines[1] -cne "$hash  $file") { throw "the checksum list does not describe the installer" }
+
+          $key = [Security.Cryptography.ECDsa]::Create()
+          $read = 0
+          $key.ImportPkcs8PrivateKey([Convert]::FromBase64String($env:RELEASE_KEY), [ref]$read)
+          # the key must be the one built into the program, or KATALOG would refuse the update
+          $public = [Convert]::ToBase64String($key.ExportSubjectPublicKeyInfo())
+          $source = Get-Content src/Katalog.Jadro/Aktualizacie/PodpisVydania.cs -Raw
+          if (-not $source.Contains("""$public""")) { throw "The release key does not match PodpisVydania.VerejnyKluc in the program." }
+          $signature = $key.SignData([IO.File]::ReadAllBytes($sums), [Security.Cryptography.HashAlgorithmName]::SHA256)
+          [IO.File]::WriteAllBytes((Join-Path release "SHA256SUMS.txt.sig"), $signature)
+
+          # started by "Run workflow": the tag is created now, on the commit that was built and tested
+          if ($env:EVENT -eq 'workflow_dispatch') {
+            gh release view $env:TAG *> $null
+            if ($LASTEXITCODE -eq 0) { throw "release $env:TAG already exists" }
+            $target = @('--target', $env:SHA)
+          } else {
+            $target = @('--verify-tag')
+          }
+          gh release create $env:TAG (Join-Path release $file) $sums (Join-Path release "SHA256SUMS.txt.sig") `
+            --title "KATALOG $env:VERSION" --notes-file "docs/releases/v$env:VERSION.md" @target
+          exit $LASTEXITCODE
