@@ -25,8 +25,13 @@ public sealed class PodrobnostiSuboru : RichTextBox
         "Kanály", "Jazyk", "Veľkosť súboru", "Veľkosť streamu", "HDR", "Obchodný názov", "Názov",
     };
 
+    private const double SirkaPopisu = 178;
+
+    private readonly List<Table> _tabulky = [];
+
     public PodrobnostiSuboru()
     {
+        SizeChanged += Rozmer;
         IsReadOnly = true;
         IsReadOnlyCaretVisible = false;
         IsTabStop = true;
@@ -69,8 +74,28 @@ public sealed class PodrobnostiSuboru : RichTextBox
         return text.ToString();
     }
 
+    /// <summary>
+    /// The value column gets the rest of the width (a star column of a table in a rich text box collapses, so the width
+    /// is set and kept when the panel is resized).
+    /// </summary>
+    private double SirkaHodnoty() => Math.Max(140, ActualWidth - SirkaPopisu - 12);
+
+    private void Rozmer(object sender, SizeChangedEventArgs e)
+    {
+        if (!e.WidthChanged)
+        {
+            return;
+        }
+
+        foreach (var tabulka in _tabulky)
+        {
+            tabulka.Columns[1].Width = new GridLength(SirkaHodnoty());
+        }
+    }
+
     private void Postav()
     {
+        _tabulky.Clear();
         var dokument = new FlowDocument
         {
             PagePadding = new Thickness(0),
@@ -96,8 +121,9 @@ public sealed class PodrobnostiSuboru : RichTextBox
             prva = false;
 
             var tabulka = new Table { CellSpacing = 0, Margin = new Thickness(0) };
-            tabulka.Columns.Add(new TableColumn { Width = new GridLength(178) });
-            tabulka.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
+            tabulka.Columns.Add(new TableColumn { Width = new GridLength(SirkaPopisu) });
+            tabulka.Columns.Add(new TableColumn { Width = new GridLength(SirkaHodnoty()) });
+            _tabulky.Add(tabulka);
             var riadky = new TableRowGroup();
             var i = 0;
             foreach (var p in sekcia.Polozky)
