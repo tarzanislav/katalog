@@ -2,6 +2,9 @@ using Katalog.Jadro.Model;
 
 namespace Katalog.Jadro.Rozhrania;
 
+/// <summary>A problem with a source the user can act on (a wrong key, no internet); the message is ready to show, in Slovak.</summary>
+public sealed class ChybaZdroja(string sprava, Exception? vnutorna = null) : Exception(sprava, vnutorna);
+
 /// <summary>What a title search knows: the name as searched, an optional year and kind.</summary>
 public sealed record HladanieTitulu(string Nazov, int? Rok = null, DruhTitulu? Druh = null);
 
@@ -36,7 +39,11 @@ public sealed record UdajeTitulu(
     IReadOnlyList<(ZdrojUdajov Zdroj, string Identifikator)> DalsieIdentifikatory);
 
 /// <summary>A collection (of films) as a source describes it, with all its parts – also those the user does not have.</summary>
-public sealed record UdajeKolekcie(ZdrojUdajov Zdroj, string Identifikator, string Nazov, string? Dej, IReadOnlyList<Kandidat> Diely);
+public sealed record UdajeKolekcie(ZdrojUdajov Zdroj, string Identifikator, string Nazov, string? Dej, IReadOnlyList<Kandidat> Diely)
+{
+    /// <summary>Address of the collection's poster.</summary>
+    public Uri? Plagat { get; init; }
+}
 
 /// <summary>
 /// One interface for every data source (architecture decision A6): a new source is added without rebuilding the program,

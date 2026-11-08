@@ -518,12 +518,22 @@ public static class Tituly
         prikaz.ExecuteNonQuery();
     }
 
+    /// <summary>Remembers that the sources had nothing more about a title (an identifier they do not know any more).</summary>
+    public static void OznacNacitany(SqliteConnection spojenie, long titulId, long teraz)
+    {
+        using var prikaz = Kniznica.Prikaz(spojenie, "UPDATE titul SET nacitany = $teraz, hladany = coalesce(hladany, $teraz) WHERE id = $t");
+        prikaz.Parameters.AddWithValue("$teraz", teraz);
+        prikaz.Parameters.AddWithValue("$t", titulId);
+        prikaz.ExecuteNonQuery();
+    }
+
     /// <summary>
-    /// Titles the sources should look at: those with a version (or wanted) that were never searched, or whose source
-    /// data were never loaded although an identifier is known; also those searched longer ago than
-    /// <paramref name="hladatZnovaPo"/> that still wait for confirmation.
+    /// Titles the sources should look at: those with a version (or wanted) whose data were never loaded and that were not
+    /// searched since <paramref name="hladatZnovaPo"/> ticks ago; and series loaded longer ago than
+    /// <paramref name="obnovitSerialyPo"/> (new episodes). Those never searched come first.
     /// </summary>
-    public static IReadOnlyList<TitulNaDoplnenie> NaDoplnenie(SqliteConnection spojenie, int najviac, long teraz, long hladatZnovaPo)
+    public static IReadOnlyList<TitulNaDoplnenie> NaDoplnenie(
+        SqliteConnection spojenie, int najviac, long teraz, long hladatZnovaPo, long obnovitSerialyPo = long.MaxValue / 2)
     {
         using var prikaz = Kniznica.Prikaz(spojenie, """
             SELECT t.id, t.druh, t.nazov, t.original, t.rok,
@@ -536,12 +546,13 @@ public static class Tituly
             WHERE (t.zelany = 1
                    OR EXISTS (SELECT 1 FROM verzia v WHERE v.titul_id = t.id)
                    OR EXISTS (SELECT 1 FROM epizoda e JOIN verzia v ON v.epizoda_id = e.id WHERE e.titul_id = t.id))
-              AND (t.nacitany IS NULL OR t.hladany IS NULL)
-              AND (t.hladany IS NULL OR t.hladany < $znova OR EXISTS (SELECT 1 FROM identifikator i WHERE i.titul_id = t.id))
+              AND ((t.nacitany IS NULL AND (t.hladany IS NULL OR t.hladany < $znova))
+                   OR (t.druh = 2 AND t.nacitany < $obnovit))
             ORDER BY t.hladany IS NOT NULL, t.id
             LIMIT $najviac
             """);
         prikaz.Parameters.AddWithValue("$znova", teraz - hladatZnovaPo);
+        prikaz.Parameters.AddWithValue("$obnovit", teraz - obnovitSerialyPo);
         prikaz.Parameters.AddWithValue("$najviac", najviac);
         using var c = prikaz.ExecuteReader();
         var vysledok = new List<TitulNaDoplnenie>();
@@ -591,7 +602,7 @@ public static class Tituly
         prikaz.Parameters.AddWithValue("$o", objektId);
         prikaz.Parameters.AddWithValue("$p", pole);
         prikaz.ExecuteNonQuery();
-        using var hladat = Kniznica.Prikaz(spojenie, "UPDATE titul SET nacitany = NULL WHERE id = $o AND $d = 1");
+        using var hladat = Kniznica.Prikaz(spojenie, "UPDATE titul SET nacitany = NULL, hladany = NULL WHERE id = $o AND $d = 1");
         hladat.Parameters.AddWithValue("$d", (int)druh);
         hladat.Parameters.AddWithValue("$o", objektId);
         hladat.ExecuteNonQuery();
@@ -681,6 +692,43 @@ public static class Tituly
         }
 
         return id;
+    }
+
+    /// <summary>Identifiers of a source whose titles already have a poster (their posters are not downloaded again).</summary>
+    public static HashSet<string> IdentifikatorySPlagatom(SqliteConnection spojenie, ZdrojUdajov zdroj, IEnumerable<string> identifikatory)
+    {
+        var vysledok = new HashSet<string>(StringComparer.Ordinal);
+        using var prikaz = Kniznica.Prikaz(spojenie, """
+            SELECT 1 FROM identifikator i JOIN titul t ON t.id = i.titul_id
+            WHERE i.zdroj = $z AND i.druh = 1 AND i.hodnota = $h AND t.plagat_id IS NOT NULL
+            """);
+        prikaz.Parameters.AddWithValue("$z", (int)zdroj);
+        var hodnota = prikaz.Parameters.AddWithValue("$h", "");
+        foreach (var id in identifikatory)
+        {
+            hodnota.Value = id;
+            if (prikaz.ExecuteScalar() is not null)
+            {
+                vysledok.Add(id);
+            }
+        }
+
+        return vysledok;
+    }
+
+    /// <summary>A poster from a source for a title (a part of a collection), unless a locked or better one is there.</summary>
+    public static void NastavPlagat(SqliteConnection spojenie, long titulId, ZdrojUdajov zdroj, long plagatId, IReadOnlyList<ZdrojUdajov> poradie, long teraz)
+    {
+        if (!SmieZapisat(spojenie, DruhObjektu.Titul, titulId, "plagat_id", zdroj, poradie))
+        {
+            return;
+        }
+
+        using var prikaz = Kniznica.Prikaz(spojenie, "UPDATE titul SET plagat_id = $p WHERE id = $t");
+        prikaz.Parameters.AddWithValue("$p", plagatId);
+        prikaz.Parameters.AddWithValue("$t", titulId);
+        prikaz.ExecuteNonQuery();
+        ZapisPovod(spojenie, DruhObjektu.Titul, titulId, "plagat_id", zdroj, teraz, zamknute: false);
     }
 
     /// <summary>

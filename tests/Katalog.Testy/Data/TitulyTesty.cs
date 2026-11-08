@@ -358,6 +358,95 @@ public sealed class TitulyTesty
         }
     }
 
+    [Test]
+    public async Task DoplnenieZoZdrojov()
+    {
+        using var priecinok = new DocasnyPriecinok();
+        await using var kniznica = await Kniznica.OtvorAsync(priecinok.Subor("Kniznica.katalog"));
+        var diskId = await PripravAsync(kniznica, priecinok.Cesta, new[]
+        {
+            @"MOVIES\Vymyslená sága (2001) [tmdbid-101]\Vymyslená sága (2001) - EN FHD H264 SMALL.mkv",
+            @"Filmy\Vymyslený.Strážca.2008.1080p.mkv",
+            @"Filmy\Vymyslený strážca.avi",
+            @"Filmy\Neznámy film (1990).mkv",
+        });
+        await RozpoznanieDisku.SpustiAsync(kniznica, diskId, "", CancellationToken.None);
+        var zdroj = new FalosnyZdroj();
+        var stiahnute = new List<Uri>();
+        var doplnenie = new DoplnenieUdajov(kniznica, [zdroj], (u, _) =>
+        {
+            stiahnute.Add(u);
+            return Task.FromResult<ObrazokZdroja?>(new ObrazokZdroja([0xFF, 0xD8, (byte)stiahnute.Count, 0xFF, 0xD9], 342, 513));
+        }, UlozisteObrazkov.PreKniznicu(kniznica.Cesta), PoradieZdrojov.Predvolene);
+
+        var vysledok = await doplnenie.SpustiAsync(null, CancellationToken.None);
+        Over.Rovne(new VysledokDoplnenia(2, 1, 2, null), vysledok, "sága načítaná, strážca s rokom potvrdený, dvaja čakajú");
+        Over.Rovne(new VysledokDoplnenia(0, 0, 0, null), await doplnenie.SpustiAsync(null, CancellationToken.None), "druhý beh nič nehľadá");
+        using (var c = kniznica.OtvorCitanie())
+        {
+            var naPotvrdenie = KniznicaTitulov.Najdi(c, Dotaz.Citaj(""), new KontextHladania([], DateTime.Now), PohladKniznice.NaPotvrdenie);
+            Over.Postupnost(["Neznámy film", "Vymyslený strážca"], naPotvrdenie.Select(t => t.Nazov), "na potvrdenie");
+            var saga = KniznicaTitulov.Najdi(c, Dotaz.Citaj("kolekcia:ano"), new KontextHladania([], DateTime.Now), PohladKniznice.Vsetko);
+            Over.Postupnost(["Vymyslená sága", "Vymyslená sága 2"], saga.Select(t => t.Nazov), "kolekcia s chýbajúcim dielom");
+            Over.Pravda(saga.All(t => t.Plagat is not null), "plagáty aj chýbajúceho dielu");
+            var strazca = KniznicaTitulov.Najdi(c, Dotaz.Citaj("strazca rok:2008"), new KontextHladania([], DateTime.Now), PohladKniznice.Filmy).Single();
+            Over.Pravda(strazca is { NaPotvrdenie: false, Original: "The Invented Guardian" }, "strážca potvrdený s údajmi");
+        }
+
+        // the user picks the candidate of the title without a year
+        long bezRoka;
+        Kandidat vybrany;
+        using (var c = kniznica.OtvorCitanie())
+        {
+            bezRoka = KniznicaTitulov.Najdi(c, Dotaz.Citaj("strazca"), new KontextHladania([], DateTime.Now), PohladKniznice.NaPotvrdenie).Single().Id;
+            vybrany = Tituly.Kandidati(c, bezRoka).First(k => k.Identifikator == "movie/9001");
+        }
+
+        var potvrdeny = await doplnenie.PotvrdKandidataAsync(bezRoka, vybrany, CancellationToken.None);
+        using (var c = kniznica.OtvorCitanie())
+        {
+            Over.Rovne("2", Skalar(c, $"SELECT count(*) FROM verzia WHERE titul_id = {potvrdeny} AND potvrdena = 1"), "zlúčený so strážcom, obe verzie potvrdené");
+            Over.Rovne("Neznámy film", KniznicaTitulov.Najdi(c, Dotaz.Citaj(""), new KontextHladania([], DateTime.Now), PohladKniznice.NaPotvrdenie).Single().Nazov, "ostal jeden");
+        }
+
+        Over.Pravda(zdroj.Hladane.All(h => h.Nazov.Length > 0) && !zdroj.Hladane.Any(h => h.Nazov.Contains(".mkv", StringComparison.Ordinal)), "posiela sa len názov");
+    }
+
+    private sealed class FalosnyZdroj : IZdrojUdajov
+    {
+        public List<HladanieTitulu> Hladane { get; } = [];
+
+        public ZdrojUdajov Zdroj => ZdrojUdajov.Tmdb;
+
+        public bool JeZapnuty => true;
+
+        public Task<IReadOnlyList<Kandidat>> HladajAsync(HladanieTitulu hladanie, CancellationToken zrusenie)
+        {
+            Hladane.Add(hladanie);
+            IReadOnlyList<Kandidat> vysledok = Normalizacia.Nazov(hladanie.Nazov) == "vymysleny strazca"
+                ? [new(ZdrojUdajov.Tmdb, "movie/9001", DruhTitulu.Film, "Vymyslený strážca", "The Invented Guardian", 2008, 0, new Uri("https://image.tmdb.org/t/p/w342/s.jpg")),
+                   new(ZdrojUdajov.Tmdb, "movie/9002", DruhTitulu.Film, "Vymyslený strážca 2", null, 2012, 0)]
+                : [new(ZdrojUdajov.Tmdb, "movie/5", DruhTitulu.Film, "Celkom iný film", null, 1990, 0)];
+            return Task.FromResult(vysledok);
+        }
+
+        public Task<UdajeTitulu?> NacitajAsync(string identifikator, CancellationToken zrusenie) => Task.FromResult<UdajeTitulu?>(identifikator switch
+        {
+            "movie/101" => new UdajeTitulu(ZdrojUdajov.Tmdb, identifikator, DruhTitulu.Film, "Vymyslená sága", "Vymyslená sága", 2001, "Opis.", 120, 7, ["Fantasy"], [], [],
+                new Uri("https://image.tmdb.org/t/p/w342/saga.jpg"), []),
+            "movie/9001" => new UdajeTitulu(ZdrojUdajov.Tmdb, identifikator, DruhTitulu.Film, "Vymyslený strážca", "The Invented Guardian", 2008, "Opis.", 150, 8, [], [], [],
+                null, []),
+            _ => null,
+        });
+
+        public Task<IReadOnlyList<UdajeKolekcie>> KolekcieAsync(string identifikator, CancellationToken zrusenie) =>
+            Task.FromResult<IReadOnlyList<UdajeKolekcie>>(identifikator == "movie/101"
+                ? [new UdajeKolekcie(ZdrojUdajov.Tmdb, "collection/1", "Vymyslená sága – kolekcia", null,
+                    [new Kandidat(ZdrojUdajov.Tmdb, "movie/101", DruhTitulu.Film, "Vymyslená sága", null, 2001, 1),
+                     new Kandidat(ZdrojUdajov.Tmdb, "movie/102", DruhTitulu.Film, "Vymyslená sága 2", null, 2003, 1, new Uri("https://image.tmdb.org/t/p/w342/s2.jpg"))])]
+                : []);
+    }
+
     private static async Task<long> PripravAsync(Kniznica kniznica, string priecinok, IEnumerable<string> subory)
     {
         var disk = Path.Combine(priecinok, "disk");
