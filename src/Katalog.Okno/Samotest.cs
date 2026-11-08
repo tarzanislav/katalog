@@ -223,7 +223,7 @@ internal static class Samotest
 
         okno.PoleHladania.Text = "typ:video pripojene:ano velkost:>=500B -ukazka";
         Over((await okno.HladajAsync())?.Polozky.Count == 2, "filtre v dotaze: typ, pripojené, veľkosť, záporné slovo");
-        okno.PoleHladania.Text = "Vymyslen herec:vymysleny";
+        okno.PoleHladania.Text = "Vymyslen stitok:vymysleny";
         await okno.HladajAsync();
         Over(okno.UpozorneniaHladania.Visibility == Visibility.Visible, "neznáme pole sa ohlási");
         okno.SpustacPrehravania = null;
