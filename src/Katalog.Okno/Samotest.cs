@@ -438,7 +438,8 @@ internal static class Samotest
         {
             await okno.VyberPolozkuAsync(film);
             Over(okno.DetailZobrazeny is { Verzie.Count: 3, DuplicitneVerzie.Count: 2 }, "detail: tri verzie, dve z nich duplicita");
-            Over(okno.DetailVerzie.Items.OfType<BlokVerzie>().Count(b => b.Nadpis == "Duplicita") == 2, "karta: duplicitné verzie označené");
+            Over(okno.DetailVerzie.Items.OfType<BlokVerzie>().Count(b => b.Nadpis.StartsWith("Duplicita", StringComparison.Ordinal)) == 2,
+                "karta: duplicitné verzie označené: " + string.Join(" | ", okno.DetailVerzie.Items.OfType<BlokVerzie>().Select(b => b.Nadpis)));
             await SnimkaAsync(okno, "duplicity-svetle.png");
         }
 

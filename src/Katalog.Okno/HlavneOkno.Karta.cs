@@ -143,7 +143,8 @@ public partial class HlavneOkno
 
             var epizoda = v.Seria is { } s && v.Cislo is { } c ? $"S{s:00}E{c:00} · " : "";
             var duplicita = d.DuplicitneVerzie.Contains(v.Id);
-            var nadpis = epizoda + (!v.Potvrdena ? "Verzia čaká na potvrdenie" : duplicita ? "Duplicita" : d.NajlepsieVerzie.Contains(v.Id) ? "Najlepšia verzia" : "Verzia");
+            var nadpis = epizoda + (duplicita ? "Duplicita" : !v.Potvrdena ? "Verzia čaká na potvrdenie" : d.NajlepsieVerzie.Contains(v.Id) ? "Najlepšia verzia" : "Verzia") +
+                         (duplicita && !v.Potvrdena ? " (čaká na potvrdenie)" : "");
             var kde = $"{prvy.DiskCislo} {prvy.DiskNazov}" + (pripojene.Contains(prvy.DiskId) ? " (pripojený)" : "") +
                       $" · {Format.Velkost(v.Subory.Sum(x => x.Velkost))}" +
                       (v.Subory.Count > 1 ? $" · {Format.Mnozne(v.Subory.Count, "súbor", "súbory", "súborov")}" : "") +
