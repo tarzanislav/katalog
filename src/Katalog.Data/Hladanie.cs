@@ -195,7 +195,10 @@ public static class Hladanie
             };
             if (sql is not null)
             {
-                podmienky.Add(podmienka.Zaporna ? "NOT (" + sql + ")" : sql);
+                // "without Czech sound" or "without subtitles" speaks of videos: files without technical data are no match
+                podmienky.Add(!podmienka.Zaporna ? sql
+                    : podmienka is MedialnaPodmienka ? $"NOT ({sql}) AND s.id IN (SELECT subor_id FROM medialne_udaje)"
+                    : "NOT (" + sql + ")");
             }
         }
 
