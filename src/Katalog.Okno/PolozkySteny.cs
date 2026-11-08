@@ -44,6 +44,15 @@ internal sealed class PolozkaSteny : INotifyPropertyChanged
         Ikona = "";
     }
 
+    public PolozkaSteny(StitokTitulov stitok)
+    {
+        Znacka = stitok;
+        Nazov = stitok.Nazov;
+        Podnadpis = Format.Mnozne(stitok.Titulov, "titul", "tituly", "titulov");
+        Priehladnost = 1;
+        Ikona = "\uE8EC";
+    }
+
     public PolozkaSteny(ZoznamHistraKniznice zoznam)
     {
         Zoznam = zoznam;
@@ -58,6 +67,9 @@ internal sealed class PolozkaSteny : INotifyPropertyChanged
     public KolekciaKniznice? Kolekcia { get; }
 
     public ZoznamHistraKniznice? Zoznam { get; }
+
+    /// <summary>A tag of the user's (a tile of the view Štítky).</summary>
+    public StitokTitulov? Znacka { get; }
 
     public string Nazov { get; }
 
@@ -79,7 +91,7 @@ internal sealed class PolozkaSteny : INotifyPropertyChanged
     // list columns
     public string RokText => Titul?.Rok?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
 
-    public string DruhText => Titul?.Druh switch { DruhTitulu.Serial => "seriál", DruhTitulu.Film => "film", _ => Kolekcia is not null ? "kolekcia" : "zoznam" };
+    public string DruhText => Titul?.Druh switch { DruhTitulu.Serial => "seriál", DruhTitulu.Film => "film", _ => Kolekcia is not null ? "kolekcia" : Znacka is not null ? "štítok" : "zoznam" };
 
     public string KvalitaText => Titul?.Kvalita switch { TriedaKvality.UHD4K => "4K", TriedaKvality.Nezistena or null => "", var k => k.ToString()! };
 

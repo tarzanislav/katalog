@@ -54,6 +54,9 @@ public sealed class Nastavenia
     /// <summary>The user's name on the server; empty when the server has one user.</summary>
     public string JellyfinPouzivatel { get; set; } = "";
 
+    /// <summary>How labels were printed last time (format, QR, frame, shift of the printer), used again next time.</summary>
+    public Vystupy.MoznostiStitkov Stitky { get; set; } = new();
+
     /// <summary>A version the user chose to skip ("Túto verziu vynechať").</summary>
     public string? VynechanaVerzia { get; set; }
 

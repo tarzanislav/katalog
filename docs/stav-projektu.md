@@ -146,6 +146,35 @@ Hotové:
 - **Štatistiky (N5)**: filmy, seriály, epizódy, hodiny sledovania, kvalita, desaťročia, žánre, tituly na diskoch.
 - Samotest: duplicita a najlepšia verzia, nezálohované, prehľad so zdravím (vymyslená odpoveď pomocníka), štatistiky.
 
+## Etapa E6 – výstupy (8. 11. 2026, vetva vyvoj/etapa6)
+
+Hotové (všetko vlastným kódom, bez nových knižníc – rozhodnutie vlastníka 8. 11. 2026):
+
+- **QR kódy** (ISO/IEC 18004, všetky verzie a úrovne opravy, UTF-8): zhodné bit po bite s nezávislým kódovačom,
+  overené aj čítačkami QR kódov.
+- **Štítky diskov** (číslo D007, názov, katalóg, kapacita, súbory, tituly, kde disk leží) a **štítky titulov** na obaly
+  (disky, na ktorých titul leží, názov, rok, kvalita) s QR kódom. Formáty z EviTA: hárky A4 (24, 21, 40, 65 a 14 štítkov)
+  aj tlačiareň štítkov; prvý voľný štítok načatého hárka, kópie, rámček na strihanie, posun tlače. Náhľad strán,
+  tlač a PDF.
+- **Export každého zoznamu** (výsledky hľadania, obsah priečinka, tituly knižnice s diskami, prehľad diskov, požičané)
+  do **Excelu** (čísla ako čísla, veľkosti v GB, dátumy ako dátumy, filter a ukotvený nadpis; text sa nikdy nestane
+  vzorcom), **CSV** pre slovenský Excel, **HTML** (jedna stránka, triedenie kliknutím, svetlá aj tmavá) a **PDF**;
+  tlač zoznamov s nadpisom na každej strane a číslami strán.
+- **PDF** zapisuje program sám: strany ako obrázky bez straty (Flate), sivé strany v odtieňoch sivej – slovenské
+  písmená vyzerajú presne ako na obrazovke, bez vkladania písma.
+- **Export a import katalógu (A1)**: katalóg do samostatného súboru knižnice (disky, priečinky, súbory, technické
+  údaje, skeny, zdravie, tituly na nich s osobami, žánrami, kolekciami, štítkami a pozretiami; obrázky nie – zdroje ich
+  načítajú znova). Import z ľubovoľného súboru knižnice (aj staršej schémy): disky, ktoré knižnica už má, vynechá,
+  obsadené čísla diskov prečísluje, známe tituly (podľa identifikátora zdroja alebo názvu a roka) spojí. Celý import je
+  jeden zápis (všetko alebo nič), pred ním záloha; súbor z cudzieho zdroja sa číta len vo vlastnej kópii a do knižnice
+  idú len jej vlastné stĺpce.
+- **Výpožičky (N6)**: požičať disk (strom diskov) alebo titul (detail) – komu, poznámka; zoznam Požičané s históriou,
+  vrátenie, export; pole `pozicane:ano` / `pozicane:Meno` (titul požičaný sám alebo s diskom).
+- **Štítky titulov** (vlastné značky, napr. Vianoce): v detaile titulu, pohľad Štítky v Zbierkach, pole `stitok:`.
+- Schéma knižnice **v5**: kľúče štítkov a mien bez diakritiky, najviac jedna otvorená výpožička disku či titulu.
+- Samotest: štítky v okne aj v PDF, export výsledkov do všetkých formátov, tabuľka titulov s diskami, prehľad,
+  výpožička a štítok s ich poliami, export katalógu a import späť (disk už v knižnici je).
+
 Otvorené:
 
 - **Logo TMDB** v okne O programe: podmienky TMDB ho chcú pri upozornení; oficiálny súbor loga sa tu nedal stiahnuť –
@@ -153,9 +182,9 @@ Otvorené:
 - Fotky hercov a pozadia (prídu s webovým katalógom E9, plagáty v troch veľkostiach tiež).
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
+- Tlač na skutočnej tlačiarni a zdravie skutočných diskov sa dajú vyskúšať len na počítači vlastníka.
 
-**Vydania** (so súhlasom vlastníka, podpis zoznamu súčtov a súčet inštalátora overené): **0.1.0** a **0.2.0**
-8. 11. 2026. Poznámky k vydaniam 0.3.0 (E4) a 0.4.0 (E5) sú pripravené; vydajú sa len so súhlasom vlastníka.
+**Vydania** (so súhlasom vlastníka – schválenie v Review deployments; podpis zoznamu súčtov a súčet inštalátora
+overené): **0.1.0**, **0.2.0** a **0.4.0** 8. 11. 2026.
 
-Ďalšia etapa: **E6 – výstupy**: štítky diskov s QR kódmi, tlač a export (CSV, Excel, PDF), export a import katalógu,
-výpožičky (N6), štítky titulov.
+Ďalšia etapa: **E7 – playlisty a náhodný výber**.

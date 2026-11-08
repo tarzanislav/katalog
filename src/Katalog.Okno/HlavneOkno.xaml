@@ -37,6 +37,7 @@ pripojene:ano        zmazane:aj | len
 kvalita:4k | >=fhd   kodek:hevc   hdr:ano | dv   dlzka:>2h
 zvuk:sk,cs           titulky:sk | ano | nie      poskodene:ano
 rok:2001   zaner:komedia   herec:"Meno"   kniznica:film | serial | potvrdit   videne:nie
+verzie:>1   zalohovane:nie   duplikat:ano   pozicane:ano | Meno   stitok:Vianoce
 Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                     </TextBox.ToolTip>
                 </TextBox>
@@ -150,10 +151,18 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                                     <MenuItem x:Name="PonukaUpravit" Header="Upraviť disk…" Click="UpravitDisk_Click" />
                                     <MenuItem x:Name="PonukaOdstranit" Header="Odstrániť disk z knižnice…" Click="OdstranitDisk_Click" />
                                     <Separator />
+                                    <MenuItem x:Name="PonukaStitky" Header="Tlačiť štítky…" Click="StitkyZoStromu_Click"
+                                              ToolTip="Štítok s QR kódom na disk (pri katalógu na všetky jeho disky)" />
+                                    <MenuItem x:Name="PonukaPozicat" Header="Požičať disk…" Click="PozicatDisk_Click" />
+                                    <Separator />
                                     <MenuItem Header="Pridať disk…" Click="PridatDisk_Click" />
                                     <MenuItem Header="Nový katalóg…" Click="NovyKatalog_Click" />
                                     <MenuItem x:Name="PonukaPremenovatKatalog" Header="Premenovať katalóg…" Click="PremenovatKatalog_Click" />
                                     <MenuItem x:Name="PonukaZmazatKatalog" Header="Zmazať katalóg…" Click="ZmazatKatalog_Click" />
+                                    <MenuItem x:Name="PonukaExportovatKatalog" Header="Exportovať katalóg…" Click="ExportovatKatalog_Click"
+                                              ToolTip="Katalóg do samostatného súboru: disky, súbory a tituly na nich (napr. pre iný počítač)" />
+                                    <MenuItem Header="Importovať katalóg…" Click="ImportovatKatalog_Click"
+                                              ToolTip="Katalógy zo súboru knižnice; disky, ktoré knižnica už má, sa vynechajú" />
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                         </TreeView>
@@ -163,10 +172,12 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                                  SelectionChanged="Navigacia_SelectionChanged">
                             <ListBoxItem x:Name="NavigaciaUlozene" Content="Uložené hľadania" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaKolekcie" Content="Kolekcie" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaStitky" Content="Štítky" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaHistra" Content="Zoznamy HISTRA" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Playlisty" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaDuplicity" Content="Duplicity" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaNezalohovane" Content="Len na jednom disku" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaPozicane" Content="Požičané" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaPrehlad" Content="Prehľad diskov" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaStatistiky" Content="Štatistiky" Style="{StaticResource PolozkaNavigacie}" />
                         </ListBox>
@@ -208,6 +219,8 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                             Click="AktualizovatDisk_Click" />
                     <Button x:Name="TlacidloOtvorit" Content="Otvoriť v Prieskumníkovi" Padding="14,5" Margin="8,0,0,0"
                             Click="OtvoritVPrieskumnikovi_Click" />
+                    <Button Content="Exportovať…" Padding="14,5" Margin="8,0,0,0" Click="ExportovatPriecinok_Click"
+                            ToolTip="Obsah priečinka do Excelu, CSV, HTML alebo PDF" />
                     <CheckBox x:Name="AjZmazane" Content="Ukázať aj zmazané" Margin="16,0,0,0" VerticalAlignment="Center"
                               Checked="AjZmazane_Changed" Unchecked="AjZmazane_Changed" />
                 </WrapPanel>
@@ -263,6 +276,9 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                         </StackPanel>
                     </Button>
                     <Button Content="Uložiť hľadanie…" Padding="14,5" Margin="8,0,0,0" Click="UlozitHladanie_Click" />
+                    <Button Content="Exportovať…" Padding="14,5" Margin="8,0,0,0" Click="ExportovatVysledky_Click"
+                            ToolTip="Výsledky do Excelu, CSV, HTML alebo PDF" />
+                    <Button Content="Tlačiť…" Padding="14,5" Margin="8,0,0,0" Click="TlacitVysledky_Click" />
                     <Button Content="Zavrieť hľadanie" Padding="14,5" Margin="8,0,0,0" Click="ZavrietHladanie_Click" />
                 </WrapPanel>
                 <ListView Grid.Row="4" x:Name="ZoznamVysledkov" SelectionMode="Extended"
@@ -344,6 +360,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
 rok:2001   rok:1990..1999   zaner:komedia   hodnotenie:>=7   moje:>=8
 herec:"Meno"   rezia:Priezvisko   kolekcia:ano | "Názov"
 videne:nie   mam:nie   zelane:ano   kniznica:film | serial | potvrdit
+stitok:Vianoce   pozicane:ano | Meno   verzie:>1   zalohovane:nie
 kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextBlock>
                             </TextBox.ToolTip>
                         </TextBox>
@@ -359,6 +376,16 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                         </Button>
                         <Button x:Name="TlacidloNacitatHistra" Content="Načítať zoznamy z HISTRA" Padding="14,5" Margin="8,0,0,0"
                                 Click="NacitatHistra_Click" Visibility="Collapsed" />
+                        <Button x:Name="TlacidloVystupKniznice" Content="Export a tlač" Padding="14,5" Margin="8,0,0,0" Click="VystupKniznice_Click">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Exportovať zoznam…" Click="ExportovatKniznicu_Click" ToolTip="Tituly do Excelu, CSV, HTML alebo PDF" />
+                                    <MenuItem Header="Tlačiť zoznam…" Click="TlacitKniznicu_Click" />
+                                    <MenuItem Header="Štítky titulov…" Click="StitkyTitulov_Click"
+                                              ToolTip="Štítky s QR kódom na obaly: vybraný titul, inak všetky zobrazené" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
                         <Button x:Name="TlacidloDoplnit" Content="Doplniť údaje" Padding="14,5" Margin="8,0,0,0" Click="Doplnit_Click"
                                 ToolTip="Rozpoznať nové videá a doplniť názvy, dej a plagáty zo zdrojov (beží aj samo)" />
                     </WrapPanel>
@@ -472,6 +499,9 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                     <TextBlock Text="Kam sa zmestí" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <TextBox x:Name="PotrebneMiesto" Width="90" Padding="6,4" VerticalContentAlignment="Center" ToolTip="Napr. 50 GB, 700 MB, 1,5 TB" />
                     <Button Content="Nájsť disk" Padding="12,4" Margin="8,0,16,0" Click="KamSaZmesti_Click" />
+                    <Button Content="Štítky diskov…" Padding="12,4" Margin="0,0,8,0" Click="StitkyDiskov_Click"
+                            ToolTip="Štítky s QR kódom: vybrané disky, inak všetky" />
+                    <Button Content="Exportovať…" Padding="12,4" Margin="0,0,8,0" Click="ExportovatPrehlad_Click" />
                     <Button x:Name="TlacidloZdravie" Padding="12,4" Click="ZistitZdravie_Click"
                             ToolTip="Prečíta SMART pripojených diskov; Windows sa opýta na povolenie (číta sa s právami správcu, v samostatnom malom programe)">
                         <StackPanel Orientation="Horizontal">
@@ -481,7 +511,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                     </Button>
                 </WrapPanel>
                 <TextBlock Grid.Row="2" x:Name="VysledokPrehladu" Margin="0,0,0,8" TextWrapping="Wrap" Visibility="Collapsed" />
-                <ListView Grid.Row="3" x:Name="ZoznamPrehladu" SelectionChanged="ZoznamPrehladu_SelectionChanged">
+                <ListView Grid.Row="3" x:Name="ZoznamPrehladu" SelectionMode="Extended" SelectionChanged="ZoznamPrehladu_SelectionChanged">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Disk" Width="180">
@@ -555,6 +585,42 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                 </StackPanel>
             </ScrollViewer>
 
+            <!-- center: loans (N6) -->
+            <Grid Grid.Column="1" x:Name="PanelVypoziciek" Margin="20,16,20,8" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Požičané" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock x:Name="PocetVypoziciek" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource TichyText}" />
+                </StackPanel>
+                <TextBlock Grid.Row="1" Margin="0,2,0,0" Style="{StaticResource TichyText}"
+                           Text="Disk požičiaš v strome diskov (pravým tlačidlom), titul v jeho detaile. Hľadanie: pozicane:ano alebo pozicane:Meno." />
+                <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,8">
+                    <Button x:Name="TlacidloVratit" Content="Vrátené" Padding="14,5" Click="VratitVypozicku_Click" IsEnabled="False" />
+                    <Button x:Name="TlacidloZmazatVypozicku" Content="Zmazať záznam" Padding="14,5" Margin="8,0,0,0" Click="ZmazatVypozicku_Click" IsEnabled="False" />
+                    <Button Content="Exportovať…" Padding="14,5" Margin="8,0,0,0" Click="ExportovatVypozicky_Click" />
+                    <CheckBox x:Name="AjVratene" Content="Aj vrátené" Margin="16,0,0,0" VerticalAlignment="Center"
+                              Checked="AjVratene_Changed" Unchecked="AjVratene_Changed" />
+                </WrapPanel>
+                <ListView Grid.Row="3" x:Name="ZoznamVypoziciek" SelectionMode="Extended" SelectionChanged="ZoznamVypoziciek_SelectionChanged">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Čo" Width="260" DisplayMemberBinding="{Binding Co}" />
+                            <GridViewColumn Header="Komu" Width="160" DisplayMemberBinding="{Binding Komu}" />
+                            <GridViewColumn Header="Od" Width="100" DisplayMemberBinding="{Binding OdText}" />
+                            <GridViewColumn Header="Vrátené" Width="100" DisplayMemberBinding="{Binding DoText}" />
+                            <GridViewColumn Header="Poznámka" Width="200" DisplayMemberBinding="{Binding Poznamka}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <TextBlock Grid.Row="3" x:Name="ZiadnaVypozicka" Text="Nič nie je požičané." Visibility="Collapsed"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource TichyText}" />
+            </Grid>
+
             <!-- center: saved searches -->
             <Grid Grid.Column="1" x:Name="PanelUlozenych" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
@@ -608,6 +674,9 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                             <ToggleButton x:Name="DetailVidene" Content="Videné" Padding="12,4" Margin="0,0,6,6" Click="DetailVidene_Click" />
                             <ToggleButton x:Name="DetailZelane" Content="Želané" Padding="12,4" Margin="0,0,6,6" Click="DetailZelane_Click" />
                             <Button Content="Upraviť…" Padding="12,4" Margin="0,0,6,6" Click="UpravitTitul_Click" />
+                            <Button Content="Štítky…" Padding="12,4" Margin="0,0,6,6" Click="StitkyTitulu_Click"
+                                    ToolTip="Vlastné štítky titulu (napr. Vianoce, Pre deti), oddelené čiarkou" />
+                            <Button x:Name="DetailPozicat" Content="Požičať…" Padding="12,4" Margin="0,0,6,6" Click="PozicatTitul_Click" />
                         </WrapPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                             <TextBlock Text="Moje hodnotenie" VerticalAlignment="Center" Margin="0,0,8,0" />

@@ -176,7 +176,7 @@ public partial class HlavneOkno
     /// <summary>Shows one of the panels of the middle of the window and hides the others.</summary>
     private void UkazStred(UIElement panel)
     {
-        foreach (var p in new UIElement[] { PanelPrazdny, PanelSuborov, PanelVysledkov, PanelUlozenych, PanelKniznice, PanelPrehladu, PanelStatistik })
+        foreach (var p in new UIElement[] { PanelPrazdny, PanelSuborov, PanelVysledkov, PanelUlozenych, PanelKniznice, PanelPrehladu, PanelStatistik, PanelVypoziciek })
         {
             p.Visibility = ReferenceEquals(p, panel) ? Visibility.Visible : Visibility.Collapsed;
         }

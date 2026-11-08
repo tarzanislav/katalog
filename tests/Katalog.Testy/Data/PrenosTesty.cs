@@ -157,6 +157,8 @@ public sealed class PrenosTesty
             IEnumerable<string> Tituly2(string text) => KniznicaTitulov.Najdi(c, Dotaz.Citaj(text), nikto, PohladKniznice.Vsetko).Select(t => t.Nazov);
             Over.Postupnost(["Vymyslený film", "Vymyslený jediný", "Vymyslený seriál"], Tituly2(""), "tituly bez zdvojenia");
             Over.Postupnost(["Vymyslený film"], Tituly2("verzie:3"), "film má tri verzie na troch diskoch");
+            var film = KniznicaTitulov.Najdi(c, Dotaz.Citaj("verzie:3"), nikto, PohladKniznice.Vsetko).Single().Id;
+            Over.Postupnost(["D001", "D002", "D003"], KniznicaTitulov.DiskyTitulov(c, [film])[film], "disky filmu (na štítok)");
             Over.Postupnost(["Vymyslený film", "Vymyslený seriál"], Tituly2("stitok:vianoce"), "štítky prišli");
             Over.Postupnost(["Vymyslený film", "Vymyslený seriál"], Tituly2("pozicane:jan"), "výpožička disku prišla");
             Over.Rovne(2, Hladanie.Najdi(c, Dotaz.Citaj("S01E01"), nikto).Polozky.Count, "fulltext nových súborov");

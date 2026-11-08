@@ -129,8 +129,10 @@ public static class KniznicaTitulov
     /// </summary>
     /// <param name="kolekciaId">Only the parts of this collection (all of them, in their order).</param>
     /// <param name="zoznamHistra">Only the titles of this HISTRA list.</param>
+    /// <param name="stitokId">Only the titles with this tag of the user.</param>
     public static IReadOnlyList<PolozkaKniznice> Najdi(
-        SqliteConnection spojenie, Dotaz dotaz, KontextHladania kontext, PohladKniznice pohlad, long? kolekciaId = null, long? zoznamHistra = null)
+        SqliteConnection spojenie, Dotaz dotaz, KontextHladania kontext, PohladKniznice pohlad, long? kolekciaId = null, long? zoznamHistra = null,
+        long? stitokId = null)
     {
         using var prikaz = spojenie.CreateCommand();
         var cislo = 0;
@@ -169,6 +171,11 @@ public static class KniznicaTitulov
         if (pohlad is PohladKniznice.Filmy or PohladKniznice.Serialy && !hovoriOMam)
         {
             podmienky.Add("p.titul_id IS NOT NULL");
+        }
+
+        if (stitokId is { } st)
+        {
+            podmienky.Add($"t.id IN (SELECT titul_id FROM titul_stitok WHERE stitok_id = {Parameter(st)})");
         }
 
         if (kolekciaId is { } k)
@@ -456,6 +463,42 @@ public static class KniznicaTitulov
 
         var porovnanie = StringComparer.Create(CultureInfo.GetCultureInfo("sk-SK"), CompareOptions.IgnoreCase);
         return vysledok.OrderBy(k => k.Nazov, porovnanie).ToList();
+    }
+
+    /// <summary>
+    /// The disks with present files of each title (its own versions or its episodes'), by number ("D003") – for labels
+    /// and exports.
+    /// </summary>
+    public static IReadOnlyDictionary<long, IReadOnlyList<string>> DiskyTitulov(SqliteConnection spojenie, IEnumerable<long> tituly)
+    {
+        var vysledok = new Dictionary<long, IReadOnlyList<string>>();
+        foreach (var davka in tituly.Distinct().Chunk(500))
+        {
+            using var prikaz = spojenie.CreateCommand();
+            prikaz.CommandText = $"""
+                SELECT DISTINCT coalesce(v.titul_id, e.titul_id), d.cislo
+                FROM verzia v LEFT JOIN epizoda e ON e.id = v.epizoda_id
+                JOIN verzia_subor vs ON vs.verzia_id = v.id JOIN subor s ON s.id = vs.subor_id JOIN disk d ON d.id = s.disk_id
+                WHERE s.stav = 0 AND coalesce(v.titul_id, e.titul_id) IN ({string.Join(',', davka.Select(i => i.ToString(CultureInfo.InvariantCulture)))})
+                ORDER BY 1, 2
+                """;
+            using var citac = prikaz.ExecuteReader();
+            while (citac.Read())
+            {
+                var titul = citac.GetInt64(0);
+                var cislo = "D" + citac.GetInt64(1).ToString("000", CultureInfo.InvariantCulture);
+                if (vysledok.TryGetValue(titul, out var disky))
+                {
+                    ((List<string>)disky).Add(cislo);
+                }
+                else
+                {
+                    vysledok[titul] = new List<string> { cislo };
+                }
+            }
+        }
+
+        return vysledok;
     }
 
     /// <summary>The HISTRA lists in the library with how many of their titles the user has.</summary>

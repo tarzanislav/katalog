@@ -10,6 +10,9 @@ KATALOG je vlastný kód (licencia Apache 2.0). Používa tieto diela tretích s
 | [.NET](https://github.com/dotnet/runtime) | runtime programu | MIT |
 | [FFmpeg](https://ffmpeg.org) 9.0.2 (priečinok `ffmpeg`) | technické údaje videí (ffprobe) a náhľady (ffmpeg) | GNU LGPL 2.1 alebo novšia |
 | [zlib](https://zlib.net) (súčasť zostavy FFmpeg) | rozbaľovanie údajov niektorých formátov | zlib |
+| [QR Code generator library](https://www.nayuki.io/page/qr-code-generator-library) (Project Nayuki) – postup kódovania, prepísaný v programe (`Katalog.Vystupy/QrKod.cs`), nie pribalený | QR kódy na štítkoch | MIT |
+
+PDF, Excel (Office Open XML), CSV a HTML zapisuje KATALOG vlastným kódom, bez ďalších knižníc.
 
 ## Zdroje údajov
 
@@ -32,9 +35,11 @@ náhľadov JPEG. Text licencie (`COPYING.LGPLv2.1`) a popis zostavy (`SOURCE.txt
 **Úplný zdrojový kód tejto zostavy** (FFmpeg a skripty zostavenia) je priložený ku každému vydaniu KATALOGU na GitHube
 ako `ffmpeg-9.0.2-source.tar.xz` (https://github.com/tarzanislav/katalog/releases).
 
-## MIT (Microsoft.Data.Sqlite, .NET)
+## MIT (Microsoft.Data.Sqlite, .NET, QR kód)
 
 Copyright (c) .NET Foundation and Contributors
+
+Copyright (c) Project Nayuki (QR Code generator library, https://www.nayuki.io/page/qr-code-generator-library)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the

@@ -25,6 +25,8 @@ internal enum ObsahKniznice
     ZoznamHistra,
     Duplicity,
     Nezalohovane,
+    Stitky,
+    Stitok,
 }
 
 /// <summary>
@@ -44,6 +46,8 @@ public partial class HlavneOkno
     private int _stlpceSteny;
     private long? _vybranyTitul;
     private DetailTitulu? _detail;
+    private Vypozicka? _detailVypozicka;
+    private IReadOnlyList<string> _detailStitky = [];
     private int _cisloKniznice;
     private bool _plnimDetail;
 
@@ -117,6 +121,13 @@ public partial class HlavneOkno
             });
             NavigaciaDuplicity.Content = duplicity > 0 ? $"Duplicity ({Format.Pocet(duplicity)})" : "Duplicity";
             NavigaciaNezalohovane.Content = nezalohovane > 0 ? $"Len na jednom disku ({Format.Pocet(nezalohovane)})" : "Len na jednom disku";
+            var (pozicane, stitky) = await Task.Run(() =>
+            {
+                using var c = kniznica.OtvorCitanie();
+                return (Vypozicky.Otvorene(c).Count, StitkyTitulov.Zoznam(c).Count);
+            });
+            NavigaciaPozicane.Content = pozicane > 0 ? $"Požičané ({Format.Pocet(pozicane)})" : "Požičané";
+            NavigaciaStitky.Content = stitky > 0 ? $"Štítky ({Format.Pocet(stitky)})" : "Štítky";
         }
         catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
         {
@@ -138,6 +149,12 @@ public partial class HlavneOkno
             return true;
         }
 
+        if (ReferenceEquals(polozka, NavigaciaPozicane))
+        {
+            _ = ZobrazVypozickyAsync();
+            return true;
+        }
+
         ObsahKniznice? obsah = polozka switch
         {
             _ when ReferenceEquals(polozka, NavigaciaFilmy) => ObsahKniznice.Filmy,
@@ -148,6 +165,7 @@ public partial class HlavneOkno
             _ when ReferenceEquals(polozka, NavigaciaHistra) => ObsahKniznice.ZoznamyHistra,
             _ when ReferenceEquals(polozka, NavigaciaDuplicity) => ObsahKniznice.Duplicity,
             _ when ReferenceEquals(polozka, NavigaciaNezalohovane) => ObsahKniznice.Nezalohovane,
+            _ when ReferenceEquals(polozka, NavigaciaStitky) => ObsahKniznice.Stitky,
             _ => null,
         };
         if (obsah is not { } o)
@@ -194,6 +212,9 @@ public partial class HlavneOkno
                         .Where(k => dotaz.JePrazdny || dotaz.Podmienky.OfType<Slovo>().All(s => Normalizacia.Nazov(k.Nazov).Contains(Normalizacia.Nazov(s.Text), StringComparison.Ordinal) != s.Zaporna))
                         .Select(k => new PolozkaSteny(k, obrazky)).ToList(),
                     ObsahKniznice.ZoznamyHistra => KniznicaTitulov.ZoznamyHistra(c).Select(z => new PolozkaSteny(z)).ToList(),
+                    ObsahKniznice.Stitky => StitkyTitulov.Zoznam(c)
+                        .Where(k => dotaz.JePrazdny || dotaz.Podmienky.OfType<Slovo>().All(s => Normalizacia.Nazov(k.Nazov).Contains(Normalizacia.Nazov(s.Text), StringComparison.Ordinal) != s.Zaporna))
+                        .Select(k => new PolozkaSteny(k)).ToList(),
                     _ => KniznicaTitulov.Najdi(c, dotaz, kontext, obsah switch
                         {
                             ObsahKniznice.Filmy => PohladKniznice.Filmy,
@@ -205,7 +226,8 @@ public partial class HlavneOkno
                             _ => PohladKniznice.Vsetko,
                         },
                         kolekciaId: obsah == ObsahKniznice.Kolekcia ? otvorene?.Id : null,
-                        zoznamHistra: obsah == ObsahKniznice.ZoznamHistra ? otvorene?.Id : null)
+                        zoznamHistra: obsah == ObsahKniznice.ZoznamHistra ? otvorene?.Id : null,
+                        stitokId: obsah == ObsahKniznice.Stitok ? otvorene?.Id : null)
                         .Select(t => new PolozkaSteny(t, obrazky)).ToList(),
                 };
             });
@@ -231,22 +253,26 @@ public partial class HlavneOkno
             ObsahKniznice.ZoznamyHistra => "Zoznamy HISTRA",
             ObsahKniznice.Duplicity => "Duplicity",
             ObsahKniznice.Nezalohovane => "Len na jednom disku",
+            ObsahKniznice.Stitky => "Štítky",
             _ => otvorene?.Nazov ?? "",
         };
         PocetKniznice.Text = Format.Mnozne(polozky.Count, obsah switch
         {
             ObsahKniznice.Kolekcie => "kolekcia",
             ObsahKniznice.ZoznamyHistra => "zoznam",
+            ObsahKniznice.Stitky => "štítok",
             _ => "titul",
         }, obsah switch
         {
             ObsahKniznice.Kolekcie => "kolekcie",
             ObsahKniznice.ZoznamyHistra => "zoznamy",
+            ObsahKniznice.Stitky => "štítky",
             _ => "tituly",
         }, obsah switch
         {
             ObsahKniznice.Kolekcie => "kolekcií",
             ObsahKniznice.ZoznamyHistra => "zoznamov",
+            ObsahKniznice.Stitky => "štítkov",
             _ => "titulov",
         });
         TlacidloSpatKniznica.Visibility = otvorene is null ? Visibility.Collapsed : Visibility.Visible;
@@ -294,6 +320,7 @@ public partial class HlavneOkno
             ObsahKniznice.ZoznamyHistra => "Zatiaľ žiadne zoznamy. Načítaj ich tlačidlom „Načítať zoznamy z HISTRA“ (potrebuje token HISTRA).",
             ObsahKniznice.Duplicity => "Žiadny titul nemáš viackrát. Keď bude, ukáže sa tu aj s návrhom, ktorá verzia je lepšia.",
             ObsahKniznice.Nezalohovane => "Všetky tituly máš aspoň na dvoch diskoch. Výborne – strata jedného disku ťa nepripraví o žiadny film.",
+            ObsahKniznice.Stitky => "Zatiaľ žiadne štítky. Titulu ich pridáš v jeho detaile tlačidlom „Štítky…“ (napr. Vianoce, Pre deti).",
             _ => "Prázdne.",
         };
     }
@@ -403,6 +430,11 @@ public partial class HlavneOkno
                 _otvorene = (z.Id, z.Nazov);
                 await ZobrazKnizniciuAsync();
                 break;
+            case { Znacka: { } st }:
+                _obsah = ObsahKniznice.Stitok;
+                _otvorene = (st.Id, st.Nazov);
+                await ZobrazKnizniciuAsync();
+                break;
             case { Titul: { Mam: true } t }:
                 await PrehrajTitulAsync(t.Id);
                 break;
@@ -411,7 +443,12 @@ public partial class HlavneOkno
 
     private async void SpatKniznica_Click(object sender, RoutedEventArgs e)
     {
-        _obsah = _obsah == ObsahKniznice.ZoznamHistra ? ObsahKniznice.ZoznamyHistra : ObsahKniznice.Kolekcie;
+        _obsah = _obsah switch
+        {
+            ObsahKniznice.ZoznamHistra => ObsahKniznice.ZoznamyHistra,
+            ObsahKniznice.Stitok => ObsahKniznice.Stitky,
+            _ => ObsahKniznice.Kolekcie,
+        };
         _otvorene = null;
         await ZobrazKnizniciuAsync();
     }
@@ -478,7 +515,9 @@ public partial class HlavneOkno
             riadky.Add(new RiadokDetailu("O kolekcii", dej));
         }
 
-        riadky.Add(new RiadokDetailu("Otvoriť", "Dvojklik ukáže jej tituly – aj tie, ktoré nemáš (bledé)."));
+        riadky.Add(new RiadokDetailu("Otvoriť", polozka.Znacka is not null
+            ? "Dvojklik ukáže jeho tituly. Hľadanie: stitok:\"" + polozka.Nazov + "\""
+            : "Dvojklik ukáže jej tituly – aj tie, ktoré nemáš (bledé)."));
         DetailRiadky.ItemsSource = riadky;
     }
 
@@ -491,12 +530,15 @@ public partial class HlavneOkno
         }
 
         DetailTitulu? detail;
+        Vypozicka? vypozicka;
+        IReadOnlyList<string> stitky;
         try
         {
-            detail = await Task.Run(() =>
+            (detail, vypozicka, stitky) = await Task.Run(() =>
             {
                 using var c = kniznica.OtvorCitanie();
-                return KniznicaTitulov.Detail(c, titulId, PorovnanieVerzii.ZTextu(_nastavenia.PoradieKvality));
+                return (KniznicaTitulov.Detail(c, titulId, PorovnanieVerzii.ZTextu(_nastavenia.PoradieKvality)),
+                        Vypozicky.Otvorena(c, null, titulId), StitkyTitulov.Titulu(c, titulId));
             });
         }
         catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
@@ -516,6 +558,8 @@ public partial class HlavneOkno
         }
 
         _detail = detail;
+        _detailVypozicka = vypozicka;
+        _detailStitky = stitky;
         _plnimDetail = true;
         try
         {
@@ -550,6 +594,8 @@ public partial class HlavneOkno
         DetailVidene.Visibility = t.Druh == DruhTitulu.Film ? Visibility.Visible : Visibility.Collapsed;
         DetailZelane.IsChecked = t.Zelany;
         DetailMojeHodnotenie.SelectedIndex = t.MojeHodnotenie ?? 0;
+        DetailPozicat.Content = _detailVypozicka is null ? "Požičať…" : "Vrátené";
+        DetailPozicat.ToolTip = _detailVypozicka is { } vp ? $"Požičané: {vp.Komu} od {Format.Datum(vp.Od)}" : "Zapísať, komu titul požičiavaš";
 
         // choosing: waiting for confirmation, or no source knows the title yet but there are candidates
         var tmdb = d.Identifikatory.Any(i => i.Zdroj == ZdrojUdajov.Tmdb);
@@ -565,6 +611,16 @@ public partial class HlavneOkno
         DetailKandidati.ItemsSource = d.Kandidati.Take(8).Select(k => new KartaKandidata(k)).ToList();
 
         var riadky = new List<RiadokDetailu>();
+        if (_detailVypozicka is { } pozicane)
+        {
+            riadky.Add(new RiadokDetailu("Požičané", $"{pozicane.Komu} · od {Format.Datum(pozicane.Od)}" + (pozicane.Poznamka is { } pp ? $" · {pp}" : "")));
+        }
+
+        if (_detailStitky.Count > 0)
+        {
+            riadky.Add(new RiadokDetailu("Štítky", string.Join(", ", _detailStitky)));
+        }
+
         if (d.Dej is { } dej)
         {
             riadky.Add(new RiadokDetailu("Dej", dej));

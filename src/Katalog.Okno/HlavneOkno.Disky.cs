@@ -212,6 +212,11 @@ public partial class HlavneOkno
         var katalog = VybranyKatalog();
         PonukaPremenovatKatalog.IsEnabled = katalog is not null;
         PonukaZmazatKatalog.IsEnabled = katalog is not null;
+        PonukaExportovatKatalog.IsEnabled = katalog is not null;
+        PonukaStitky.IsEnabled = jeDisk || katalog is not null;
+        PonukaStitky.Header = jeDisk ? "Tlačiť štítok disku…" : "Tlačiť štítky diskov katalógu…";
+        PonukaPozicat.IsEnabled = jeDisk;
+        PonukaPozicat.Header = jeDisk && PozicanyDisk(diskId!.Value) is not null ? "Disk je vrátený" : "Požičať disk…";
     }
 
     /// <summary>The disk the user works with: the selected disk or folder in the tree, else the shown one.</summary>
@@ -428,6 +433,21 @@ public partial class HlavneOkno
         riadky.Add(new RiadokDetailu("Disk", $"{disk.CisloText} · {disk.Nazov} · {Format.Druh(disk.Druh)}"));
         riadky.Add(new RiadokDetailu("Kde je", pripojeny is not null ? $"Pripojený ako {pripojeny}" : "Nie je pripojený" + (disk.Umiestnenie is { Length: > 0 } u ? $" · leží: {u}" : "")));
         riadky.Add(new RiadokDetailu("Posledný sken", Format.Cas(disk.PoslednySken)));
+        if (Kniznica is { } kniznicaDisku)
+        {
+            try
+            {
+                using var c = kniznicaDisku.OtvorCitanie();
+                if (Vypozicky.Otvorena(c, disk.Id, null) is { } vypozicka)
+                {
+                    riadky.Add(new RiadokDetailu("Požičaný", $"{vypozicka.Komu} · od {Format.Datum(vypozicka.Od)}" + (vypozicka.Poznamka is { } p ? $" · {p}" : "")));
+                }
+            }
+            catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
+            {
+            }
+        }
+
         if (disk.Poznamka is { Length: > 0 } poznamka)
         {
             riadky.Add(new RiadokDetailu("Poznámka", poznamka));

@@ -35,6 +35,9 @@ internal static class Format
 
     public static string Cas(long? tiky) => tiky is { } t ? Cas(t) : "nikdy";
 
+    /// <summary>Local date of UTC ticks ("8. 11. 2026").</summary>
+    public static string Datum(long tiky) => Jadro.Model.Cas.NaUtc(tiky).ToLocalTime().ToString("d. M. yyyy", Slovensky);
+
     public static string Pocet(long pocet) => pocet.ToString("#,0", Slovensky);
 
     /// <summary>Slovak plural: "1 súbor", "3 súbory", "5 súborov".</summary>

@@ -189,6 +189,7 @@ internal static class Samotest
         await HladanieAsync(okno);
         await KnizniceAsync(okno);
         await PrehladyAsync(okno);
+        await VystupyAsync(okno, nastavenia);
 
         App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
@@ -448,6 +449,134 @@ internal static class Samotest
         await okno.ZobrazStatistikyAsync();
         Over(okno.SuhrnStatistik.Text.Contains("2 filmy", StringComparison.Ordinal), "štatistiky: " + okno.SuhrnStatistik.Text.Split('\n')[0]);
         await SnimkaAsync(okno, "statistiky-tmave.png");
+    }
+
+    /// <summary>
+    /// Outputs (stage E6): labels with QR codes (the window and a PDF), every list to Excel, CSV, HTML and PDF, loans and
+    /// tags with their query fields, and a catalogue exported to its own file and imported back (nothing new comes in).
+    /// </summary>
+    private static async Task VystupyAsync(HlavneOkno okno, Nastavenia nastavenia)
+    {
+        if (okno.Kniznica is not { } kniznica)
+        {
+            return;
+        }
+
+        var vystupy = Path.Combine(_vystup, "vystupy");
+        Directory.CreateDirectory(vystupy);
+        var nikto = new KontextHladania([], DateTime.Now);
+
+        // labels of the disk: the window with its preview, then a PDF of them
+        var stitky = okno.StitkyDiskov([_diskId]);
+        Over(stitky.Count == 1 && stitky[0].Nadpis.StartsWith('D') && stitky[0].Kod?.Contains(stitky[0].Nadpis, StringComparison.Ordinal) == true,
+            "štítok disku: číslo a QR kód");
+        App.NastavMotiv("Light");
+        var stitkyOkno = new StitkyOkno(nastavenia, "Štítky diskov", [.. stitky, .. stitky.Select(st => st with { Nadpis = "D999", Nazov = "Vymyslený druhý disk" })], "Štítky diskov")
+        {
+            Owner = okno,
+        };
+        stitkyOkno.Show();
+        Over(stitkyOkno.Strany.Count == 1 && stitkyOkno.Strany[0].Prvky.OfType<Vystupy.QrNakresu>().Count() == 2, "náhľad: jedna strana, dva QR kódy");
+        await SnimkaAsync(stitkyOkno, "stitky-svetle.png");
+        var pdfStitkov = Path.Combine(vystupy, "stitky.pdf");
+        KreslenieStran.UlozPdf(stitkyOkno.Strany, pdfStitkov, "Štítky diskov");
+        stitkyOkno.Close();
+        Over(File.Exists(pdfStitkov) && File.ReadAllBytes(pdfStitkov) is [(byte)'%', (byte)'P', (byte)'D', (byte)'F', ..] && new FileInfo(pdfStitkov).Length > 10_000,
+            $"PDF štítkov ({new FileInfo(pdfStitkov).Length / 1024} kB)");
+        // the label page as a picture for the log (what the printer gets)
+        var strana = KreslenieStran.Nahlad(Vystupy.Stitky.Rozloz(stitky, new Vystupy.MoznostiStitkov()).First(), 150);
+        var koder = new PngBitmapEncoder();
+        koder.Frames.Add(BitmapFrame.Create(strana));
+        await using (var prud = File.Create(Path.Combine(_vystup, "stitky-strana.png")))
+        {
+            koder.Save(prud);
+        }
+
+        // the lists: search results, the library, the overview – in every format
+        okno.PoleHladania.Text = "typ:video";
+        await okno.HladajAsync();
+        var vysledky = okno.TabulkaVysledkov();
+        Over(vysledky.Riadky.Count >= 3, $"tabuľka výsledkov hľadania ({vysledky.Riadky.Count} riadkov)");
+        foreach (var pripona in new[] { ".xlsx", ".csv", ".html", ".pdf" })
+        {
+            var subor = Path.Combine(vystupy, "hladanie" + pripona);
+            HlavneOkno.ZapisTabulku(vysledky, subor);
+            Over(File.Exists(subor) && new FileInfo(subor).Length > 200, $"export výsledkov {pripona} ({new FileInfo(subor).Length} B)");
+        }
+
+        okno.PoleHladania.Text = "";
+        okno.NavigaciaFilmy.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        var tituly = okno.TabulkaKniznice();
+        Over(tituly.Riadky.Count >= 1 && tituly.Riadky.All(r => r[8] is string d && d.StartsWith('D')), "tabuľka titulov s diskami");
+        HlavneOkno.ZapisTabulku(tituly, Path.Combine(vystupy, "filmy.xlsx"));
+        var stitkyTitulov = okno.StitkyNaTituly(okno.PolozkySteny.Where(p => p.Titul is not null).Select(p => p.Titul!).ToList());
+        Over(stitkyTitulov.Count == tituly.Riadky.Count && stitkyTitulov.All(st => st.Nadpis.StartsWith('D')), "štítky titulov: disky ako nadpis");
+
+        await okno.ZobrazPrehladAsync();
+        var prehlad = okno.TabulkaPrehladu();
+        Over(prehlad.Riadky.Count == 1, "tabuľka prehľadu diskov");
+        HlavneOkno.ZapisTabulku(prehlad, Path.Combine(vystupy, "disky.pdf"));
+
+        // loans and tags
+        long titulId;
+        using (var c = kniznica.OtvorCitanie())
+        {
+            titulId = KniznicaTitulov.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("\"Vymyslený seriál\""), nikto, PohladKniznice.Serialy).Single().Id;
+        }
+
+        await kniznica.Zapis.ZapisAsync(s =>
+        {
+            Vypozicky.Pozicaj(s, _diskId, null, "Vymyslený Kamarát", "samotest", Cas.Teraz());
+            StitkyTitulov.Nastav(s, [titulId], ["Vianoce", "Pre deti"]);
+        });
+        using (var c = kniznica.OtvorCitanie())
+        {
+            Over(Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("pozicane:kamarat typ:video"), nikto).Polozky.Count >= 3, "pozicane: súbory požičaného disku");
+            Over(KniznicaTitulov.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("stitok:vianoce"), nikto, PohladKniznice.Vsetko).Count == 1, "stitok: titul so štítkom");
+        }
+
+        okno.NavigaciaPozicane.IsSelected = true;
+        await okno.ZobrazVypozickyAsync();
+        Over(okno.ZoznamVypoziciek.Items.Count == 1, "zoznam požičaných");
+        await SnimkaAsync(okno, "pozicane-svetle.png");
+
+        App.NastavMotiv("Dark");
+        okno.NavigaciaStitky.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        Over(okno.PolozkySteny.Count == 2 && okno.PolozkySteny.All(p => p.Znacka is not null), "štítky ako dlaždice");
+        okno.NavigaciaSerialy.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        if (okno.PolozkySteny.FirstOrDefault(p => p.Titul?.Id == titulId) is { } serial)
+        {
+            await okno.VyberPolozkuAsync(serial);
+            Over(okno.DetailRiadky.ItemsSource is IEnumerable<RiadokDetailu> riadky && riadky.Any(r => r.Popis == "Štítky" && r.Hodnota.Contains("Vianoce", StringComparison.Ordinal)),
+                "detail titulu ukazuje štítky");
+            await SnimkaAsync(okno, "stitky-titulu-tmave.png");
+        }
+
+        // a catalogue to its own file and back: the library has its disk already, so nothing comes in
+        long katalogId;
+        using (var c = kniznica.OtvorCitanie())
+        {
+            katalogId = KatalogyADisky.NajdiDisk(c, _diskId)!.KatalogId;
+        }
+
+        var export = Path.Combine(vystupy, "katalog" + Produkt.PriponaKniznice);
+        await kniznica.Zapis.VyprazdniAsync();
+        await PrenosKatalogu.ExportujAsync(kniznica, katalogId, export);
+        var vSubore = PrenosKatalogu.Katalogy(export);
+        Over(vSubore.Count == 1 && vSubore[0].Diskov == 1, "export katalógu do súboru");
+        var import = await okno.ImportujKatalogAsync(export, opytat: false);
+        Over(import is { Katalogy.Count: 0, Preskocene.Count: 1 }, "import toho istého katalógu: disk už v knižnici je");
+
+        await kniznica.Zapis.ZapisAsync(s =>
+        {
+            foreach (var v in Vypozicky.Otvorene(s))
+            {
+                Vypozicky.Vrat(s, v.Id, Cas.Teraz());
+            }
+        });
     }
 
     /// <summary>An invented poster (a colour and the title), drawn here: no picture comes from the internet.</summary>
