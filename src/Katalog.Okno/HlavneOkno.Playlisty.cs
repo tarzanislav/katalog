@@ -62,6 +62,9 @@ public partial class HlavneOkno
         TlacidloNahodne.Visibility = obsah is ObsahKniznice.Playlisty or ObsahKniznice.Kolekcie or ObsahKniznice.ZoznamyHistra or ObsahKniznice.Stitky
             ? Visibility.Collapsed
             : Visibility.Visible;
+        // in playlists the playlist's own buttons take the place of those of a single title and of the sources
+        var vPlayliste = obsah is ObsahKniznice.Playlisty or ObsahKniznice.Playlist or ObsahKniznice.Navrh;
+        TlacidloPrehratTitul.Visibility = TlacidloDoplnit.Visibility = vPlayliste ? Visibility.Collapsed : Visibility.Visible;
         var rucny = playlist?.Druh == DruhPlaylistu.Rucny;
         PonukaVylosovat.Visibility = playlist?.Druh == DruhPlaylistu.Nahodny ? Visibility.Visible : Visibility.Collapsed;
         PonukaVyssie.Visibility = PonukaNizsie.Visibility = PonukaOdobrat.Visibility = rucny ? Visibility.Visible : Visibility.Collapsed;
