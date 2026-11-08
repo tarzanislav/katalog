@@ -31,7 +31,7 @@ public sealed class VystupyTesty
 
     /// <summary>
     /// The modules agree bit for bit with an independent encoder (the Python library qrcode, byte mode, the same mask),
-    /// across versions with and without the version blocks and all four levels.
+    /// across versions with and without the version blocks and all four levels; text with diacritics carries ECI UTF-8.
     /// </summary>
     [Test]
     public void QrKodZhodny()
@@ -40,7 +40,9 @@ public sealed class VystupyTesty
         (string Text, UrovenOpravy Uroven, int Maska, int Velkost, string Odtlacok)[] pripady =
         [
             ("KATALOG D007", UrovenOpravy.M, 2, 21, "402c64ff3d7568d47f8aa6ba243b6a71d7dd63369a4abf674b298772bc852122"),
-            ("Ľúbostný príbeh (1999)", UrovenOpravy.Q, 5, 29, "f3961983282870338c2eb0d83ebe28a3a028ba80411477e11e52139061aceaac"),
+            // with diacritics the code starts with ECI 26 (UTF-8), which the Python library does not write: this one was
+            // checked by two readers instead (OpenCV and ZBar read the same text back)
+            ("Ľúbostný príbeh (1999)", UrovenOpravy.Q, 5, 29, "dd69e4a5db2a3860785fb0844c75dbb96fd8ea65a19f675e4838e96f23b207e7"),
             (dlhy, UrovenOpravy.L, 0, 61, "cdd033e9b3341c4b2ae29a78036ea263e708a00d363034cd6d8ff0899a183226"),
             (dlhy, UrovenOpravy.H, 7, 89, "9c566cd1f03e4a5ec499fc5645cd841df704477ea88b6288c00f25d1db76fcc6"),
         ];
@@ -58,8 +60,9 @@ public sealed class VystupyTesty
         // version 1-M holds 14 bytes, the 15th needs version 2
         Over.Rovne(21, QrKod.Vytvor(new string('x', 14)).GetLength(0), "14 bajtov");
         Over.Rovne(25, QrKod.Vytvor(new string('x', 15)).GetLength(0), "15 bajtov");
-        // diacritics count as their UTF-8 bytes (7 letters, 14 bytes)
-        Over.Rovne(21, QrKod.Vytvor("ľščťžýá").GetLength(0), "diakritika v UTF-8");
+        // diacritics count as their UTF-8 bytes with the ECI header: 6 letters (12 bytes) fit version 1-M, 7 do not
+        Over.Rovne(21, QrKod.Vytvor("ľščťžý").GetLength(0), "diakritika v UTF-8");
+        Over.Rovne(25, QrKod.Vytvor("ľščťžýá").GetLength(0), "diakritika a hlavička ECI");
         Over.Vyhodi<ArgumentException>(() => QrKod.Vytvor(new string('x', QrKod.NajdlhsiText + 1)), "príliš dlhý text");
 
         // the chosen mask is one of the eight, and the same text gives the same code

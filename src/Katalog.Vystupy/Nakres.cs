@@ -54,4 +54,7 @@ public static class Nakres
 
     /// <summary>Millimetres of one typographic point.</summary>
     public const double MmNaBod = 25.4 / 72;
+
+    /// <summary>The height of a line of text to its size (Segoe UI's own line spacing).</summary>
+    public const double Riadkovanie = 1.34;
 }

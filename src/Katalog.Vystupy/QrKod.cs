@@ -51,11 +51,13 @@ public static class QrKod
         }
 
         var data = Encoding.UTF8.GetBytes(text);
+        // letters beyond ASCII: an ECI 26 header tells the reader the bytes are UTF-8 (else some guess another encoding)
+        var eci = data.Any(b => b >= 0x80);
         var verzia = 1;
         while (true)
         {
             var dlzkaPocitadla = verzia <= 9 ? 8 : 16;
-            if (4 + dlzkaPocitadla + (data.Length * 8) <= PocetDatovychSlov(verzia, uroven) * 8)
+            if ((eci ? 12 : 0) + 4 + dlzkaPocitadla + (data.Length * 8) <= PocetDatovychSlov(verzia, uroven) * 8)
             {
                 break;
             }
@@ -66,7 +68,7 @@ public static class QrKod
             }
         }
 
-        var slova = Kodove(data, verzia, uroven);
+        var slova = Kodove(data, eci, verzia, uroven);
         return new Matica(verzia, uroven, slova, maska).Moduly;
     }
 
@@ -92,7 +94,7 @@ public static class QrKod
         (PocetSurovychModulov(verzia) / 8) - (EccNaBlok[(int)uroven][verzia] * PocetBlokov[(int)uroven][verzia]);
 
     /// <summary>Mode, count, data, terminator and padding, then the error correction of each block, interleaved.</summary>
-    private static byte[] Kodove(byte[] data, int verzia, UrovenOpravy uroven)
+    private static byte[] Kodove(byte[] data, bool eci, int verzia, UrovenOpravy uroven)
     {
         var kapacita = PocetDatovychSlov(verzia, uroven) * 8;
         var bity = new List<bool>(kapacita);
@@ -102,6 +104,12 @@ public static class QrKod
             {
                 bity.Add(((hodnota >> i) & 1) != 0);
             }
+        }
+
+        if (eci)
+        {
+            Pridaj(0b0111, 4);
+            Pridaj(26, 8);
         }
 
         Pridaj(0b0100, 4);

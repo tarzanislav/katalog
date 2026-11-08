@@ -376,7 +376,8 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                         </Button>
                         <Button x:Name="TlacidloNacitatHistra" Content="Načítať zoznamy z HISTRA" Padding="14,5" Margin="8,0,0,0"
                                 Click="NacitatHistra_Click" Visibility="Collapsed" />
-                        <Button x:Name="TlacidloVystupKniznice" Content="Export a tlač" Padding="14,5" Margin="8,0,0,0" Click="VystupKniznice_Click">
+                        <Button x:Name="TlacidloVystupKniznice" Padding="10,5" Margin="8,0,0,0" Click="VystupKniznice_Click" ToolTip="Export, tlač a štítky">
+                            <TextBlock Text="&#xE749;" FontFamily="{StaticResource Ikony}" />
                             <Button.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Exportovať zoznam…" Click="ExportovatKniznicu_Click" ToolTip="Tituly do Excelu, CSV, HTML alebo PDF" />

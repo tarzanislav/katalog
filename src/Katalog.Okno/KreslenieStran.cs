@@ -67,8 +67,8 @@ internal static class KreslenieStran
                 var text = new FormattedText(t.Text, CultureInfo.GetCultureInfo("sk-SK"), FlowDirection.LeftToRight,
                     t.Tucne ? PismoTucne : Pismo, t.Velkost * 96 / 72, Stetec(t.Farba), 1.0)
                 {
+                    // the number of lines bounds the height (a height bound would drop a line a hair taller than the box)
                     MaxTextWidth = Math.Max(1, t.Sirka * DipNaMm),
-                    MaxTextHeight = Math.Max(1, t.Vyska * DipNaMm) + 1,
                     MaxLineCount = Math.Max(1, t.Riadkov),
                     Trimming = TextTrimming.CharacterEllipsis,
                     TextAlignment = t.Zarovnanie switch

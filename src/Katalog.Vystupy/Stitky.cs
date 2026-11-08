@@ -153,9 +153,9 @@ public static class Stitky
         var velkostNadpisu = 15 * mierka;
         var velkostNazvu = 9.5 * mierka;
         var velkostRiadku = Math.Max(6, 7.5 * mierka);
-        var vyskaNadpisu = velkostNadpisu * Nakres.MmNaBod * 1.2;
-        var vyskaNazvu = velkostNazvu * Nakres.MmNaBod * 1.2;
-        var vyskaRiadku = velkostRiadku * Nakres.MmNaBod * 1.2;
+        var vyskaNadpisu = velkostNadpisu * Nakres.MmNaBod * Nakres.Riadkovanie;
+        var vyskaNazvu = velkostNazvu * Nakres.MmNaBod * Nakres.Riadkovanie;
+        var vyskaRiadku = velkostRiadku * Nakres.MmNaBod * Nakres.Riadkovanie;
 
         var dole = y + vyska - okraj;
         var hore = y + okraj;
