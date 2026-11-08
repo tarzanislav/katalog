@@ -37,6 +37,9 @@ public partial class FiltreOkno : Window
         PoleZmenene.Text = Dotaz.HodnotaPola(text, PoleDotazu.Zmenene) ?? "";
         Vyber(VolbaPridania, Dotaz.HodnotaPola(text, PoleDotazu.Pridane));
         Vyber(VolbaZmazanych, Dotaz.HodnotaPola(text, PoleDotazu.Zmazane));
+        Vyber(VolbaKvality, Dotaz.HodnotaPola(text, PoleDotazu.Kvalita));
+        PoleZvuku.Text = Dotaz.HodnotaPola(text, PoleDotazu.Zvuk) ?? "";
+        PoleTitulkov.Text = Dotaz.HodnotaPola(text, PoleDotazu.Titulky) ?? "";
         var disk = Dotaz.HodnotaPola(text, PoleDotazu.Disk);
         ZoznamDiskov.SelectedItem = ZoznamDiskov.Items.OfType<Volba>().FirstOrDefault(v => CisloDisku(v.Hodnota) == CisloDisku(disk ?? "")) ?? ZoznamDiskov.Items[0];
         var katalog = Dotaz.HodnotaPola(text, PoleDotazu.Katalog);
@@ -82,6 +85,9 @@ public partial class FiltreOkno : Window
         ZoznamDiskov.SelectedIndex = 0;
         ZoznamKatalogov.SelectedIndex = 0;
         VolbaZmazanych.SelectedIndex = 0;
+        VolbaKvality.SelectedIndex = 0;
+        PoleZvuku.Text = "";
+        PoleTitulkov.Text = "";
         LenPripojene.IsChecked = false;
     }
 
@@ -107,6 +113,9 @@ public partial class FiltreOkno : Window
         text = Dotaz.NastavPole(text, PoleDotazu.Katalog, (ZoznamKatalogov.SelectedItem as Volba)?.Hodnota);
         text = Dotaz.NastavPole(text, PoleDotazu.Pripojene, LenPripojene.IsChecked == true ? "ano" : null);
         text = Dotaz.NastavPole(text, PoleDotazu.Zmazane, Hodnota(VolbaZmazanych));
+        text = Dotaz.NastavPole(text, PoleDotazu.Kvalita, Hodnota(VolbaKvality));
+        text = Dotaz.NastavPole(text, PoleDotazu.Zvuk, PoleZvuku.Text.Replace(" ", "", StringComparison.Ordinal));
+        text = Dotaz.NastavPole(text, PoleDotazu.Titulky, PoleTitulkov.Text.Replace(" ", "", StringComparison.Ordinal));
 
         // a value the query language does not understand is shown here, before it leaves the window
         var upozornenia = Dotaz.Citaj(text).Upozornenia;

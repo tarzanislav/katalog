@@ -55,6 +55,8 @@ internal static class Samotest
     /// <summary>Id of the invented disk the self-test scans.</summary>
     private static long _diskId;
 
+    private static Media.NastrojeFfmpeg? _ffmpeg;
+
     private static async Task KniznicaAsync(string cesta)
     {
         await using var kniznica = await Kniznica.OtvorAsync(cesta, new ZalohyKniznice(Path.Combine(_vystup, "Zalohy")));
@@ -72,6 +74,14 @@ internal static class Samotest
         Subor(disk, @"TVSHOWS\Vymyslený seriál (2025)\Season 01\Vymyslený seriál S01E01 - CZ FHD H265 SMALL.mkv", 700);
         Subor(disk, @"TVSHOWS\Vymyslený seriál (2025)\Season 01\Vymyslený seriál S01E02 - CZ FHD H265 SMALL.mkv", 710);
         Subor(disk, @"Dokumenty\Vymyslená poznámka.txt", 12);
+
+        // the film is a real (invented) video made by KATALOG's own FFmpeg: its technical data are read later
+        _ffmpeg = Media.HladanieFfmpeg.Najdi(null, AppContext.BaseDirectory);
+        Over(_ffmpeg is { Zdroj: Media.ZdrojFfmpeg.Pribaleny, Ffmpeg: not null }, $"FFmpeg nainštalovaný s KATALOGOM, overený manifestom ({_ffmpeg?.Zdroj})");
+        if (_ffmpeg?.Ffmpeg is { } ffmpeg)
+        {
+            await VymysleneVideoAsync(ffmpeg, Path.Combine(disk, @"MOVIES\Vymyslený Šťastný film (2024)\Vymyslený Šťastný film (2024) - CZ EN FHD H264 SMALL.mkv"));
+        }
 
         var zvazky = Skenovanie.Zvazky.Systemove;
         var identita = zvazky.Identita(disk);
@@ -120,8 +130,9 @@ internal static class Samotest
     private static async Task OknoAsync(string cesta)
     {
         var nastavenia = Nastavenia.Nacitaj(Path.Combine(_vystup, "nastavenia"));
-        // the self-test never asks the internet
+        // the self-test never asks the internet; it starts reading technical data itself (to wait for it)
         nastavenia.AutomatickeAktualizacie = false;
+        nastavenia.CitatTechnickeUdaje = false;
         var okno = new HlavneOkno(nastavenia, cesta);
         okno.Show();
         await okno.Pripravene;
@@ -137,6 +148,21 @@ internal static class Samotest
 
         var vysledok = await okno.SkenujAsync(_diskId);
         Over(vysledok is { Stav: StavUlohy.Hotova }, $"sken z okna: {vysledok?.Stav}");
+
+        // technical data: the film is read (with a preview), the two empty episodes are damaged files
+        Over(okno.Ffmpeg?.Zdroj == Media.ZdrojFfmpeg.Pribaleny, $"okno používa FFmpeg nainštalovaný s KATALOGOM ({okno.Ffmpeg?.Zdroj})");
+        var citanie = await okno.CitajAsync(_diskId, pouzivatel: true);
+        Over(citanie is { Stav: StavUlohy.Hotova, Precitane: 2, Necitatelne: 1 }, $"technické údaje z okna: {citanie}");
+        if (okno.Kniznica is { } k)
+        {
+            using var c = k.OtvorCitanie();
+            var nikto = new KontextHladania([], DateTime.Now);
+            var film = Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("kvalita:sd zvuk:sk typ:video"), nikto).Polozky;
+            Over(film.Count == 1 && TechnickeUdaje.Citaj(c, film[0].Id) is { Nahlady.Count: 1, Udaje.Sirka: 320 },
+                "hľadanie podľa technických údajov a náhľad filmu");
+            Over(Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("poskodene:ano"), nikto).Polozky.Count == 1, "poškodený súbor sa dá nájsť");
+            Over(UlohyKniznice.Cakajuce(c).Count == 0, "fronta úloh je po skene a čítaní prázdna");
+        }
 
         App.NastavMotiv("Light");
         if (okno.Kniznica is { } kniznica && okno.Pripojenie is { } pripojenie)
@@ -228,10 +254,30 @@ internal static class Samotest
         Over(okno.ZoznamUlozenych.Items.Count == 2, "uložené hľadania v okne");
         await SnimkaAsync(okno, "ulozene-hladania-tmave.png");
 
-        var nastavenia = new NastaveniaOkno(Nastavenia.Nacitaj(Path.Combine(_vystup, "nastavenia")), []) { Owner = okno };
+        var nastavenia = new NastaveniaOkno(Nastavenia.Nacitaj(Path.Combine(_vystup, "nastavenia")), [], okno.Ffmpeg) { Owner = okno };
         nastavenia.Show();
         await SnimkaAsync(nastavenia, "nastavenia-tmave.png");
         nastavenia.Close();
+    }
+
+    /// <summary>An invented two-second video (test picture, a tone, Slovak sound) made by FFmpeg itself.</summary>
+    private static async Task VymysleneVideoAsync(string ffmpeg, string ciel)
+    {
+        var start = new System.Diagnostics.ProcessStartInfo(ffmpeg) { UseShellExecute = false, RedirectStandardError = true, CreateNoWindow = true };
+        foreach (var a in new[]
+                 {
+                     "-v", "error", "-nostdin", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=25:duration=2",
+                     "-f", "lavfi", "-i", "sine=frequency=440:duration=2", "-c:v", "mjpeg", "-q:v", "8", "-c:a", "pcm_s16le",
+                     "-metadata:s:a:0", "language=slo", "-y", ciel,
+                 })
+        {
+            start.ArgumentList.Add(a);
+        }
+
+        using var proces = System.Diagnostics.Process.Start(start)!;
+        var chyby = await proces.StandardError.ReadToEndAsync();
+        await proces.WaitForExitAsync();
+        Over(proces.ExitCode == 0 && new FileInfo(ciel).Length > 1000, "vymyslené video urobil FFmpeg KATALOGU" + (chyby.Length > 0 ? ": " + chyby : ""));
     }
 
     private static void Subor(string disk, string relativna, int velkost)

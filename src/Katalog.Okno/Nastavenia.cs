@@ -23,6 +23,15 @@ public sealed class Nastavenia
 
     public DateTime? PoslednaKontrolaAktualizaciiUtc { get; set; }
 
+    /// <summary>The folder with ffprobe.exe and ffmpeg.exe; empty = found by itself (UNIVERSUM, KATALOG's own, PATH).</summary>
+    public string PriecinokFfmpeg { get; set; } = "";
+
+    /// <summary>Technical data of videos are read by themselves after a scan and when a disk is connected.</summary>
+    public bool CitatTechnickeUdaje { get; set; } = true;
+
+    /// <summary>A preview picture of every video (about 15 kB each, next to the library).</summary>
+    public bool RobitNahlady { get; set; } = true;
+
     /// <summary>The player's program (.exe); empty = the program Windows opens videos with.</summary>
     public string Prehravac { get; set; } = "";
 

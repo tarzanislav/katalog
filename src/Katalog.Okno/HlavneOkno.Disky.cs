@@ -56,6 +56,7 @@ public partial class HlavneOkno
         }
 
         ObnovStrom();
+        await InicializujCitanieAsync(kniznica);
         await ObnovPripojenieAsync(oznamit: true);
     }
 
@@ -204,6 +205,7 @@ public partial class HlavneOkno
         var jeDisk = diskId is not null;
         PonukaPrehrat.IsEnabled = jeDisk;
         PonukaAktualizovat.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true && _skeny?.Bezi(diskId.Value) == false;
+        PonukaCitat.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true && _citania?.Bezi(diskId.Value) == false;
         PonukaOtvorit.IsEnabled = jeDisk && _stav?.Pripojene.ContainsKey(diskId!.Value) == true;
         PonukaUpravit.IsEnabled = jeDisk;
         PonukaOdstranit.IsEnabled = jeDisk && _skeny?.Bezi(diskId!.Value) == false;
@@ -371,6 +373,8 @@ public partial class HlavneOkno
 
     private void ZobrazDetail(Disk? disk, PolozkaZoznamu? polozka = null, string cesta = "")
     {
+        DetailNahlad.Source = null;
+        DetailNahlad.Visibility = Visibility.Collapsed;
         if (disk is null)
         {
             DetailNadpis.Text = "Detail titulu";
@@ -388,6 +392,7 @@ public partial class HlavneOkno
             {
                 riadky.Add(new RiadokDetailu("Veľkosť", $"{Format.Velkost(polozka.Velkost)} ({Format.Pocet(polozka.Velkost)} B)"));
                 riadky.Add(new RiadokDetailu("Zmenené", polozka.ZmeneneText));
+                PridajTechnickeUdaje(riadky, polozka);
             }
 
             var vnutri = cesta.Length == 0 ? polozka.Nazov : cesta + "/" + polozka.Nazov;
@@ -515,6 +520,12 @@ public partial class HlavneOkno
             ObnovStred();
         }
 
+        // new and changed videos get their technical data right after the scan
+        if (vysledok.Stav == StavUlohy.Hotova)
+        {
+            _ = CitajAsync(diskId, pouzivatel: false);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -536,8 +547,22 @@ public partial class HlavneOkno
         var beziace = _skeny?.Beziace ?? [];
         if (beziace.Count == 0)
         {
-            PriebehSkenu.Visibility = Visibility.Collapsed;
-            TlacidloZrusitSken.Visibility = Visibility.Collapsed;
+            var citania = _citania?.Beziace ?? [];
+            if (citania.Count == 0)
+            {
+                PriebehSkenu.Visibility = Visibility.Collapsed;
+                TlacidloZrusitSken.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var ci = citania[0];
+            var este = citania.Count > 1 ? $" (+ {citania.Count - 1} ďalšie)" : "";
+            StavUloh.Text = $"Čítam technické údaje videí: disk {ci.NazovDisku} · {Format.Pocet(ci.Priebeh.Hotove)} z {Format.Pocet(ci.Priebeh.Spolu)}{este}";
+            PriebehSkenu.Visibility = Visibility.Visible;
+            PriebehSkenu.IsIndeterminate = ci.Priebeh.Spolu == 0;
+            PriebehSkenu.Value = ci.Priebeh.Podiel * 100;
+            TlacidloZrusitSken.Visibility = Visibility.Visible;
+            TlacidloZrusitSken.Tag = new ZastavenieUlohy(DruhUlohy.Ffprobe, ci.DiskId);
             return;
         }
 
@@ -551,14 +576,19 @@ public partial class HlavneOkno
         PriebehSkenu.IsIndeterminate = p?.Podiel is null;
         PriebehSkenu.Value = (p?.Podiel ?? 0) * 100;
         TlacidloZrusitSken.Visibility = Visibility.Visible;
-        TlacidloZrusitSken.Tag = sken.DiskId;
+        TlacidloZrusitSken.Tag = new ZastavenieUlohy(DruhUlohy.Skenovanie, sken.DiskId);
     }
 
     private void ZrusitSken_Click(object sender, RoutedEventArgs e)
     {
-        if (TlacidloZrusitSken.Tag is long diskId)
+        switch (TlacidloZrusitSken.Tag)
         {
-            _skeny?.Zrus(diskId);
+            case ZastavenieUlohy { Druh: DruhUlohy.Skenovanie } sken:
+                _skeny?.Zrus(sken.DiskId);
+                break;
+            case ZastavenieUlohy citanie:
+                _citania?.Zrus(citanie.DiskId);
+                break;
         }
     }
 
@@ -747,6 +777,7 @@ public partial class HlavneOkno
         }
 
         ObnovStred();
+        await SpustiCakajuceUlohyAsync();
 
         // a disk someone waits for to play is the reason it was connected: it plays, no offer to update it
         if (await PrehrajCakajuceAsync() || _cakajuce is not null)

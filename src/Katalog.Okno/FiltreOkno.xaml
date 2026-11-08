@@ -24,6 +24,9 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <Style x:Key="Popis" TargetType="TextBlock">
@@ -79,8 +82,24 @@
             <TextBlock Style="{StaticResource Popis}" Grid.Row="6" Text="Katalóg" />
             <ComboBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3" x:Name="ZoznamKatalogov" DisplayMemberPath="Popis" />
 
-            <TextBlock Style="{StaticResource Popis}" Grid.Row="7" Text="Zmazané" />
-            <ComboBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaZmazanych">
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="7" Text="Kvalita obrazu" />
+            <ComboBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaKvality">
+                <ComboBoxItem Content="Akákoľvek" Tag="" />
+                <ComboBoxItem Content="4K" Tag="4k" />
+                <ComboBoxItem Content="Aspoň Full HD" Tag="&gt;=fhd" />
+                <ComboBoxItem Content="Full HD" Tag="fhd" />
+                <ComboBoxItem Content="HD" Tag="hd" />
+                <ComboBoxItem Content="SD" Tag="sd" />
+            </ComboBox>
+
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="8" Text="Jazyk zvuku" />
+            <TextBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="3" x:Name="PoleZvuku" ToolTip="Napríklad sk alebo sk,cs; nie = bez zvuku" />
+
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="9" Text="Jazyk titulkov" />
+            <TextBox Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="3" x:Name="PoleTitulkov" ToolTip="Napríklad sk; ano = akékoľvek titulky, nie = bez titulkov" />
+
+            <TextBlock Style="{StaticResource Popis}" Grid.Row="10" Text="Zmazané" />
+            <ComboBox Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="3" x:Name="VolbaZmazanych">
                 <ComboBoxItem Content="Len to, čo na diskoch je" Tag="" />
                 <ComboBoxItem Content="Aj to, čo z diskov zmizlo (história)" Tag="aj" />
                 <ComboBoxItem Content="Len to, čo z diskov zmizlo" Tag="len" />

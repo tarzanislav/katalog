@@ -34,6 +34,8 @@ velkost:>4GB         velkost:1GB..8GB
 zmenene:2024         zmenene:>=2024-05      pridane:7d
 disk:3   disk:"Názov disku"   katalog:Videotéka
 pripojene:ano        zmazane:aj | len
+kvalita:4k | >=fhd   kodek:hevc   hdr:ano | dv   dlzka:>2h
+zvuk:sk,cs           titulky:sk | ano | nie      poskodene:ano
 Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                     </TextBox.ToolTip>
                 </TextBox>
@@ -141,6 +143,8 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                                               ToolTip="Blu-ray alebo DVD v priečinku, inak videá priečinka ako playlist" />
                                     <Separator />
                                     <MenuItem x:Name="PonukaAktualizovat" Header="Aktualizovať disk" Click="AktualizovatDisk_Click" />
+                                    <MenuItem x:Name="PonukaCitat" Header="Prečítať technické údaje videí" Click="CitatTechnickeUdaje_Click"
+                                              ToolTip="Rozlíšenie, kodeky, zvuk a titulky s jazykmi, HDR a náhľad – pre videá, ktoré ich ešte nemajú" />
                                     <MenuItem x:Name="PonukaOtvorit" Header="Otvoriť v Prieskumníkovi" Click="OtvoritVPrieskumnikovi_Click" />
                                     <MenuItem x:Name="PonukaUpravit" Header="Upraviť disk…" Click="UpravitDisk_Click" />
                                     <MenuItem x:Name="PonukaOdstranit" Header="Odstrániť disk z knižnice…" Click="OdstranitDisk_Click" />
@@ -339,8 +343,11 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
 
             <Border Grid.Column="2" BorderThickness="1,1,0,0" Padding="16"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
                     <TextBlock x:Name="DetailNadpis" Text="Detail titulu" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <Image x:Name="DetailNahlad" Margin="0,10,0,0" MaxHeight="200" Stretch="Uniform" HorizontalAlignment="Left"
+                           Visibility="Collapsed" />
                     <TextBlock x:Name="DetailPrazdny" Margin="0,8,0,0" Style="{StaticResource TichyText}"
                                Text="Vyber titul alebo súbor. Tu uvidíš plagát, dej, kde leží (disk, cesta, či je pripojený), technické údaje, zvuk a titulky s jazykmi a ďalšie verzie na iných diskoch." />
                     <ItemsControl x:Name="DetailRiadky" Margin="0,8,0,0">
@@ -354,6 +361,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
 
@@ -374,7 +382,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                            Style="{StaticResource TichyText}" VerticalAlignment="Center" TextWrapping="NoWrap" />
                 <ProgressBar Grid.Column="2" x:Name="PriebehSkenu" Width="160" Height="6" Visibility="Collapsed"
                              VerticalAlignment="Center" Minimum="0" Maximum="100" />
-                <Button Grid.Column="3" x:Name="TlacidloZrusitSken" Content="Zrušiť" Padding="10,2" Margin="8,0,0,0"
+                <Button Grid.Column="3" x:Name="TlacidloZrusitSken" Content="Zastaviť" Padding="10,2" Margin="8,0,0,0"
                         Visibility="Collapsed" Click="ZrusitSken_Click" />
                 <TextBlock Grid.Column="4" x:Name="StavVerzie" Margin="16,0,0,0" Style="{StaticResource TichyText}"
                            VerticalAlignment="Center" />

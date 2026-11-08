@@ -32,9 +32,24 @@ Rovnaký zápis používajú filtre, uložené hľadania a neskôr aj playlisty,
 | `pripojene:ano` | len na diskoch pripojených teraz; `pripojene:nie` len na nepripojených |
 | `zmazane:aj` | aj to, čo z diskov zmizlo (história); `zmazane:len` len to |
 
+### Technické údaje videí
+
+Prečíta ich KATALOG sám na pozadí po skene a po pripojení disku (ffprobe); kým nie sú prečítané, tieto polia video
+nenájdu.
+
+| Zápis | Čo nájde |
+| --- | --- |
+| `kvalita:4k` | podľa rozlíšenia: `sd`, `hd`, `fhd`, `4k` (aj `720p`, `1080p`, `2160p`); `kvalita:>=fhd` Full HD a lepšie |
+| `kodek:hevc` | kodek obrazu: `hevc` (aj `h265`, `x265`), `h264` (`avc`), `av1`, `vp9`, `mpeg2`, `mpeg4` (`xvid`, `divx`), `vc1` |
+| `zvuk:sk,cs` | so zvukovou stopou v jednom z jazykov (`sk`, `slo`, `cze`, `cs`… je jedno); `zvuk:nie` bez zvuku |
+| `titulky:sk` | s titulkami v jazyku – vnútri videa aj ako súbor vedľa neho (`Film.sk.srt`); `titulky:ano`, `titulky:nie` |
+| `hdr:ano` | s HDR; `hdr:dv` (Dolby Vision), `hdr:hdr10`, `hdr:hlg`, `hdr:nie` |
+| `dlzka:>2h` | dlhšie ako 2 hodiny; `dlzka:<30min`, `dlzka:80..100` (holé číslo sú minúty), `dlzka:<=1:30` |
+| `poskodene:ano` | súbory, ktoré ffprobe nevedel prečítať (poškodené, nedokončené) |
+
 Pred pole sa dá dať mínus: `-pripona:srt` sú súbory okrem titulkov. Všetky podmienky musia platiť naraz.
-Čo program nerozumie, ohlási nad výsledkami a vynechá – nikdy nehádže potichu. Neznáme pole (napr. `zvuk:cs`
-pred etapou E3) hľadá ako obyčajný text.
+Čo program nerozumie, ohlási nad výsledkami a vynechá – nikdy nehádže potichu. Neznáme pole (napr. `herec:` pred
+etapou E4) hľadá ako obyčajný text.
 
 ## Príklady
 
@@ -45,6 +60,9 @@ pridane:7d typ:video                    čo pribudlo tento týždeň
 "S01E01" typ:video                      prvé diely seriálov
 typ:titulky -pripona:srt                titulky v iných formátoch ako SRT
 zmazane:len typ:video                   videá, ktoré z diskov zmizli (ostali v histórii)
+kvalita:4k hdr:ano                      4K s HDR
+typ:video -zvuk:sk -titulky:sk          videá bez slovenčiny (ani zvuk, ani titulky)
+kvalita:<=hd typ:video                  kandidáti na lepšiu verziu
 ```
 
 Výsledkov je najviac 500; keď ich je viac, program to povie a stačí pridať slovo alebo filter.

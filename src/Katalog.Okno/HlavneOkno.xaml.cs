@@ -75,6 +75,7 @@ public partial class HlavneOkno : Window
         // running scans stop (each folder is written whole or not at all); the writer finishes its last batch and the WAL
         // is merged, so the file can be copied right away
         _skeny?.ZrusVsetky();
+        _citania?.ZrusVsetky();
         if (Kniznica is { } kniznica)
         {
             Kniznica = null;
@@ -117,9 +118,11 @@ public partial class HlavneOkno : Window
     private async void TlacidloNastavenia_Click(object sender, RoutedEventArgs e)
     {
         var prehravace = await Task.Run(Prehravace.Najdi);
-        if (new NastaveniaOkno(_nastavenia, prehravace) { Owner = this }.ShowDialog() == true)
+        if (new NastaveniaOkno(_nastavenia, prehravace, _ffmpeg) { Owner = this }.ShowDialog() == true)
         {
             UlozNastavenia();
+            await NajdiFfmpegAsync();
+            await SpustiCakajuceUlohyAsync();
         }
     }
 

@@ -39,7 +39,6 @@ internal sealed class SpravcaSkenov(Kniznica kniznica)
         _beziace[diskId] = (zrusenie, new BeziaciSken(diskId, nazovDisku, null));
         _zrusenePouzivatelom.Remove(diskId);
         Zmena?.Invoke();
-        long? uloha = null;
         var priebeh = new Progress<PriebehSkenu>(p =>
         {
             if (_beziace.TryGetValue(diskId, out var b))
@@ -51,7 +50,7 @@ internal sealed class SpravcaSkenov(Kniznica kniznica)
 
         try
         {
-            uloha = await kniznica.Zapis.ZapisAsync(s =>
+            var uloha = await kniznica.Zapis.ZapisAsync(s =>
             {
                 var id = UlohyKniznice.Naplanuj(s, DruhUlohy.Skenovanie, Pruhy.Disk(diskId), diskId, Cas.Teraz());
                 UlohyKniznice.Zacni(s, id, Cas.Teraz());
@@ -62,7 +61,7 @@ internal sealed class SpravcaSkenov(Kniznica kniznica)
             // stopped because the program closes: the job stays running in the library and waits again next time
             if (vysledok.Stav != StavUlohy.Zrusena || _zrusenePouzivatelom.Contains(diskId))
             {
-                await kniznica.Zapis.ZapisAsync(s => UlohyKniznice.Skonci(s, uloha.Value, vysledok.Stav, vysledok.Sprava, Cas.Teraz())).ConfigureAwait(true);
+                await kniznica.Zapis.ZapisAsync(s => UlohyKniznice.Skonci(s, uloha, vysledok.Stav, vysledok.Sprava, Cas.Teraz())).ConfigureAwait(true);
             }
 
             _beziace.Remove(diskId);
