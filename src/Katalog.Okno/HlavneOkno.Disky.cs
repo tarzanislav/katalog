@@ -375,6 +375,9 @@ public partial class HlavneOkno
     {
         DetailNahlad.Source = null;
         DetailNahlad.Visibility = Visibility.Collapsed;
+        PanelDetailuTitulu.Visibility = Visibility.Collapsed;
+        DetailPlagat.Source = null;
+        _detail = null;
         if (disk is null)
         {
             DetailNadpis.Text = "Detail titulu";
@@ -392,6 +395,21 @@ public partial class HlavneOkno
             {
                 riadky.Add(new RiadokDetailu("Veľkosť", $"{Format.Velkost(polozka.Velkost)} ({Format.Pocet(polozka.Velkost)} B)"));
                 riadky.Add(new RiadokDetailu("Zmenené", polozka.ZmeneneText));
+                if (Kniznica is { } kniznica)
+                {
+                    try
+                    {
+                        using var c = kniznica.OtvorCitanie();
+                        if (KniznicaTitulov.PopisTituluSuboru(c, polozka.Id) is { } titul)
+                        {
+                            riadky.Add(new RiadokDetailu("Titul v knižnici", titul));
+                        }
+                    }
+                    catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
+                    {
+                    }
+                }
+
                 PridajTechnickeUdaje(riadky, polozka);
             }
 
@@ -521,10 +539,11 @@ public partial class HlavneOkno
             ObnovStred();
         }
 
-        // new and changed videos get their technical data right after the scan
+        // new and changed videos get their technical data right after the scan, and go into the library of titles
         if (vysledok.Stav == StavUlohy.Hotova)
         {
             _ = CitajAsync(diskId, pouzivatel: false);
+            _ = DoplnKnizniciuAsync();
         }
 
         return Task.CompletedTask;
@@ -551,6 +570,17 @@ public partial class HlavneOkno
             var citania = _citania?.Beziace ?? [];
             if (citania.Count == 0)
             {
+                if (_stavKnizniceTitulov is { } kniznica)
+                {
+                    StavUloh.Text = kniznica.Text;
+                    PriebehSkenu.Visibility = Visibility.Visible;
+                    PriebehSkenu.IsIndeterminate = kniznica.Podiel is null;
+                    PriebehSkenu.Value = (kniznica.Podiel ?? 0) * 100;
+                    TlacidloZrusitSken.Visibility = Visibility.Visible;
+                    TlacidloZrusitSken.Tag = new ZastavenieUlohy(DruhUlohy.Udaje, 0);
+                    return;
+                }
+
                 PriebehSkenu.Visibility = Visibility.Collapsed;
                 TlacidloZrusitSken.Visibility = Visibility.Collapsed;
                 return;
@@ -586,6 +616,9 @@ public partial class HlavneOkno
         {
             case ZastavenieUlohy { Druh: DruhUlohy.Skenovanie } sken:
                 _skeny?.Zrus(sken.DiskId);
+                break;
+            case ZastavenieUlohy { Druh: DruhUlohy.Udaje }:
+                _kniznicaTitulov?.Zrus();
                 break;
             case ZastavenieUlohy citanie:
                 _citania?.Zrus(citanie.DiskId);

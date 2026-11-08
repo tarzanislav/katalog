@@ -93,10 +93,10 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                         <TextBlock Text="KNIŽNICA" Style="{StaticResource NadpisSekcie}" />
                         <ListBox x:Name="NavigaciaKniznica" BorderThickness="0" Background="Transparent"
                                  SelectionChanged="Navigacia_SelectionChanged">
-                            <ListBoxItem Content="Filmy" Style="{StaticResource PolozkaNavigacie}" />
-                            <ListBoxItem Content="Seriály" Style="{StaticResource PolozkaNavigacie}" />
-                            <ListBoxItem Content="Na potvrdenie" Style="{StaticResource PolozkaNavigacie}" />
-                            <ListBoxItem Content="Zoznam želaní" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaFilmy" Content="Filmy" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaSerialy" Content="Seriály" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaNaPotvrdenie" Content="Na potvrdenie" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaZelane" Content="Zoznam želaní" Style="{StaticResource PolozkaNavigacie}" />
                         </ListBox>
 
                         <Grid Margin="0,0,8,0">
@@ -161,7 +161,8 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                         <ListBox x:Name="NavigaciaZbierky" BorderThickness="0" Background="Transparent"
                                  SelectionChanged="Navigacia_SelectionChanged">
                             <ListBoxItem x:Name="NavigaciaUlozene" Content="Uložené hľadania" Style="{StaticResource PolozkaNavigacie}" />
-                            <ListBoxItem Content="Kolekcie" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaKolekcie" Content="Kolekcie" Style="{StaticResource PolozkaNavigacie}" />
+                            <ListBoxItem x:Name="NavigaciaHistra" Content="Zoznamy HISTRA" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Playlisty" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Duplicity" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem Content="Prehľad diskov" Style="{StaticResource PolozkaNavigacie}" />
@@ -183,7 +184,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                     <TextBlock x:Name="PrazdnyNadpis" Text="Knižnica je zatiaľ prázdna" FontSize="18" FontWeight="SemiBold"
                                HorizontalAlignment="Center" TextAlignment="Center" Margin="0,12,0,6" TextWrapping="Wrap" />
                     <TextBlock x:Name="PrazdnyText" TextAlignment="Center" Style="{StaticResource TichyText}"
-                               Text="Pridaj disk vľavo (Pridať disk). Plagátová stena s filmami a seriálmi príde v etape E4." />
+                               Text="Pridaj disk vľavo (Pridať disk). Filmy a seriály z neho sa tu ukážu samy." />
                 </StackPanel>
             </Grid>
 
@@ -311,6 +312,147 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                            TextAlignment="Center" Style="{StaticResource TichyText}" MaxWidth="420" />
             </Grid>
 
+            <!-- center: the library of titles – poster wall or list of films, series, collections, HISTRA lists -->
+            <Grid Grid.Column="1" x:Name="PanelKniznice" Margin="20,16,20,8" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="TlacidloSpatKniznica" Padding="10,5" Margin="0,0,10,0" Click="SpatKniznica_Click" Visibility="Collapsed"
+                            ToolTip="Späť">
+                        <TextBlock Text="&#xE72B;" FontFamily="{StaticResource Ikony}" />
+                    </Button>
+                    <TextBlock x:Name="NadpisKniznice" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="PocetKniznice" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource TichyText}" />
+                </StackPanel>
+                <Grid Grid.Row="1" Margin="0,10,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MaxWidth="420" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid>
+                        <TextBox x:Name="FilterKniznice" Padding="8,5" VerticalContentAlignment="Center" TextChanged="FilterKniznice_TextChanged"
+                                 ToolTipService.ShowDuration="60000">
+                            <TextBox.ToolTip>
+                                <TextBlock xml:space="preserve" FontFamily="Consolas" FontSize="12">Slová: názvy titulov (aj originálne, bez ohľadu na diakritiku)
+rok:2001   rok:1990..1999   zaner:komedia   hodnotenie:>=7   moje:>=8
+herec:"Meno"   rezia:Priezvisko   kolekcia:ano | "Názov"
+videne:nie   mam:nie   zelane:ano   kniznica:film | serial | potvrdit
+kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextBlock>
+                            </TextBox.ToolTip>
+                        </TextBox>
+                        <TextBlock x:Name="NapovedaFiltraKniznice" Text="Filtrovať, napr. zaner:komedia rok:>=2000" Margin="12,0,8,0"
+                                   VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.6" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                    <WrapPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                        <Button x:Name="TlacidloPrehratTitul" Padding="14,5" Click="PrehratTitul_Click" IsEnabled="False">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE768;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
+                                <TextBlock Text="Prehrať" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="TlacidloNacitatHistra" Content="Načítať zoznamy z HISTRA" Padding="14,5" Margin="8,0,0,0"
+                                Click="NacitatHistra_Click" Visibility="Collapsed" />
+                        <Button x:Name="TlacidloDoplnit" Content="Doplniť údaje" Padding="14,5" Margin="8,0,0,0" Click="Doplnit_Click"
+                                ToolTip="Rozpoznať nové videá a doplniť názvy, dej a plagáty zo zdrojov (beží aj samo)" />
+                    </WrapPanel>
+                </Grid>
+                <TextBlock Grid.Row="2" x:Name="UpozornenieKniznice" Margin="0,0,0,8" TextWrapping="Wrap" Visibility="Collapsed"
+                           Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+
+                <ListBox Grid.Row="3" x:Name="StenaPlagatov" BorderThickness="0" Background="Transparent"
+                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                         ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         SizeChanged="StenaPlagatov_SizeChanged">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Focusable" Value="False" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <ItemsControl ItemsSource="{Binding Polozky}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="150" Margin="6" Padding="4" CornerRadius="6" BorderThickness="2" Background="Transparent"
+                                                Cursor="Hand" MouseLeftButtonDown="Dlazdica_MouseLeftButtonDown" Opacity="{Binding Priehladnost}"
+                                                ToolTip="{Binding Nazov}">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="Transparent" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Vybrana}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel>
+                                                <Grid Height="210">
+                                                    <Border CornerRadius="4" Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                                        <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" FontSize="36" Opacity="0.4"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <Image Source="{Binding Obrazok, IsAsync=True}" Stretch="UniformToFill" />
+                                                    <Border VerticalAlignment="Top" HorizontalAlignment="Left" Margin="4" Padding="6,1" CornerRadius="3"
+                                                            Background="#CC202020" Visibility="{Binding MaStitok, Converter={StaticResource BoolNaViditelnost}}">
+                                                        <TextBlock Text="{Binding Stitok}" Foreground="White" FontSize="11" />
+                                                    </Border>
+                                                </Grid>
+                                                <TextBlock Text="{Binding Nazov}" FontWeight="SemiBold" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Podnadpis}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <ListView Grid.Row="3" x:Name="ZoznamTitulov" Visibility="Collapsed"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                          SelectionChanged="ZoznamTitulov_SelectionChanged" MouseDoubleClick="ZoznamTitulov_MouseDoubleClick">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Názov" Width="320">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Opacity="{Binding Priehladnost}">
+                                            <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding Nazov}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Rok" Width="60" DisplayMemberBinding="{Binding RokText}" />
+                            <GridViewColumn Header="Druh" Width="80" DisplayMemberBinding="{Binding DruhText}" />
+                            <GridViewColumn Header="Kvalita" Width="70" DisplayMemberBinding="{Binding KvalitaText}" />
+                            <GridViewColumn Header="Hodnotenie" Width="90" DisplayMemberBinding="{Binding HodnotenieText}" />
+                            <GridViewColumn Header="Stav" Width="120" DisplayMemberBinding="{Binding Stitok}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+                <TextBlock Grid.Row="3" x:Name="PrazdnaKniznica" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextAlignment="Center" Style="{StaticResource TichyText}" MaxWidth="460" />
+            </Grid>
+
             <!-- center: saved searches -->
             <Grid Grid.Column="1" x:Name="PanelUlozenych" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
@@ -350,6 +492,59 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                            Visibility="Collapsed" />
                     <TextBlock x:Name="DetailPrazdny" Margin="0,8,0,0" Style="{StaticResource TichyText}"
                                Text="Vyber titul alebo súbor. Tu uvidíš plagát, dej, kde leží (disk, cesta, či je pripojený), technické údaje, zvuk a titulky s jazykmi a ďalšie verzie na iných diskoch." />
+                    <!-- the detail of a title (stage E4) -->
+                    <StackPanel x:Name="PanelDetailuTitulu" Visibility="Collapsed">
+                        <Image x:Name="DetailPlagat" Margin="0,10,10,0" MaxHeight="320" Stretch="Uniform" HorizontalAlignment="Left" />
+                        <TextBlock x:Name="DetailPodnadpis" Margin="0,8,0,0" Style="{StaticResource TichyText}" />
+                        <WrapPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button x:Name="DetailPrehrat" Padding="12,4" Margin="0,0,6,6" Click="PrehratTitul_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE768;" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Prehrať" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <ToggleButton x:Name="DetailVidene" Content="Videné" Padding="12,4" Margin="0,0,6,6" Click="DetailVidene_Click" />
+                            <ToggleButton x:Name="DetailZelane" Content="Želané" Padding="12,4" Margin="0,0,6,6" Click="DetailZelane_Click" />
+                            <Button Content="Upraviť…" Padding="12,4" Margin="0,0,6,6" Click="UpravitTitul_Click" />
+                        </WrapPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                            <TextBlock Text="Moje hodnotenie" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ComboBox x:Name="DetailMojeHodnotenie" Width="70" SelectionChanged="DetailMojeHodnotenie_SelectionChanged" />
+                        </StackPanel>
+
+                        <!-- choosing what a title is: the candidates of the sources side by side -->
+                        <StackPanel x:Name="DetailVyber" Visibility="Collapsed" Margin="0,14,0,0">
+                            <TextBlock x:Name="DetailVyberNadpis" Text="Čo je to za titul?" FontWeight="SemiBold" />
+                            <TextBlock x:Name="DetailVyberText" Margin="0,2,0,6" Style="{StaticResource TichyText}" FontSize="12" />
+                            <ItemsControl x:Name="DetailKandidati">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="132" Margin="0,0,8,8" Padding="4" CornerRadius="6" BorderThickness="1"
+                                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                                            <StackPanel>
+                                                <Border Height="180" CornerRadius="4" Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                                    <Image Source="{Binding Plagat}" Stretch="UniformToFill" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Nazov}" FontWeight="SemiBold" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="40" />
+                                                <TextBlock Text="{Binding Podnadpis}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+                                                <Button Content="Toto je ono" Margin="0,6,0,0" Padding="8,3" Click="VybratKandidata_Click" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <WrapPanel Orientation="Horizontal">
+                                <Button x:Name="DetailPotvrdit" Content="Potvrdiť, ako je" Padding="10,3" Margin="0,0,6,6" Click="PotvrditTitul_Click" />
+                                <Button Content="Hľadať inak…" Padding="10,3" Margin="0,0,6,6" Click="HladatInak_Click" />
+                                <Button Content="Nie je to film ani seriál" Padding="10,3" Margin="0,0,6,6" Click="NieJeTitul_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
                     <ItemsControl x:Name="DetailRiadky" Margin="0,8,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

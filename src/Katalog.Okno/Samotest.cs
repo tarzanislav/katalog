@@ -21,8 +21,12 @@ internal static class Samotest
     private static string _vystup = "";
     private static int _chyby;
 
+    /// <summary>The self-test runs: the sources of data stay off (nothing goes to the internet).</summary>
+    public static bool Bezi { get; private set; }
+
     public static async Task<int> SpustiAsync()
     {
+        Bezi = true;
         _vystup = Environment.GetEnvironmentVariable("KATALOG_SELFTEST_DIR") is { Length: > 0 } priecinok
             ? priecinok
             : Path.Combine(Path.GetTempPath(), Produkt.Nazov + "-samotest");
@@ -183,6 +187,7 @@ internal static class Samotest
         }
 
         await HladanieAsync(okno);
+        await KnizniceAsync(okno);
 
         App.NastavMotiv("Dark");
         var oPrograme = new OProgrameOkno { Owner = okno };
@@ -254,10 +259,189 @@ internal static class Samotest
         Over(okno.ZoznamUlozenych.Items.Count == 2, "uložené hľadania v okne");
         await SnimkaAsync(okno, "ulozene-hladania-tmave.png");
 
-        var nastavenia = new NastaveniaOkno(Nastavenia.Nacitaj(Path.Combine(_vystup, "nastavenia")), [], okno.Ffmpeg) { Owner = okno };
+        var nastavenia = new NastaveniaOkno(Nastavenia.Nacitaj(Path.Combine(_vystup, "nastavenia")), [], okno.Ffmpeg,
+            Tajomstva.Nacitaj(Path.Combine(_vystup, "nastavenia"))) { Owner = okno };
         nastavenia.Show();
         await SnimkaAsync(nastavenia, "nastavenia-tmave.png");
         nastavenia.Close();
+    }
+
+    /// <summary>
+    /// The library of titles (stage E4) with a stand-in source: recognition from names, data and posters filled in, the
+    /// poster wall and list, a title waiting for confirmation chosen from candidates, a collection with a missing part,
+    /// playing a series, the sources tab of Settings.
+    /// </summary>
+    private static async Task KnizniceAsync(HlavneOkno okno)
+    {
+        if (okno.KniznicaTitulov is not { } spravca || okno.Kniznica is not { } kniznica)
+        {
+            Chyba("okno nemá knižnicu titulov");
+            return;
+        }
+
+        // a film without a year: it waits for confirmation
+        Subor(Path.Combine(_vystup, "VymyslenyDisk"), @"Filmy\Vymyslený strážca.avi", 900);
+        var plagaty = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+        {
+            ["/samotest-film.jpg"] = Plagat("Vymyslený Šťastný film", Color.FromRgb(0x2B, 0x58, 0x9C)),
+            ["/samotest-serial.jpg"] = Plagat("Vymyslený seriál", Color.FromRgb(0x8A, 0x3B, 0x12)),
+            ["/samotest-diel2.jpg"] = Plagat("Vymyslený Šťastný film 2", Color.FromRgb(0x1E, 0x6B, 0x3A)),
+            ["/samotest-strazca.jpg"] = Plagat("Vymyslený strážca", Color.FromRgb(0x5B, 0x2C, 0x83)),
+        };
+        spravca.ZdrojePreSamotest = [new ZdrojSamotestu()];
+        spravca.ObrazkyPreSamotest = (adresa, _) => Task.FromResult<Ulohy.ObrazokZdroja?>(plagaty.TryGetValue(adresa.AbsolutePath.Replace("/t/p/w342", "", StringComparison.Ordinal), out var jpeg)
+            ? new Ulohy.ObrazokZdroja(jpeg, 342, 513)
+            : null);
+        await okno.SkenujAsync(_diskId);
+        await okno.DoplnKnizniciuAsync();
+
+        App.NastavMotiv("Light");
+        okno.NavigaciaFilmy.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        var filmy = okno.PolozkySteny;
+        Over(filmy.Any(f => f.Nazov == "Vymyslený Šťastný film" && f.MaPlagat && f.Titul is { NaPotvrdenie: false }), "film s plagátom zo zdroja, potvrdený sám (názov a rok sedia)");
+        Over(filmy.Any(f => f.Nazov == "Vymyslený strážca" && f.Titul is { NaPotvrdenie: true }), "film bez roka čaká na potvrdenie");
+        if (filmy.FirstOrDefault(f => f.Nazov == "Vymyslený Šťastný film") is { } film)
+        {
+            await okno.VyberPolozkuAsync(film);
+            Over(okno.DetailZobrazeny is { Dej: not null, Kolekcie.Count: 1 } d && d.Verzie.Count == 1, "detail filmu: dej, verzia, kolekcia");
+        }
+
+        await SnimkaAsync(okno, "kniznica-plagaty-svetle.png");
+        okno.ZobrazenieZoznam.IsChecked = true;
+        await SnimkaAsync(okno, "kniznica-zoznam-svetle.png");
+        okno.ZobrazeniePlagaty.IsChecked = true;
+
+        App.NastavMotiv("Dark");
+        okno.NavigaciaSerialy.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        if (okno.PolozkySteny.FirstOrDefault(s => s.Nazov == "Vymyslený seriál") is { Titul: { } serial } dlazdica)
+        {
+            await okno.VyberPolozkuAsync(dlazdica);
+            Over(okno.DetailZobrazeny?.Epizody is { Count: 3 } e && e.Count(x => x.Mam) == 1, "seriál: 3 epizódy zo zdroja, mám 1 (druhá zmazaná)");
+            await SnimkaAsync(okno, "kniznica-serial-tmave.png");
+            Jadro.Prehravanie.Spustenie? spustenie = null;
+            okno.SpustacPrehravania = s => spustenie = s;
+            var hra = await okno.PrehrajTitulAsync(serial.Id);
+            Over(hra && spustenie?.Program.EndsWith("Vymyslený seriál S01E01 - CZ FHD H265 SMALL.mkv", StringComparison.Ordinal) == true, "prehratie seriálu z knižnice");
+            okno.SpustacPrehravania = null;
+        }
+        else
+        {
+            Chyba("seriál v knižnici");
+        }
+
+        App.NastavMotiv("Light");
+        okno.NavigaciaNaPotvrdenie.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        if (okno.PolozkySteny.FirstOrDefault(p => p.Nazov == "Vymyslený strážca") is { Titul: { } strazca } naPotvrdenie)
+        {
+            await okno.VyberPolozkuAsync(naPotvrdenie);
+            Over(okno.DetailZobrazeny?.Kandidati.Count == 2 && okno.DetailVyber.Visibility == Visibility.Visible, "na potvrdenie: dva návrhy vedľa seba");
+            await SnimkaAsync(okno, "na-potvrdenie-svetle.png");
+            var kandidat = okno.DetailZobrazeny!.Kandidati.First(k => k.Identifikator == "movie/9103");
+            await okno.PotvrdKandidataAsync(strazca.Id, kandidat);
+            await okno.ZobrazKnizniciuAsync();
+            Over(okno.PolozkySteny.Count == 0, "po výbere nič nečaká na potvrdenie");
+        }
+        else
+        {
+            Chyba("titul na potvrdenie");
+        }
+
+        okno.NavigaciaKolekcie.IsSelected = true;
+        await okno.ZobrazKnizniciuAsync();
+        Over(okno.PolozkySteny.SingleOrDefault()?.Kolekcia is { Diely: 2, Mam: 1 }, "kolekcia: dva diely, mám jeden");
+        await SnimkaAsync(okno, "kolekcie-svetle.png");
+
+        using (var c = kniznica.OtvorCitanie())
+        {
+            var nikto = new KontextHladania([], DateTime.Now);
+            Over(Hladanie.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("kniznica:serial"), nikto).Polozky.Count == 1, "hľadanie súborov podľa knižnice (kniznica:serial)");
+            Over(KniznicaTitulov.Najdi(c, Jadro.Dotazy.Dotaz.Citaj("mam:nie"), nikto, PohladKniznice.Vsetko).Any(t => t.Nazov == "Vymyslený Šťastný film 2"),
+                "chýbajúci diel kolekcie (mam:nie)");
+        }
+
+        App.NastavMotiv("Dark");
+        var nastavenia = new NastaveniaOkno(Nastavenia.Nacitaj(Path.Combine(_vystup, "nastavenia")), [], okno.Ffmpeg,
+            Tajomstva.Nacitaj(Path.Combine(_vystup, "nastavenia")), zdroje: true) { Owner = okno };
+        nastavenia.Show();
+        await SnimkaAsync(nastavenia, "nastavenia-zdroje-tmave.png");
+        nastavenia.Close();
+    }
+
+    /// <summary>An invented poster (a colour and the title), drawn here: no picture comes from the internet.</summary>
+    private static byte[] Plagat(string nazov, Color farba)
+    {
+        var kresba = new DrawingVisual();
+        using (var k = kresba.RenderOpen())
+        {
+            k.DrawRectangle(new LinearGradientBrush(farba, Color.FromRgb(0x10, 0x10, 0x10), 90), null, new Rect(0, 0, 342, 513));
+            var text = new FormattedText(nazov, CultureInfo.GetCultureInfo("sk-SK"), FlowDirection.LeftToRight, new Typeface("Segoe UI Semibold"), 34,
+                Brushes.White, 1) { MaxTextWidth = 300, TextAlignment = TextAlignment.Center };
+            k.DrawText(text, new Point(21, 360));
+        }
+
+        var obrazok = new RenderTargetBitmap(342, 513, 96, 96, PixelFormats.Pbgra32);
+        obrazok.Render(kresba);
+        var koder = new JpegBitmapEncoder { QualityLevel = 85 };
+        koder.Frames.Add(BitmapFrame.Create(obrazok));
+        using var prud = new MemoryStream();
+        koder.Save(prud);
+        return prud.ToArray();
+    }
+
+    /// <summary>A stand-in for TMDB with invented titles; nothing goes to the internet.</summary>
+    private sealed class ZdrojSamotestu : Jadro.Rozhrania.IZdrojUdajov
+    {
+        private static Uri Plagat(string meno) => new("https://image.tmdb.org/t/p/w342/" + meno);
+
+        public ZdrojUdajov Zdroj => ZdrojUdajov.Tmdb;
+
+        public bool JeZapnuty => true;
+
+        public Task<IReadOnlyList<Jadro.Rozhrania.Kandidat>> HladajAsync(Jadro.Rozhrania.HladanieTitulu hladanie, CancellationToken zrusenie)
+        {
+            IReadOnlyList<Jadro.Rozhrania.Kandidat> vysledok = Normalizacia.Nazov(hladanie.Nazov) switch
+            {
+                "vymysleny stastny film" => [new(ZdrojUdajov.Tmdb, "movie/9101", DruhTitulu.Film, "Vymyslený Šťastný film", "Vymyslený Šťastný film", 2024, 0)],
+                "vymysleny serial" => [new(ZdrojUdajov.Tmdb, "tv/9102", DruhTitulu.Serial, "Vymyslený seriál", "Vymyslený seriál", 2025, 0)],
+                "vymysleny strazca" =>
+                [
+                    new(ZdrojUdajov.Tmdb, "movie/9103", DruhTitulu.Film, "Vymyslený strážca", "The Invented Guardian", 2008, 0),
+                    new(ZdrojUdajov.Tmdb, "movie/9104", DruhTitulu.Film, "Vymyslený strážca 2", "The Invented Guardian 2", 2012, 0),
+                ],
+                _ => [],
+            };
+            return Task.FromResult(vysledok);
+        }
+
+        public Task<Jadro.Rozhrania.UdajeTitulu?> NacitajAsync(string identifikator, CancellationToken zrusenie) =>
+            Task.FromResult<Jadro.Rozhrania.UdajeTitulu?>(identifikator switch
+            {
+                "movie/9101" => new(ZdrojUdajov.Tmdb, identifikator, DruhTitulu.Film, "Vymyslený Šťastný film", "Vymyslený Šťastný film", 2024,
+                    "Vymyslený dej o šťastí, ktoré sa nedá nájsť hľadaním.", 104, 7.8, ["Komédia", "Dráma"],
+                    [new("person/1", "Vymyslená Herečka", RolaOsoby.Herec, "Šťastena", 0), new("person/2", "Vymyslený Režisér", RolaOsoby.Rezia, null, 1)],
+                    [], Plagat("samotest-film.jpg"), []),
+                "tv/9102" => new(ZdrojUdajov.Tmdb, identifikator, DruhTitulu.Serial, "Vymyslený seriál", "Vymyslený seriál", 2025, "Vymyslený seriál o diskoch.", 45, 8.2,
+                    ["Krimi"], [], [new(1, 1, "Prvý disk", new DateOnly(2025, 1, 6), null), new(1, 2, "Druhý disk", null, null), new(1, 3, "Tretí disk", null, null)],
+                    Plagat("samotest-serial.jpg"), []),
+                "movie/9103" => new(ZdrojUdajov.Tmdb, identifikator, DruhTitulu.Film, "Vymyslený strážca", "The Invented Guardian", 2008, "Vymyslený strážca stráži disky.",
+                    120, 7.1, ["Akčný"], [], [], Plagat("samotest-strazca.jpg"), []),
+                _ => null,
+            });
+
+        public Task<IReadOnlyList<Jadro.Rozhrania.UdajeKolekcie>> KolekcieAsync(string identifikator, CancellationToken zrusenie) =>
+            Task.FromResult<IReadOnlyList<Jadro.Rozhrania.UdajeKolekcie>>(identifikator == "movie/9101"
+                ?
+                [
+                    new(ZdrojUdajov.Tmdb, "collection/9100", "Vymyslené šťastné filmy", "Dva vymyslené filmy.",
+                    [
+                        new(ZdrojUdajov.Tmdb, "movie/9101", DruhTitulu.Film, "Vymyslený Šťastný film", null, 2024, 1),
+                        new(ZdrojUdajov.Tmdb, "movie/9105", DruhTitulu.Film, "Vymyslený Šťastný film 2", null, 2026, 1, Plagat("samotest-diel2.jpg")),
+                    ]),
+                ]
+                : []);
     }
 
     /// <summary>An invented two-second video (test picture, a tone, Slovak sound) made by FFmpeg itself.</summary>

@@ -42,6 +42,14 @@ public partial class HlavneOkno : Window
             Kniznica = await Kniznica.OtvorAsync(_cestaKniznice);
             StavKniznice.Text = PopisKniznice(Kniznica);
             await InicializujDiskyAsync(Kniznica);
+            InicializujKnizniciu(Kniznica);
+            if (NavigaciaKniznica.SelectedItem is ListBoxItem vybrana)
+            {
+                ZobrazObsahNavigacie(vybrana);
+            }
+
+            await ObnovPoctyKnizniceAsync();
+            _ = DoplnKnizniciuAsync();
             if (!Kniznica.Kontrola.JeVPoriadku)
             {
                 MessageBox.Show(this,
@@ -76,6 +84,7 @@ public partial class HlavneOkno : Window
         // is merged, so the file can be copied right away
         _skeny?.ZrusVsetky();
         _citania?.ZrusVsetky();
+        _kniznicaTitulov?.Zrus();
         if (Kniznica is { } kniznica)
         {
             Kniznica = null;
@@ -106,23 +115,31 @@ public partial class HlavneOkno : Window
             return;
         }
 
+        if (ZobrazObsahNavigacie(polozka))
+        {
+            return;
+        }
+
         ZobrazPrazdny(polozka.Content as string ?? "", "Táto časť príde v ďalších etapách",
-            "Filmy, seriály a kolekcie s plagátmi prídu v etape E4, playlisty v E7, duplicity a prehľad diskov v E5. " +
-            "Súbory a priečinky už nájdeš hľadaním hore.");
+            "Duplicity a prehľad diskov prídu v etape E5, playlisty v E7. Súbory a priečinky nájdeš hľadaním hore.");
     }
 
     private async void TlacidloAktualizacie_Click(object sender, RoutedEventArgs e) => await KontrolujAktualizacieAsync(rucne: true);
 
     private void TlacidloOPrograme_Click(object sender, RoutedEventArgs e) => new OProgrameOkno { Owner = this }.ShowDialog();
 
-    private async void TlacidloNastavenia_Click(object sender, RoutedEventArgs e)
+    private async void TlacidloNastavenia_Click(object sender, RoutedEventArgs e) => await OtvorNastaveniaAsync(zdroje: false);
+
+    /// <summary>Settings; <paramref name="zdroje"/> opens the tab of the sources of data.</summary>
+    private async Task OtvorNastaveniaAsync(bool zdroje)
     {
         var prehravace = await Task.Run(Prehravace.Najdi);
-        if (new NastaveniaOkno(_nastavenia, prehravace, _ffmpeg) { Owner = this }.ShowDialog() == true)
+        if (new NastaveniaOkno(_nastavenia, prehravace, _ffmpeg, TajomstvaProgramu, zdroje) { Owner = this }.ShowDialog() == true)
         {
             UlozNastavenia();
             await NajdiFfmpegAsync();
             await SpustiCakajuceUlohyAsync();
+            _ = DoplnKnizniciuAsync();
         }
     }
 

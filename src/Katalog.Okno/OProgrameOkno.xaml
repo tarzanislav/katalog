@@ -19,6 +19,15 @@
                    Text="Tvoje údaje nikdy neopustia tento počítač." />
         <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}"
                    Text="Na internet ide len hľadaný názov titulu do zapnutých zdrojov a kontrola nových verzií na GitHube. Žiadna telemetria." />
+        <Border Margin="0,12,0,0" Padding="10,8" CornerRadius="6" BorderThickness="1"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+            <StackPanel>
+                <TextBlock FontWeight="SemiBold" Text="Údaje o filmoch a seriáloch" />
+                <TextBlock x:Name="UpozornenieTmdb" Margin="0,4,0,0" TextWrapping="Wrap" />
+                <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}" TextWrapping="Wrap"
+                           Text="Názvy, dej, žánre, herci, plagáty a kolekcie pochádzajú z TMDB (themoviedb.org), tvoje zoznamy z HISTRA (histra.net), kolekcie a pozretia voliteľne z tvojho servera Jellyfin. Uchovávajú sa len na tomto počítači." />
+            </StackPanel>
+        </Border>
         <TextBlock Margin="0,12,0,0" Style="{StaticResource TichyText}"
                    Text="Licencia Apache 2.0. Program sa poskytuje bez akejkoľvek záruky. Diela tretích strán sú uvedené v súbore THIRD-PARTY-NOTICES.md v priečinku programu." />
         <TextBlock Margin="0,4,0,0" Style="{StaticResource TichyText}" Text="© 2026 tarzanislav" />

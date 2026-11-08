@@ -21,6 +21,7 @@ internal sealed class SpravcaKniznice(Kniznica kniznica, Nastavenia nastavenia, 
     private static readonly HttpClient Http = VytvorKlienta();
 
     private CancellationTokenSource? _zrusenie;
+    private Task? _beh;
     private bool _znova;
     private bool _jellyfinHotovy;
 
@@ -49,6 +50,12 @@ internal sealed class SpravcaKniznice(Kniznica kniznica, Nastavenia nastavenia, 
             return nahradne;
         }
 
+        if (Samotest.Bezi)
+        {
+            // the self-test never asks the internet, even on a computer with keys
+            return [];
+        }
+
         var kluce = tajomstva.Kluce();
         var zdroje = new List<IZdrojUdajov>();
         if (nastavenia.PouzivatTmdb && kluce.Tmdb.Kluc is { } tmdb)
@@ -66,7 +73,7 @@ internal sealed class SpravcaKniznice(Kniznica kniznica, Nastavenia nastavenia, 
 
     private JellyfinZdroj? Jellyfin()
     {
-        if (!nastavenia.PouzivatJellyfin || ZdrojePreSamotest is not null)
+        if (!nastavenia.PouzivatJellyfin || ZdrojePreSamotest is not null || Samotest.Bezi)
         {
             return null;
         }
@@ -93,16 +100,22 @@ internal sealed class SpravcaKniznice(Kniznica kniznica, Nastavenia nastavenia, 
 
     /// <summary>
     /// Puts new videos into the library and lets the sources fill it (the self-test awaits it). While a run goes on, a
-    /// new request only marks that one more run is needed.
+    /// new request marks that one more run is needed and waits for it (all on the window's thread).
     /// </summary>
-    public async Task SpustiAsync()
+    public Task SpustiAsync()
     {
-        if (_zrusenie is not null)
+        if (_beh is { IsCompleted: false })
         {
             _znova = true;
-            return;
+            return _beh;
         }
 
+        _beh = BehAsync();
+        return _beh;
+    }
+
+    private async Task BehAsync()
+    {
         using var zrusenie = new CancellationTokenSource();
         _zrusenie = zrusenie;
         try

@@ -492,6 +492,30 @@ public static class KniznicaTitulov
         return prikaz.ExecuteScalar() is long id ? id : null;
     }
 
+    /// <summary>"Názov (rok)" of the title a file belongs to, with S01E02 for an episode; null for a file of no version.</summary>
+    public static string? PopisTituluSuboru(SqliteConnection spojenie, long suborId)
+    {
+        using var prikaz = Kniznica.Prikaz(spojenie, """
+            SELECT t.nazov, t.rok, e.seria, e.cislo, v.potvrdena FROM verzia_subor vs JOIN verzia v ON v.id = vs.verzia_id
+            LEFT JOIN epizoda e ON e.id = v.epizoda_id JOIN titul t ON t.id = coalesce(v.titul_id, e.titul_id)
+            WHERE vs.subor_id = $s
+            """);
+        prikaz.Parameters.AddWithValue("$s", suborId);
+        using var c = prikaz.ExecuteReader();
+        if (!c.Read())
+        {
+            return null;
+        }
+
+        var text = c.GetString(0) + (c.IsDBNull(1) ? "" : $" ({c.GetInt32(1).ToString(CultureInfo.InvariantCulture)})");
+        if (!c.IsDBNull(2))
+        {
+            text += $" · S{c.GetInt32(2):00}E{c.GetInt32(3):00}";
+        }
+
+        return c.GetInt32(4) == 1 ? text : text + " · čaká na potvrdenie";
+    }
+
     private static Dictionary<long, int> PoradieKolekcie(SqliteConnection spojenie, long kolekciaId)
     {
         using var prikaz = Kniznica.Prikaz(spojenie, "SELECT titul_id, poradie FROM kolekcia_titul WHERE kolekcia_id = $k");
