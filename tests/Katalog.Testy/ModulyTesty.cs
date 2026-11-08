@@ -3,7 +3,6 @@ using Katalog.Jadro.Rozhrania;
 using Katalog.Media;
 using Katalog.Skenovanie;
 using Katalog.Ulohy;
-using Katalog.Zdroje;
 
 namespace Katalog.Testy;
 

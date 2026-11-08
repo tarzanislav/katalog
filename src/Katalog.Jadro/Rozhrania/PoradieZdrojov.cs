@@ -1,11 +1,12 @@
 using Katalog.Jadro.Model;
-using Katalog.Jadro.Rozhrania;
 
-namespace Katalog.Zdroje;
+namespace Katalog.Jadro.Rozhrania;
 
 /// <summary>
-/// Order in which sources fill a field that is not locked (decision A5): the file name first (UNIVERSUM's names are
-/// exact), then TMDB, HISTRA and Jellyfin. The user may reorder them; a field the user typed is never overwritten.
+/// Order in which sources fill a field that is not locked (decision A5, approved design): the file name first (UNIVERSUM's
+/// names are exact), then TMDB, HISTRA and Jellyfin. The file name only gives what it knows for sure – the original
+/// name and year of a title from a UNIVERSUM library or with a TMDB mark; a guess from any other name has no origin, so
+/// the first source replaces it. The user may reorder them; a field the user typed is never overwritten.
 /// </summary>
 public static class PoradieZdrojov
 {
