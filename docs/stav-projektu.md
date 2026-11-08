@@ -76,5 +76,7 @@ Otvorené:
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
 
-Ďalej: **vydanie 0.1.0** (len so súhlasom vlastníka), potom **E3 – technické údaje videa** (ffprobe: rozlíšenie,
+**Vydanie 0.1.0** zverejnené 8. 11. 2026 so súhlasom vlastníka; podpis zoznamu súčtov a súčet inštalátora overené.
+
+Ďalšia etapa: **E3 – technické údaje videa** (ffprobe: rozlíšenie,
 kodeky, zvuk a titulky s jazykmi, HDR, náhľady) s trvalou frontou úloh.
