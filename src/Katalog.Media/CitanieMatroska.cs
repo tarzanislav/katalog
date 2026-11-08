@@ -199,9 +199,14 @@ public static class CitanieMatroska
             }
         }
 
-        if (prvyCluster is { } cluster && info.Stopy.Any(s => s.Kodek == "dts"))
+        if (prvyCluster is { } cluster && info.Stopy.Any(s => s.ChceRamec))
         {
-            DtsZBlokov(subor, cluster, koniec, info.Stopy);
+            PrveRamce(subor, cluster, koniec, info.Stopy);
+        }
+
+        foreach (var s in info.Stopy)
+        {
+            s.AnalyzujRamec();
         }
 
         foreach (var s in info.Stopy)
@@ -444,6 +449,9 @@ public static class CitanieMatroska
                 case 0x9F:
                     s.Kanaly = (int)Cislo(data);
                     break;
+                case 0x6264 when Cislo(data) is > 0UL and <= 64UL and var hlbka:
+                    s.BitovaHlbka = (int)hlbka;
+                    break;
             }
         }
     }
@@ -464,6 +472,19 @@ public static class CitanieMatroska
             "V_MPEG4/ISO/ASP" or "V_MPEG4/ISO/SP" or "V_MPEG4/ISO/AP" => ("mpeg4", "MPEG-4 Visual", null, null),
             "V_MS/VFW/FOURCC" => FourCc(privat),
             "V_MJPEG" => ("mjpeg", "JPEG", null, null),
+            "V_MPEGI/ISO/VVC" => ("vvc", "VVC", "Versatile Video Coding", null),
+            "V_PRORES" => ("prores", "ProRes", "Apple ProRes", null),
+            "V_THEORA" => ("theora", "Theora", null, null),
+            "V_FFV1" => ("ffv1", "FFV1", "FF Video Codec 1", null),
+            "V_UNCOMPRESSED" => ("rawvideo", "RGB", "nekomprimované video", null),
+            "A_AC4" => ("ac4", "AC-4", "Audio Coding 4", "Dolby AC-4"),
+            "A_ALAC" => ("alac", "ALAC", "Apple Lossless Audio Codec", null),
+            "A_MPEGH/MHA1" or "A_MPEGH/MHM1" => ("mpegh", "MPEG-H 3D Audio", null, null),
+            "A_WAVPACK4" => ("wavpack", "WavPack", null, null),
+            "A_MS/ACM" => ("wma", "ACM", null, null),
+            "S_DVBSUB" => ("dvb_subtitle", "DVB Subtitle", null, null),
+            "S_ARIBSUB" => ("arib_caption", "ARIB STD-B24", null, null),
+            "S_KATE" => ("kate", "Kate", null, null),
             "A_AC3" or "A_AC3/BSID9" or "A_AC3/BSID10" => ("ac3", "AC-3", "Audio Coding 3", "Dolby Digital"),
             "A_EAC3" => ("eac3", "E-AC-3", "Enhanced AC-3", "Dolby Digital Plus"),
             "A_TRUEHD" => ("truehd", "MLP FBA", "Meridian Lossless Packing FBA", "Dolby TrueHD"),
@@ -474,7 +495,9 @@ public static class CitanieMatroska
             "A_MPEG/L3" => ("mp3", "MPEG Audio", "MPEG-1 Layer 3", "MP3"),
             "A_MPEG/L2" => ("mp2", "MPEG Audio", "MPEG-1 Layer 2", null),
             var a when a.StartsWith("A_AAC", StringComparison.Ordinal) => ("aac", "AAC", "Advanced Audio Codec", null),
-            var a when a.StartsWith("A_PCM", StringComparison.Ordinal) => ("pcm_s16le", "PCM", null, null),
+            "A_PCM/INT/BIG" => ("pcm_s16be", "PCM", "Big Endian", null),
+            "A_PCM/FLOAT/IEEE" => ("pcm_f32le", "PCM", "Float (IEEE)", null),
+            var a when a.StartsWith("A_PCM", StringComparison.Ordinal) => ("pcm_s16le", "PCM", "Little Endian", null),
             "S_TEXT/UTF8" => ("subrip", "UTF-8", "UTF-8 Plain Text", null),
             "S_TEXT/ASS" => ("ass", "ASS", "Advanced Sub Station Alpha", null),
             "S_TEXT/SSA" => ("ssa", "SSA", "Sub Station Alpha", null),
@@ -503,6 +526,14 @@ public static class CitanieMatroska
                 break;
             case var a when a.StartsWith("A_AAC", StringComparison.Ordinal):
                 s.Profil = KodekyVidea.ProfilAac(privat);
+                if (s.Profil == "xHE-AAC")
+                {
+                    (s.Format, s.FormatInfo) = ("USAC", "xHE-AAC (Unified Speech and Audio Coding)");
+                }
+
+                break;
+            case "V_PRORES" when privat.Length >= 4:
+                s.Profil = KodekyVidea.ProfilProRes(System.Text.Encoding.ASCII.GetString(privat, 0, 4));
                 break;
         }
     }
@@ -610,87 +641,50 @@ public static class CitanieMatroska
         }
     }
 
-    /// <summary>
-    /// DTS-HD: the first frames of the DTS tracks in the first clusters (at most 4 MB): an extension substream with
-    /// XLL is Master Audio, with XBR High Resolution Audio, with LBR Express.
-    /// </summary>
-    private static void DtsZBlokov(Stream subor, long cluster, long koniec, List<InfoStopy> stopy)
-    {
-        var dts = stopy.Where(s => s.Kodek == "dts").ToDictionary(s => s.Id);
-        var dlzka = (int)Math.Min(4L << 20, koniec - cluster);
-        if (dlzka <= 0)
-        {
-            return;
-        }
+    /// <summary>How far into the clusters the first frames are looked for (they are near the start).</summary>
+    private const long NajviacHladania = 16L << 20;
 
-        var data = CitajData(subor, cluster, dlzka);
-        var pos = 0;
-        var hotove = new HashSet<int>();
-        while (pos < data.Length && hotove.Count < dts.Count)
+    /// <summary>
+    /// The first frame of each track that wants one (<see cref="InfoStopy.ChceRamec"/>): the clusters are walked block
+    /// by block from the first one, only the needed blocks are read (at most 2 MB each), at most 16 MB in.
+    /// </summary>
+    private static void PrveRamce(Stream subor, long cluster, long koniec, List<InfoStopy> stopy)
+    {
+        var chcene = stopy.Where(s => s.ChceRamec).ToDictionary(s => s.Id);
+        var pos = cluster;
+        var hranica = Math.Min(koniec, cluster + NajviacHladania);
+        Span<byte> hlavaBloku = stackalloc byte[8];
+        while (pos < hranica && chcene.Count > 0)
         {
-            if (!PrecitajHlavicku(data, pos, out var id, out var velkost, out var obsah))
+            if (Hlavicka(subor, pos) is not { } prvok)
             {
                 return;
             }
 
-            if (id == IdCluster)
+            if (prvok.Id is IdCluster or 0xA0)
             {
-                pos = obsah; // into the cluster
+                pos = prvok.Data; // into a cluster or a block group
                 continue;
             }
 
-            if (id is 0xA3 or 0xA1 && velkost is { } v && obsah + v <= data.Length)
+            if (prvok.Velkost is not { } velkost)
             {
-                var (stopa, dlzkaCisla) = Vint(data, obsah, oznacenie: false);
-                if (dlzkaCisla > 0 && dts.TryGetValue((int)stopa, out var s) && hotove.Add((int)stopa))
+                return;
+            }
+
+            if (prvok.Id is 0xA3 or 0xA1 && velkost is > 4 and < 64L << 20)
+            {
+                subor.Position = prvok.Data;
+                var precitane = subor.ReadAtLeast(hlavaBloku, hlavaBloku.Length, throwOnEndOfStream: false);
+                var (cislo, dlzkaCisla) = Vint(hlavaBloku[..precitane].ToArray(), 0, oznacenie: false);
+                if (dlzkaCisla > 0 && chcene.Remove((int)cislo, out var stopa))
                 {
-                    var ramec = data.AsSpan(obsah + dlzkaCisla + 3, (int)v - dlzkaCisla - 3);
-                    DtsHd(ramec, s);
+                    var zaciatok = prvok.Data + dlzkaCisla + 3;
+                    stopa.PrvyRamec = CitajData(subor, zaciatok, Math.Min(velkost - dlzkaCisla - 3, 2L << 20));
                 }
             }
 
-            if (id == 0xA0)
-            {
-                pos = obsah; // a block group: into it
-                continue;
-            }
-
-            if (velkost is not { } dalej)
-            {
-                return;
-            }
-
-            pos = (int)Math.Min(data.Length, obsah + dalej);
-        }
-    }
-
-    internal static void DtsHd(ReadOnlySpan<byte> ramec, InfoStopy s)
-    {
-        ReadOnlySpan<byte> exss = [0x64, 0x58, 0x20, 0x25];
-        var i = ramec.IndexOf(exss);
-        if (i < 0)
-        {
-            return;
-        }
-
-        var rozsirenie = ramec[i..];
-        if (rozsirenie.IndexOf([(byte)0x41, (byte)0xA2, (byte)0x95, (byte)0x47]) >= 0)
-        {
-            (s.Kodek, s.Format, s.FormatInfo, s.ObchodnyNazov) = ("dts-hd ma", "DTS XLL", "DTS-HD Master Audio", "DTS-HD Master Audio");
-        }
-        else if (rozsirenie.IndexOf([(byte)0x65, (byte)0x5E, (byte)0x31, (byte)0x5E]) >= 0)
-        {
-            (s.Kodek, s.Format, s.FormatInfo, s.ObchodnyNazov) = ("dts-hd hra", "DTS XBR", "DTS-HD High Resolution Audio", "DTS-HD High Resolution Audio");
-            s.KonstantnyTok = true;
-        }
-        else if (rozsirenie.IndexOf([(byte)0x0A, (byte)0x80, (byte)0x19, (byte)0x21]) >= 0)
-        {
-            (s.Format, s.FormatInfo, s.ObchodnyNazov) = ("DTS LBR", "DTS Express", "DTS Express");
-        }
-
-        if (s.Kodek == "dts-hd ma")
-        {
-            s.KonstantnyTok = false;
+            pos = prvok.Data + velkost;
         }
     }
 

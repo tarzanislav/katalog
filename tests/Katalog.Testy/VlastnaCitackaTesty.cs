@@ -97,14 +97,64 @@ public sealed class VlastnaCitackaTesty
     {
         InfoStopy S() => new() { Kodek = "dts", Format = "DTS" };
         var ma = S();
-        CitanieMatroska.DtsHd([0x7F, 0xFE, 0x80, 0x01, 0, 0, 0x64, 0x58, 0x20, 0x25, 1, 2, 0x41, 0xA2, 0x95, 0x47], ma);
+        AnalyzaRamcov.Dts([0x7F, 0xFE, 0x80, 0x01, 0, 0, 0x64, 0x58, 0x20, 0x25, 1, 2, 0x41, 0xA2, 0x95, 0x47], ma);
         Over.Rovne("dts-hd ma", ma.Kodek, "XLL je Master Audio");
         var hra = S();
-        CitanieMatroska.DtsHd([0x64, 0x58, 0x20, 0x25, 0x65, 0x5E, 0x31, 0x5E], hra);
+        AnalyzaRamcov.Dts([0x64, 0x58, 0x20, 0x25, 0x65, 0x5E, 0x31, 0x5E], hra);
         Over.Rovne("dts-hd hra", hra.Kodek, "XBR je High Resolution");
         var jadro = S();
-        CitanieMatroska.DtsHd([0x7F, 0xFE, 0x80, 0x01, 0x41, 0xA2, 0x95, 0x47], jadro);
+        AnalyzaRamcov.Dts([0x7F, 0xFE, 0x80, 0x01, 0x41, 0xA2, 0x95, 0x47], jadro);
         Over.Rovne("dts", jadro.Kodek, "bez rozširujúceho prúdu len DTS");
+    }
+
+    [Test]
+    public void AtmosDtsXAHdr10Plus()
+    {
+        // E-AC-3 5.1 with JOC: strmtyp 0, frmsiz, fscod 0, 6 blocks, acmod 7, LFE, bsid 16, dialnorm 24, addbsi with the flag
+        var bity = new ZapisBitov();
+        bity.Zapis(0x0B77, 16).Zapis(0, 2).Zapis(0, 3).Zapis(100, 11).Zapis(0, 2).Zapis(3, 2).Zapis(7, 3).Zapis(1, 1).Zapis(16, 5)
+            .Zapis(24, 5).Zapis(0, 1).Zapis(0, 1).Zapis(0, 1).Zapis(1, 1).Zapis(1, 6).Zapis(0, 7).Zapis(1, 1).Zapis(16, 8).Zapis(0, 16);
+        var eac3 = new InfoStopy { Kodek = "eac3", Format = "E-AC-3", PrvyRamec = bity.Bajty() };
+        eac3.AnalyzujRamec();
+        Over.Pravda(eac3 is { Kodek: "eac3 atmos", Atmos: true, Kanaly: 6, RozlozenieKanalov: "L R C LFE Ls Rs", Dialogy: -24 }, "E-AC-3 s Atmos (JOC)");
+        Over.Rovne("Dolby Digital Plus s Dolby Atmos", eac3.ObchodnyNazov, "obchodný názov");
+
+        var bezAtmos = new ZapisBitov();
+        bezAtmos.Zapis(0x0B77, 16).Zapis(0, 2).Zapis(0, 3).Zapis(100, 11).Zapis(0, 2).Zapis(3, 2).Zapis(2, 3).Zapis(0, 1).Zapis(16, 5)
+            .Zapis(31, 5).Zapis(0, 1).Zapis(0, 1).Zapis(0, 1).Zapis(0, 1).Zapis(0, 16);
+        var stereo = new InfoStopy { Kodek = "eac3", PrvyRamec = bezAtmos.Bajty() };
+        stereo.AnalyzujRamec();
+        Over.Pravda(stereo is { Kodek: "eac3", Atmos: false, Kanaly: 2, RozlozenieKanalov: "L R", Dialogy: -31 }, "E-AC-3 stereo bez Atmosu");
+
+        // TrueHD: access unit, major sync with four substreams and the 16-channel presentation
+        byte[] truehd = [0x10, 0x20, 0x00, 0x00, 0xF8, 0x72, 0x6F, 0xBA, 0, 0, 0, 0, 0xB7, 0x52, 0, 0, 0, 0, 0x80, 0, 0x40, 0x80, 0, 0];
+        var thd = new InfoStopy { Kodek = "truehd", PrvyRamec = truehd };
+        thd.AnalyzujRamec();
+        Over.Pravda(thd is { Kodek: "truehd atmos", Atmos: true, ObchodnyNazov: "Dolby TrueHD s Dolby Atmos" }, "TrueHD s Atmos");
+        truehd[21] = 0x00;
+        var thd2 = new InfoStopy { Kodek = "truehd", PrvyRamec = truehd };
+        thd2.AnalyzujRamec();
+        Over.Pravda(thd2 is { Kodek: "truehd", Atmos: false }, "TrueHD bez Atmosu");
+
+        // DTS:X: XLL with its X marker; IMAX Enhanced
+        var x = new InfoStopy { Kodek = "dts" };
+        AnalyzaRamcov.Dts([0x64, 0x58, 0x20, 0x25, 0x41, 0xA2, 0x95, 0x47, 0, 0, 0x02, 0x00, 0x08, 0x50], x);
+        Over.Pravda(x is { Kodek: "dts:x", ObchodnyNazov: "DTS:X" }, "DTS:X");
+        var imax = new InfoStopy { Kodek = "dts" };
+        AnalyzaRamcov.Dts([0x64, 0x58, 0x20, 0x25, 0x41, 0xA2, 0x95, 0x47, 0xF1, 0x40, 0x00, 0xD0], imax);
+        Over.Rovne("DTS:X IMAX Enhanced", imax.ObchodnyNazov, "IMAX Enhanced");
+
+        // HEVC: an SEI with HDR10+ (T.35: B5 003C 0001 04) and an RPU of Dolby Vision, NAL sizes in 4 bytes
+        byte[] sei = [0x4E, 0x01, 0x04, 0x08, 0xB5, 0x00, 0x3C, 0x00, 0x01, 0x04, 0x01, 0x40, 0x80];
+        byte[] rpu = [0x7C, 0x01, 0x19, 0x08];
+        byte[] obraz = [0, 0, 0, (byte)sei.Length, .. sei, 0, 0, 0, (byte)rpu.Length, .. rpu];
+        var video = new InfoStopy { Druh = DruhStopy.Video, Kodek = "hevc", JeVideo = true, Prenos = "PQ (SMPTE ST 2084)", Hdr = Hdr.Hdr10, PrvyRamec = obraz };
+        video.AnalyzujRamec();
+        Over.Pravda(video is { Hdr10Plus: true, Hdr: Hdr.DolbyVision }, "HDR10+ a Dolby Vision v obraze");
+        var vysledok = PopisKontajnera.Vytvor(new InfoSuboru { Format = "Matroska", Velkost = 1, Stopy = { video } });
+        Over.Rovne(Hdr.DolbyVision, vysledok.Udaje.Hdr, "Dolby Vision má prednosť");
+        Over.Pravda(vysledok.Podrobnosti.Single(s => s.Nazov == "Video").Polozky.Single(p => p.Popis == "HDR").Hodnota.Contains("HDR10+", StringComparison.Ordinal),
+            "HDR v podrobnostiach");
     }
 
     [Test]
@@ -259,5 +309,35 @@ public sealed class VlastnaCitackaTesty
         var b = new byte[4];
         BinaryPrimitives.WriteUInt32BigEndian(b, hodnota);
         return b;
+    }
+
+    /// <summary>Bits written MSB first (a frame of a codec put together).</summary>
+    private sealed class ZapisBitov
+    {
+        private readonly List<bool> _bity = [];
+
+        public ZapisBitov Zapis(long hodnota, int pocet)
+        {
+            for (var i = pocet - 1; i >= 0; i--)
+            {
+                _bity.Add(((hodnota >> i) & 1) == 1);
+            }
+
+            return this;
+        }
+
+        public byte[] Bajty()
+        {
+            var bajty = new byte[(_bity.Count + 7) / 8];
+            for (var i = 0; i < _bity.Count; i++)
+            {
+                if (_bity[i])
+                {
+                    bajty[i / 8] |= (byte)(0x80 >> (i % 8));
+                }
+            }
+
+            return bajty;
+        }
     }
 }

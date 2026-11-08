@@ -282,4 +282,14 @@ skôr cez ffprobe sa raz prečítajú znova. V detaile súboru a na karte titulu
 súboru“) ich ukazuje prehľad v štýle MediaInfo – tučné farebné nadpisy sekcií, popisy a hodnoty v dvoch stĺpcoch,
 hlavné hodnoty tučne; dá sa označiť myšou aj klávesnicou a skopírovať (celé ako zarovnaný text).
 
+**Čítačka 2** (9. 11. 2026, schéma **v8** – podrobnosti sa raz prečítajú znova): okrem hlavičky aj **prvý rámec**
+stôp, ktoré o sebe povedia viac (v MKV po blokoch od prvého clustra, najviac 16 MB ďaleko a 2 MB na blok; v MP4 prvá
+vzorka podľa stco/co64 a stsz). Rozozná **Dolby Atmos** v TrueHD (major sync: 4 substreamy a 16-kanálová prezentácia)
+aj v E-AC-3 (JOC – príznak rozšírenia typu A v doplnkových údajoch rámca; v MP4 aj z boxu dec3), **DTS:X** a DTS:X
+IMAX Enhanced (značky v XLL), DTS 96/24, **HDR10+** (SEI ITU-T T.35 so ST 2094-40 v prvom obraze HEVC) a **Dolby Vision**
+aj bez konfigurácie v kontajneri (NAL RPU). Pri Dolby Digital normalizácia dialógov, rozloženie kanálov a tok AC-3
+z rámca. Nové kodeky: **H.266/VVC, ProRes (profily), Theora, FFV1, AC-4, MPEG-H 3D Audio, ALAC, xHE-AAC (USAC),
+PCM (bitová hĺbka, endian, float), WavPack, DVB a ARIB titulky**, v MP4 aj VP9 s farbami (vpcC), DTS Express a DTS:X
+profil 2. Bitová hĺbka zvuku sa ukazuje len pri bezstratových formátoch. Vyhľadávanie `kodek:` pozná aj h266 a prores.
+
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.

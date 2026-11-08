@@ -99,6 +99,7 @@ internal static class KodekyVidea
         stopa.Podvzorkovanie = Chroma(hvcc[16] & 3);
         stopa.BitovaHlbka = (hvcc[17] & 7) + 8;
         stopa.FarebnyPriestor = "YUV";
+        stopa.DlzkaNal = (hvcc[21] & 3) + 1;
 
         // arrays of parameter sets: the SPS (type 33) carries the VUI with the colours
         var pocet = hvcc[22];
@@ -367,6 +368,7 @@ internal static class KodekyVidea
         stopa.FarebnyPriestor = "YUV";
         stopa.Podvzorkovanie = "4:2:0";
         stopa.BitovaHlbka = 8;
+        stopa.DlzkaNal = (avcc[4] & 3) + 1;
 
         // past the SPS and PPS, High profiles add chroma_format and bit depths
         var i = 6;
@@ -428,17 +430,61 @@ internal static class KodekyVidea
         stopa.Podvzorkovanie = mono == 1 ? "4:0:0" : x == 1 && y == 1 ? "4:2:0" : x == 1 ? "4:2:2" : "4:4:4";
     }
 
-    /// <summary>The audio object type of an AAC AudioSpecificConfig: LC, HE-AAC (SBR), HE-AACv2 (PS).</summary>
-    public static string? ProfilAac(ReadOnlySpan<byte> asc) => asc.Length < 1 ? null : (asc[0] >> 3) switch
+    /// <summary>The audio object type of an AAC AudioSpecificConfig: LC, HE-AAC (SBR), HE-AACv2 (PS), xHE-AAC (USAC).</summary>
+    public static string? ProfilAac(ReadOnlySpan<byte> asc)
     {
-        1 => "Main",
-        2 => "LC",
-        3 => "SSR",
-        4 => "LTP",
-        5 => "HE-AAC",
-        29 => "HE-AACv2",
-        var t => t.ToString(CultureInfo.InvariantCulture),
+        if (asc.Length < 1)
+        {
+            return null;
+        }
+
+        var typ = asc[0] >> 3;
+        if (typ == 31 && asc.Length >= 2)
+        {
+            typ = 32 + (((asc[0] & 7) << 3) | (asc[1] >> 5)); // the escape of the object type
+        }
+
+        return typ switch
+        {
+            1 => "Main",
+            2 => "LC",
+            3 => "SSR",
+            4 => "LTP",
+            5 => "HE-AAC",
+            29 => "HE-AACv2",
+            39 => "ER AAC ELD",
+            42 => "xHE-AAC",
+            _ => typ.ToString(CultureInfo.InvariantCulture),
+        };
+    }
+
+    /// <summary>The profile of Apple ProRes by its four-character code.</summary>
+    public static string ProfilProRes(string fourcc) => fourcc switch
+    {
+        "apco" => "422 Proxy",
+        "apcs" => "422 LT",
+        "apcn" => "422",
+        "apch" => "422 HQ",
+        "ap4h" => "4444",
+        "ap4x" => "4444 XQ",
+        _ => fourcc,
     };
+
+    /// <summary>VPCodecConfigurationRecord (vpcC, MP4): profile, level, bit depth, chroma and colours of VP9.</summary>
+    public static void Vp9(ReadOnlySpan<byte> vpcc, InfoStopy stopa)
+    {
+        if (vpcc.Length < 10)
+        {
+            return;
+        }
+
+        stopa.Profil = $"Profil {vpcc[4]}@L{(vpcc[5] / 10.0).ToString("0.#", CultureInfo.InvariantCulture)}";
+        stopa.BitovaHlbka = vpcc[6] >> 4;
+        stopa.FarebnyPriestor = "YUV";
+        stopa.Podvzorkovanie = ((vpcc[6] >> 1) & 7) switch { 0 or 1 => "4:2:0", 2 => "4:2:2", _ => "4:4:4" };
+        stopa.FarebnyRozsah = (vpcc[6] & 1) == 1 ? "Full" : "Limited";
+        Farby(stopa, vpcc[7], vpcc[8], vpcc[9]);
+    }
 
     /// <summary>Colour primaries, transfer and matrix by ISO/IEC 23091-2 (H.273); HDR10 and HLG from the transfer.</summary>
     public static void Farby(InfoStopy stopa, int primarne, int prenos, int matica)

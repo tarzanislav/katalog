@@ -171,7 +171,8 @@ public static class PorovnanieVerzii
     private static int Kodek(string? kodek) => kodek?.ToLowerInvariant() switch
     {
         null or "" => 0,
-        "av1" or "hevc" or "h265" or "vvc" => 3,
+        "vvc" => 4,
+        "av1" or "hevc" or "h265" => 3,
         "h264" or "avc" or "vp9" => 2,
         _ => 1,
     };

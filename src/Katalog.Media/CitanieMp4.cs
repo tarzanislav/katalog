@@ -122,6 +122,24 @@ public static class CitanieMp4
             }
         }
 
+        // the first sample of tracks whose frame says more (Atmos, DTS:X, HDR10+), at most 2 MB each
+        foreach (var stopa in info.Stopy.Where(t => t.ChceRamec && t.PrvaVzorka is { Velkost: > 0 }))
+        {
+            var (pozicia, velkost) = stopa.PrvaVzorka!.Value;
+            if (pozicia > 0 && pozicia < subor.Length)
+            {
+                var data = new byte[(int)Math.Min(Math.Min(velkost, 2L << 20), subor.Length - pozicia)];
+                subor.Position = pozicia;
+                subor.ReadExactly(data);
+                stopa.PrvyRamec = data;
+            }
+        }
+
+        foreach (var stopa in info.Stopy)
+        {
+            stopa.AnalyzujRamec();
+        }
+
         return info.Stopy.Count == 0 ? null : info;
     }
 
@@ -307,10 +325,18 @@ public static class CitanieMp4
                     }
 
                     break;
+                case "stco" when d.Length >= 12 && BinaryPrimitives.ReadUInt32BigEndian(d.AsSpan(4)) > 0:
+                    s.PrvaVzorka = (BinaryPrimitives.ReadUInt32BigEndian(d.AsSpan(8)), s.PrvaVzorka?.Velkost ?? 0);
+                    break;
+                case "co64" when d.Length >= 16 && BinaryPrimitives.ReadUInt32BigEndian(d.AsSpan(4)) > 0:
+                    s.PrvaVzorka = ((long)BinaryPrimitives.ReadUInt64BigEndian(d.AsSpan(8)), s.PrvaVzorka?.Velkost ?? 0);
+                    break;
                 case "stsz" when d.Length >= 12:
                     var velkost = BinaryPrimitives.ReadUInt32BigEndian(d.AsSpan(4));
                     var kusov = BinaryPrimitives.ReadUInt32BigEndian(d.AsSpan(8));
                     s.PocetSnimok = kusov;
+                    var prva = velkost > 0 ? velkost : d.Length >= 16 ? BinaryPrimitives.ReadUInt32BigEndian(d.AsSpan(12)) : 0;
+                    s.PrvaVzorka = (s.PrvaVzorka?.Pozicia ?? 0, prva);
                     if (velkost > 0)
                     {
                         s.VelkostStreamu = (long)velkost * kusov;
@@ -343,6 +369,14 @@ public static class CitanieMp4
             "av01" => ("av1", "AV1", "AOMedia Video 1", null),
             "vp09" => ("vp9", "VP9", null, null),
             "mp4v" => ("mpeg4", "MPEG-4 Visual", null, null),
+            "vvc1" or "vvi1" => ("vvc", "VVC", "Versatile Video Coding", null),
+            "apco" or "apcs" or "apcn" or "apch" or "ap4h" or "ap4x" => ("prores", "ProRes", "Apple ProRes", null),
+            "ac-4" => ("ac4", "AC-4", "Audio Coding 4", "Dolby AC-4"),
+            "mha1" or "mha2" or "mhm1" or "mhm2" => ("mpegh", "MPEG-H 3D Audio", null, null),
+            "alac" => ("alac", "ALAC", "Apple Lossless Audio Codec", null),
+            "ipcm" or "lpcm" or "sowt" or "twos" or "in24" or "in32" or "fl32" or "fl64" => ("pcm_s16le", "PCM", null, null),
+            "dtse" => ("dts", "DTS LBR", "DTS Express", "DTS Express"),
+            "dtsx" => ("dts:x", "DTS UHD", "DTS:X Profile 2", "DTS:X"),
             "mp4a" => ("aac", "AAC", "Advanced Audio Codec", null),
             "ac-3" => ("ac3", "AC-3", "Audio Coding 3", "Dolby Digital"),
             "ec-3" => ("eac3", "E-AC-3", "Enhanced AC-3", "Dolby Digital Plus"),
@@ -362,7 +396,8 @@ public static class CitanieMp4
         };
 
         int zaciatok;
-        if (format is "hvc1" or "hev1" or "dvh1" or "dvhe" or "avc1" or "avc3" or "dva1" or "dvav" or "av01" or "vp09" or "mp4v" or "jpeg" or "png ")
+        if (format is "hvc1" or "hev1" or "dvh1" or "dvhe" or "avc1" or "avc3" or "dva1" or "dvav" or "av01" or "vp09" or "mp4v" or "jpeg" or "png "
+            or "vvc1" or "vvi1" or "apco" or "apcs" or "apcn" or "apch" or "ap4h" or "ap4x")
         {
             if (d.Length < 78)
             {
@@ -373,7 +408,8 @@ public static class CitanieMp4
             s.Vyska = BinaryPrimitives.ReadUInt16BigEndian(d.AsSpan(26));
             zaciatok = 78;
         }
-        else if (format is "mp4a" or "ac-3" or "ec-3" or "mlpa" or "dtsc" or "dtsh" or "dtsl" or "Opus" or "fLaC" or ".mp3")
+        else if (format is "mp4a" or "ac-3" or "ec-3" or "mlpa" or "dtsc" or "dtsh" or "dtsl" or "dtse" or "dtsx" or "Opus" or "fLaC" or ".mp3"
+                 or "ac-4" or "mha1" or "mha2" or "mhm1" or "mhm2" or "alac" or "ipcm" or "lpcm" or "sowt" or "twos" or "in24" or "in32" or "fl32" or "fl64")
         {
             if (d.Length < 28)
             {
@@ -383,6 +419,11 @@ public static class CitanieMp4
             var verzia = BinaryPrimitives.ReadUInt16BigEndian(d.AsSpan(8));
             s.Kanaly = BinaryPrimitives.ReadUInt16BigEndian(d.AsSpan(16));
             s.Vzorkovanie = BinaryPrimitives.ReadUInt32BigEndian(d.AsSpan(24)) >> 16;
+            if (s.Format == "PCM")
+            {
+                s.BitovaHlbka = format switch { "in24" => 24, "in32" or "fl32" => 32, "fl64" => 64, _ => BinaryPrimitives.ReadUInt16BigEndian(d.AsSpan(18)) };
+                s.FormatInfo = format is "twos" or "in24" or "in32" ? "Big Endian" : format is "fl32" or "fl64" ? "Float (IEEE)" : "Little Endian";
+            }
             zaciatok = verzia switch { 1 => 44, 2 => 64, _ => 28 };
         }
         else
@@ -393,6 +434,11 @@ public static class CitanieMp4
         if (zaciatok > d.Length)
         {
             return;
+        }
+
+        if (s.Kodek == "prores")
+        {
+            s.Profil = KodekyVidea.ProfilProRes(format);
         }
 
         foreach (var (typ, data) in Boxy(d[zaciatok..]))
@@ -439,8 +485,92 @@ public static class CitanieMp4
 
                     break;
                 case "esds":
-                    s.Profil = ProfilZEsds(data) ?? s.Profil;
+                    if (Esds(data) is 0x69 or 0x6B)
+                    {
+                        (s.Kodek, s.Format, s.FormatInfo, s.ObchodnyNazov) = ("mp3", "MPEG Audio", "MPEG-1 Layer 3", "MP3");
+                    }
+                    else
+                    {
+                        s.Profil = ProfilZEsds(data) ?? s.Profil;
+                        if (s.Profil == "xHE-AAC")
+                        {
+                            (s.Format, s.FormatInfo) = ("USAC", "xHE-AAC (Unified Speech and Audio Coding)");
+                        }
+                    }
+
                     break;
+                case "vpcC":
+                    KodekyVidea.Vp9(data, s);
+                    break;
+                case "dec3" when data.Length >= 5:
+                    Dec3(data, s);
+                    break;
+                case "dac3" when data.Length >= 3:
+                    // fscod, bsid, bsmod, acmod, lfeon, bit_rate_code
+                    var acmod = (data[1] >> 3) & 7;
+                    var lfe = (data[1] >> 2) & 1;
+                    s.Kanaly = new[] { 2, 1, 2, 3, 3, 4, 4, 5 }[acmod] + lfe;
+                    s.RozlozenieKanalov = AnalyzaRamcov.Rozlozenie(acmod, lfe == 1);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>The object type of an esds box (0x40 AAC, 0x6B MP3 …), or null.</summary>
+    private static int? Esds(byte[] esds)
+    {
+        // tag 0x04 (DecoderConfigDescriptor): its first byte past the length is objectTypeIndication
+        for (var i = 4; i + 2 < esds.Length; i++)
+        {
+            if (esds[i] != 0x04)
+            {
+                continue;
+            }
+
+            var j = i + 1;
+            for (var k = 0; k < 4 && j < esds.Length && (esds[j] & 0x80) != 0; k++)
+            {
+                j++;
+            }
+
+            return j + 1 < esds.Length ? esds[j + 1] : null;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// EC3SpecificBox: the channels of the independent substream, and past the substreams the flag of the extension type A
+    /// (joint object coding – Dolby Atmos) with its complexity index.
+    /// </summary>
+    private static void Dec3(byte[] data, InfoStopy s)
+    {
+        var r = new CitacBitov(data);
+        s.DatovyTok ??= r.Bity(13) * 1000;
+        var nezavislych = (int)r.Bity(3) + 1;
+        for (var i = 0; i < nezavislych; i++)
+        {
+            r.Preskoc(2 + 5 + 1 + 1 + 3);
+            var acmod = (int)r.Bity(3);
+            var lfe = r.Bit();
+            r.Preskoc(3);
+            var zavislych = (int)r.Bity(4);
+            r.Preskoc(zavislych > 0 ? 9 : 1);
+            if (i == 0)
+            {
+                s.Kanaly ??= new[] { 2, 1, 2, 3, 3, 4, 4, 5 }[acmod] + lfe;
+                s.RozlozenieKanalov ??= AnalyzaRamcov.Rozlozenie(acmod, lfe == 1);
+            }
+        }
+
+        if (!r.Koniec)
+        {
+            r.Preskoc(7);
+            if (r.Bit() == 1 && !r.Koniec)
+            {
+                s.Atmos = true;
+                s.ObchodnyNazov = "Dolby Digital Plus s Dolby Atmos";
+                s.FormatInfo = "Enhanced AC-3 s JOC (Joint Object Coding)";
             }
         }
     }

@@ -425,7 +425,7 @@ public sealed class Dotaz
         PoleDotazu.Katalog => "katalog:Videotéka",
         PoleDotazu.Pripojene => "pripojene:ano",
         PoleDotazu.Kvalita => "kvalita:4k,fhd alebo kvalita:>=fhd (sd, hd, fhd, 4k)",
-        PoleDotazu.Kodek => "kodek:hevc (h265, h264, av1, vp9, mpeg2, mpeg4, vc1)",
+        PoleDotazu.Kodek => "kodek:hevc (h265, h264, h266, av1, vp9, mpeg2, mpeg4, vc1, prores)",
         PoleDotazu.Zvuk => "zvuk:cs, zvuk:sk,cs alebo zvuk:nie",
         PoleDotazu.Titulky => "titulky:sk, titulky:ano alebo titulky:nie",
         PoleDotazu.Hdr => "hdr:ano (alebo hdr10, dv, hlg, nie)",
@@ -592,6 +592,8 @@ public sealed class Dotaz
         "mpeg2" or "mpeg2video" => "mpeg2video",
         "mpeg4" or "xvid" or "divx" => "mpeg4",
         "vc1" => "vc1",
+        "vvc" or "h266" => "vvc",
+        "prores" => "prores",
         _ => null,
     };
 

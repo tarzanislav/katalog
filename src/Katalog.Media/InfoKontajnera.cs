@@ -106,6 +106,46 @@ public sealed class InfoStopy
     public bool Vynutena { get; set; }
 
     public bool Sdh { get; set; }
+
+    /// <summary>The dialogue level of Dolby Digital (dialnorm, dB).</summary>
+    public int? Dialogy { get; set; }
+
+    /// <summary>Dolby Atmos (TrueHD with its 16-channel presentation, E-AC-3 with JOC).</summary>
+    public bool Atmos { get; set; }
+
+    /// <summary>HDR10+ (SMPTE ST 2094-40) metadata in the picture.</summary>
+    public bool Hdr10Plus { get; set; }
+
+    /// <summary>The length of NAL unit sizes in the frames of HEVC and AVC (from hvcC/avcC).</summary>
+    internal int DlzkaNal { get; set; } = 4;
+
+    /// <summary>The first frame of the track, when the reader fetched it for <see cref="AnalyzaRamcov"/>.</summary>
+    internal byte[]? PrvyRamec { get; set; }
+
+    /// <summary>MP4: where the first sample lies and how big it is.</summary>
+    internal (long Pozicia, long Velkost)? PrvaVzorka { get; set; }
+
+    /// <summary>Whether the reader wants the first frame: audio whose frame says more, and HEVC (HDR10+, Dolby Vision).</summary>
+    internal bool ChceRamec => Kodek is "ac3" or "eac3" or "truehd" or "dts" || (JeVideo && Kodek == "hevc");
+
+    /// <summary>Applies what the first frame says, once.</summary>
+    internal void AnalyzujRamec()
+    {
+        if (PrvyRamec is { } ramec && JeVideo && Kodek == "hevc")
+        {
+            AnalyzaRamcov.ObrazHevc(ramec, DlzkaNal, this);
+        }
+        else if (PrvyRamec is { } zvuk)
+        {
+            AnalyzaRamcov.Zvuk(zvuk, this);
+        }
+
+        PrvyRamec = null;
+        if (Atmos && Kodek is "truehd" or "eac3")
+        {
+            Kodek += " atmos";
+        }
+    }
 }
 
 /// <summary>What the own reader gives the library: the data ffprobe would give, and the details for the detail panel.</summary>
@@ -131,7 +171,7 @@ public static class PopisKontajnera
             video?.Kodek,
             video?.Sirka,
             video?.Vyska,
-            video?.Hdr ?? Hdr.Ziadne,
+            video is null ? Hdr.Ziadne : video.Hdr == Hdr.DolbyVision ? Hdr.DolbyVision : video.Hdr10Plus ? Hdr.Hdr10Plus : video.Hdr,
             video?.Snimky is { } f2 ? Math.Round(f2, 3) : null,
             video is null && info.Stopy.All(s => s.Druh != DruhStopy.Zvuk) ? "súbor nemá obraz ani zvuk" : null);
 
@@ -221,6 +261,12 @@ public static class PopisKontajnera
                     _ => null,
                 });
                 Pridaj(p, "Vzorkovacia frekvencia", s.Vzorkovanie is { } hz ? (hz / 1000).ToString("0.0", Sk) + " kHz" : null);
+                // the bit depth of lossy codecs is that of the decoder, not of the stream: only lossless ones show it
+                Pridaj(p, "Bitová hĺbka", s.BitovaHlbka is { } bz && s.Kodek is not null &&
+                    (s.Kodek.StartsWith("pcm", StringComparison.Ordinal) || s.Kodek is "flac" or "alac" or "wavpack" or "dts-hd ma" or "dts:x" ||
+                     s.Kodek.StartsWith("truehd", StringComparison.Ordinal)) ? $"{bz} bitov" : null);
+                Pridaj(p, "Normalizácia dialógov", s.Dialogy is { } dn ? AnalyzaRamcov.Decibely(dn) : null);
+                Pridaj(p, "Dolby Atmos", s.Atmos ? "áno" : null);
             }
 
             if (druh == DruhStopy.Titulky)
@@ -246,7 +292,27 @@ public static class PopisKontajnera
                 Pridaj(p, "Primárne farby", s.PrimarneFarby);
                 Pridaj(p, "Prenosové charakteristiky", s.Prenos);
                 Pridaj(p, "Maticové koeficienty", s.Matica);
-                Pridaj(p, "HDR", s.HdrPopis ?? (s.Hdr != Hdr.Ziadne ? PopisMedii.Hdr(s.Hdr) : null));
+                var hdr = new List<string>();
+                if (s.Hdr == Hdr.DolbyVision)
+                {
+                    hdr.Add(s.HdrPopis ?? "Dolby Vision");
+                }
+
+                if (s.Hdr10Plus)
+                {
+                    hdr.Add("HDR10+ (SMPTE ST 2094-40)");
+                }
+
+                if (s.Prenos == "PQ (SMPTE ST 2084)" && !s.Hdr10Plus)
+                {
+                    hdr.Add(s.Hdr != Hdr.DolbyVision && s.HdrPopis is { } popisHdr ? popisHdr : "HDR10 (SMPTE ST 2086)");
+                }
+                else if (s.Hdr == Hdr.Hlg || s.Prenos == "HLG")
+                {
+                    hdr.Add("HLG");
+                }
+
+                Pridaj(p, "HDR", hdr.Count > 0 ? string.Join(", ", hdr.Distinct()) : null);
             }
 
             sekcie.Add(new SekciaMedia(nazov, p));
