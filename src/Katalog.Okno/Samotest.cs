@@ -311,9 +311,21 @@ internal static class Samotest
         {
             await okno.VyberPolozkuAsync(film);
             Over(okno.DetailZobrazeny is { Dej: not null, Kolekcie.Count: 1 } d && d.Verzie.Count == 1, "detail filmu: dej, verzia, kolekcia");
+            Over(okno.DetailOdkazy.Items.OfType<OdkazTitulu>().Any(o => o.Text == "TMDB" && HlavneOkno.SmieOtvorit(o.Adresa)) &&
+                 okno.DetailOdkazy.Items.OfType<OdkazTitulu>().Any(o => o.Text.StartsWith("ČSFD", StringComparison.Ordinal)),
+                "karta titulu: odkazy TMDB a ČSFD");
+            Over(okno.DetailVerzie.Items.Count == 1 && okno.DetailKolekcie.Visibility == Visibility.Visible &&
+                 okno.DetailKolekcie.Items.OfType<SkupinaKolekcie>().SingleOrDefault()?.Diely is { Count: 2 } diely && diely.Count(x => x.Aktualny) == 1,
+                "karta titulu: verzia s údajmi súboru, kolekcia s oboma dielmi (zobrazený označený)");
+            Over(HlavneOkno.Minutaz(136) == "2 h 16 min (136 min)" && HlavneOkno.Minutaz(48) == "48 min", "minutáž");
         }
 
         await SnimkaAsync(okno, "kniznica-plagaty-svetle.png");
+        okno.Nastavenia.DetailVpravo = true;
+        okno.UsporiadajStlpce();
+        await SnimkaAsync(okno, "kniznica-detail-vpravo-svetle.png");
+        okno.Nastavenia.DetailVpravo = false;
+        okno.UsporiadajStlpce();
         okno.ZobrazenieZoznam.IsChecked = true;
         await SnimkaAsync(okno, "kniznica-zoznam-svetle.png");
         okno.ZobrazeniePlagaty.IsChecked = true;

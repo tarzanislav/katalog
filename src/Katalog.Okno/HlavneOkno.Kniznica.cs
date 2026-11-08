@@ -358,7 +358,7 @@ public partial class HlavneOkno
     /// <summary>Puts the tiles into rows by the width of the wall (only rebuilt when the number of columns changes).</summary>
     private void PostavStenu()
     {
-        var stlpce = Math.Max(1, (int)((StenaPlagatov.ActualWidth - 24) / 162));
+        var stlpce = Math.Max(1, (int)((StenaPlagatov.ActualWidth - 24) / 134));
         if (stlpce == _stlpceSteny && StenaPlagatov.ItemsSource is not null)
         {
             return;
@@ -585,13 +585,16 @@ public partial class HlavneOkno
         DetailTitulu? detail;
         Vypozicka? vypozicka;
         IReadOnlyList<string> stitky;
+        IReadOnlyList<(KolekciaKniznice, IReadOnlyList<PolozkaKniznice>)> kolekcie;
+        Dictionary<long, TechnickeUdajeSuboru> technicke;
         try
         {
-            (detail, vypozicka, stitky) = await Task.Run(() =>
+            (detail, vypozicka, stitky, kolekcie, technicke) = await Task.Run(() =>
             {
                 using var c = kniznica.OtvorCitanie();
-                return (KniznicaTitulov.Detail(c, titulId, PorovnanieVerzii.ZTextu(_nastavenia.PoradieKvality)),
-                        Vypozicky.Otvorena(c, null, titulId), StitkyTitulov.Titulu(c, titulId));
+                var d = KniznicaTitulov.Detail(c, titulId, PorovnanieVerzii.ZTextu(_nastavenia.PoradieKvality));
+                var (k, t) = DoplnkyKarty(c, d);
+                return (d, Vypozicky.Otvorena(c, null, titulId), StitkyTitulov.Titulu(c, titulId), k, t);
             });
         }
         catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
@@ -613,6 +616,8 @@ public partial class HlavneOkno
         _detail = detail;
         _detailVypozicka = vypozicka;
         _detailStitky = stitky;
+        _detailKolekcie = kolekcie;
+        _detailTechnicke = technicke;
         _plnimDetail = true;
         try
         {
@@ -633,15 +638,7 @@ public partial class HlavneOkno
         DetailNadpis.Text = t.Nazov;
         DetailPlagat.Source = t.Plagat is { } p && _obrazky is { } o && File.Exists(o.Cesta(p)) ? NacitajObrazok(o.Cesta(p)) : null;
         DetailPlagat.Visibility = DetailPlagat.Source is null ? Visibility.Collapsed : Visibility.Visible;
-        DetailPodnadpis.Text = string.Join(" · ", new[]
-        {
-            t.Original is { } orig && orig != t.Nazov ? orig : null,
-            t.Rok?.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            t.Druh == DruhTitulu.Serial ? "seriál" : "film",
-            d.Zanre.Count > 0 ? string.Join(", ", d.Zanre) : null,
-            d.DlzkaMinut is { } m ? $"{m} min" : null,
-            t.Hodnotenie is { } h ? $"hodnotenie {h.ToString("0.0", Format.Slovensky)}" : null,
-        }.Where(x => x is not null));
+        VyplnKartu(d);
         DetailPrehrat.IsEnabled = t.Mam;
         DetailVidene.IsChecked = t.Videne;
         DetailVidene.Visibility = t.Druh == DruhTitulu.Film ? Visibility.Visible : Visibility.Collapsed;
@@ -680,30 +677,6 @@ public partial class HlavneOkno
             riadky.Add(new RiadokDetailu("Štítky", string.Join(", ", _detailStitky)));
         }
 
-        if (d.Dej is { } dej)
-        {
-            riadky.Add(new RiadokDetailu("Dej", dej));
-        }
-
-        var rezia = d.Osoby.Where(o => o.Rola == RolaOsoby.Rezia).Select(o => o.Meno).ToList();
-        if (rezia.Count > 0)
-        {
-            riadky.Add(new RiadokDetailu(t.Druh == DruhTitulu.Serial ? "Tvorcovia" : "Réžia", string.Join(", ", rezia)));
-        }
-
-        var scenar = d.Osoby.Where(o => o.Rola == RolaOsoby.Scenar).Select(o => o.Meno).ToList();
-        if (scenar.Count > 0)
-        {
-            riadky.Add(new RiadokDetailu("Scenár", string.Join(", ", scenar)));
-        }
-
-        var herci = d.Osoby.Where(o => o.Rola == RolaOsoby.Herec).Take(12)
-            .Select(o => o.Postava is { Length: > 0 } postava ? $"{o.Meno} ({postava})" : o.Meno).ToList();
-        if (herci.Count > 0)
-        {
-            riadky.Add(new RiadokDetailu("Hrajú", string.Join(", ", herci)));
-        }
-
         if (t.Druh == DruhTitulu.Serial && d.Epizody.Count > 0)
         {
             foreach (var seria in d.Epizody.GroupBy(e => e.Seria))
@@ -719,36 +692,6 @@ public partial class HlavneOkno
 
                 riadky.Add(new RiadokDetailu(seria.Key == 0 ? "Špeciály" : $"Séria {seria.Key}", text));
             }
-        }
-
-        var pripojene = _stav?.Pripojene.Keys.ToHashSet() ?? [];
-        foreach (var v in d.Verzie)
-        {
-            var prvy = v.Subory.FirstOrDefault();
-            if (prvy is null)
-            {
-                continue;
-            }
-
-            var popis = v.Seria is { } s && v.Cislo is { } c ? $"S{s:00}E{c:00} · " : "";
-            popis += $"{prvy.DiskCislo} {prvy.DiskNazov}" + (pripojene.Contains(prvy.DiskId) ? " (pripojený)" : "") +
-                     $" · {Format.Velkost(v.Subory.Sum(x => x.Velkost))}" +
-                     (prvy.Kvalita != TriedaKvality.Nezistena ? $" · {(prvy.Kvalita == TriedaKvality.UHD4K ? "4K" : prvy.Kvalita.ToString())}" : "") +
-                     (v.Subory.Count > 1 ? $" · {Format.Mnozne(v.Subory.Count, "súbor", "súbory", "súborov")}" : "") +
-                     (v.Poznamka is { } poz ? $" · {poz}" : "") +
-                     (!v.Pritomna ? " · zmazaná z disku" : "") + "\n" + prvy.Nazov;
-            var nadpis = !v.Potvrdena ? "Verzia (čaká na potvrdenie)" : d.NajlepsieVerzie.Contains(v.Id) ? "Verzia – najlepšia" : "Verzia";
-            if (d.NajlepsieVerzie.Contains(v.Id) && DovodNajlepsej(d, v) is { } dovod)
-            {
-                popis += $"\nnajlepšia: {dovod}";
-            }
-
-            riadky.Add(new RiadokDetailu(nadpis, popis));
-        }
-
-        foreach (var k in d.Kolekcie)
-        {
-            riadky.Add(new RiadokDetailu("Kolekcia", $"{k.Nazov} · mám {k.Mam} z {k.Diely}"));
         }
 
         if (d.ZoznamyHistra.Count > 0)
@@ -770,11 +713,6 @@ public partial class HlavneOkno
         var zamknute = d.Povod.Where(p => p.Value.Zamknute).Select(p => NazovPola(p.Key)).ToList();
         riadky.Add(new RiadokDetailu("Údaje", (zdroje.Count > 0 ? "z " + string.Join(", ", zdroje) : "len z názvov súborov") +
                                               (zamknute.Count > 0 ? " · tvoje (zamknuté): " + string.Join(", ", zamknute) : "")));
-        if (d.Identifikatory.Count > 0)
-        {
-            riadky.Add(new RiadokDetailu("Identifikátory", string.Join(", ", d.Identifikatory.Select(i => $"{NazovZdroja(i.Zdroj)} {i.Hodnota}"))));
-        }
-
         if (d.Identifikatory.Any(i => i.Zdroj == ZdrojUdajov.Tmdb))
         {
             riadky.Add(new RiadokDetailu("Zdroj údajov", "Údaje a plagáty z TMDB (themoviedb.org). " + Katalog.Zdroje.TmdbZdroj.Upozornenie));

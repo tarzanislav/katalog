@@ -80,15 +80,16 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
             </Grid>
         </Border>
 
-        <!-- three columns: navigation, library, detail -->
-        <Grid Grid.Row="2">
+        <!-- three columns: navigation, then the detail (a third of the rest) and the library – the detail on the left by
+             default, on the right by the settings (owner, 8. 11. 2026); each block has its own tint -->
+        <Grid Grid.Row="2" x:Name="Stlpce">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="260" MinWidth="180" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="320" MinWidth="240" />
+                <ColumnDefinition x:Name="StlpecA" Width="*" MinWidth="300" />
+                <ColumnDefinition x:Name="StlpecB" Width="2*" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" BorderThickness="0,1,1,0"
+            <Border Grid.Column="0" BorderThickness="0,1,1,0" Background="{DynamicResource FarbaMenu}"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
@@ -185,8 +186,10 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                 </ScrollViewer>
             </Border>
 
+            <!-- the library: the poster wall, a disk's folder, results, overviews -->
+            <Grid x:Name="PanelStredu" Grid.Column="2">
             <!-- center: an empty state, or the content of a disk's folder -->
-            <Grid Grid.Column="1" x:Name="PanelPrazdny" Margin="20,16,20,16">
+            <Grid x:Name="PanelPrazdny" Margin="20,16,20,16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -202,7 +205,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                 </StackPanel>
             </Grid>
 
-            <Grid Grid.Column="1" x:Name="PanelSuborov" Margin="20,16,20,8" Visibility="Collapsed">
+            <Grid x:Name="PanelSuborov" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -256,7 +259,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
             </Grid>
 
             <!-- center: results of a search -->
-            <Grid Grid.Column="1" x:Name="PanelVysledkov" Margin="20,16,20,8" Visibility="Collapsed">
+            <Grid x:Name="PanelVysledkov" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -332,7 +335,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
             </Grid>
 
             <!-- center: the library of titles – poster wall or list of films, series, collections, HISTRA lists -->
-            <Grid Grid.Column="1" x:Name="PanelKniznice" Margin="20,16,20,8" Visibility="Collapsed">
+            <Grid x:Name="PanelKniznice" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -462,7 +465,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Width="150" Margin="6" Padding="4" CornerRadius="6" BorderThickness="2" Background="Transparent"
+                                        <Border Width="124" Margin="5" Padding="3" CornerRadius="6" BorderThickness="2" Background="Transparent"
                                                 Cursor="Hand" MouseLeftButtonDown="Dlazdica_MouseLeftButtonDown" Opacity="{Binding Priehladnost}"
                                                 ToolTip="{Binding Nazov}">
                                             <Border.Style>
@@ -476,7 +479,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                                 </Style>
                                             </Border.Style>
                                             <StackPanel>
-                                                <Grid Height="210">
+                                                <Grid Height="174">
                                                     <Border CornerRadius="4" Background="{DynamicResource ControlFillColorSecondaryBrush}">
                                                         <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" FontSize="36" Opacity="0.4"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -527,7 +530,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
             </Grid>
 
             <!-- center: overview of disks (space, contents, health) and where new files fit (N2) -->
-            <Grid Grid.Column="1" x:Name="PanelPrehladu" Margin="20,16,20,8" Visibility="Collapsed">
+            <Grid x:Name="PanelPrehladu" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -594,7 +597,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
             </Grid>
 
             <!-- center: statistics of the library (N5) -->
-            <ScrollViewer Grid.Column="1" x:Name="PanelStatistik" Margin="20,16,8,8" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="PanelStatistik" Margin="20,16,8,8" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0,0,12,0">
                     <TextBlock Text="Štatistiky" FontSize="22" FontWeight="SemiBold" />
                     <TextBlock x:Name="SuhrnStatistik" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="15" />
@@ -629,7 +632,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
             </ScrollViewer>
 
             <!-- center: loans (N6) -->
-            <Grid Grid.Column="1" x:Name="PanelVypoziciek" Margin="20,16,20,8" Visibility="Collapsed">
+            <Grid x:Name="PanelVypoziciek" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -665,7 +668,7 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
             </Grid>
 
             <!-- center: saved searches -->
-            <Grid Grid.Column="1" x:Name="PanelUlozenych" Margin="20,16,20,8" Visibility="Collapsed">
+            <Grid x:Name="PanelUlozenych" Margin="20,16,20,8" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -694,7 +697,9 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                            HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource TichyText}" />
             </Grid>
 
-            <Border Grid.Column="2" BorderThickness="1,1,0,0" Padding="16"
+            </Grid>
+
+            <Border x:Name="PanelDetailu" Grid.Column="1" BorderThickness="0,1,1,0" Padding="18,16,10,16" Background="{DynamicResource FarbaDetailu}"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
@@ -705,8 +710,49 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                                Text="Vyber titul alebo súbor. Tu uvidíš plagát, dej, kde leží (disk, cesta, či je pripojený), technické údaje, zvuk a titulky s jazykmi a ďalšie verzie na iných diskoch." />
                     <!-- the detail of a title (stage E4) -->
                     <StackPanel x:Name="PanelDetailuTitulu" Visibility="Collapsed">
-                        <Image x:Name="DetailPlagat" Margin="0,10,10,0" MaxHeight="320" Stretch="Uniform" HorizontalAlignment="Left" />
-                        <TextBlock x:Name="DetailPodnadpis" Margin="0,8,0,0" Style="{StaticResource TichyText}" />
+                        <!-- the card of a title, as in UNIVERSUM (owner, 8. 11. 2026): poster, links, identifiers, names, facts -->
+                        <Image x:Name="DetailPlagat" Margin="0,4,0,0" MaxHeight="360" MaxWidth="240" Stretch="Uniform" HorizontalAlignment="Left" />
+                        <ItemsControl x:Name="DetailOdkazy" Margin="0,12,0,0" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Text}" ToolTip="{Binding Adresa}" Padding="10,3" Margin="0,0,6,6" Click="OdkazTitulu_Click" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border x:Name="DetailBlokIdentifikatorov" Background="{DynamicResource FarbaBlokuDetailu}" CornerRadius="6" Padding="10,4,10,8" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Identifikátory" Style="{StaticResource NadpisKarty}" Margin="0,4,0,4" />
+                                <ItemsControl x:Name="DetailIdentifikatory" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="2" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,1,10,1">
+                                                <TextBlock DockPanel.Dock="Left" Text="{Binding Popis}" Style="{StaticResource TichyText}" Width="58" />
+                                                <TextBox Text="{Binding Hodnota, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" />
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                        <TextBox x:Name="DetailHlavnyNazov" Style="{StaticResource TextNaKopirovanie}" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0" />
+                        <ItemsControl x:Name="DetailIneNazvy" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" FontSize="15" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBox x:Name="DetailPodnadpis" Style="{StaticResource TextNaKopirovanie}" Margin="0,6,0,0" />
                         <WrapPanel Orientation="Horizontal" Margin="0,10,0,0">
                             <Button x:Name="DetailPrehrat" Padding="12,4" Margin="0,0,6,6" Click="PrehratTitul_Click">
                                 <StackPanel Orientation="Horizontal">
@@ -730,6 +776,17 @@ kvalita:4k   zvuk:cs   titulky:sk   disk:3 … podmienky súborov verzií</TextB
                             <ComboBox x:Name="DetailMojeHodnotenie" Width="70" SelectionChanged="DetailMojeHodnotenie_SelectionChanged" />
                         </StackPanel>
 
+                        <ItemsControl x:Name="DetailUdaje" Margin="0,8,0,0" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,2,0,2">
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Popis}" FontWeight="SemiBold" Width="78" />
+                                        <TextBox Text="{Binding Hodnota, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBox x:Name="DetailDej" Style="{StaticResource TextNaKopirovanie}" Margin="0,10,0,0" />
                         <!-- choosing what a title is: the candidates of the sources side by side -->
                         <StackPanel x:Name="DetailVyber" Visibility="Collapsed" Margin="0,14,0,0">
                             <TextBlock x:Name="DetailVyberNadpis" Text="Čo je to za titul?" FontWeight="SemiBold" />
@@ -786,6 +843,30 @@ ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
                                 <Button Content="Nie je to film ani seriál" Padding="10,3" Margin="0,0,6,6" Click="NieJeTitul_Click" />
                             </WrapPanel>
                         </StackPanel>
+
+                        <!-- where the title lies: each version with its disk and what its file is (picture, sound, subtitles) -->
+                        <ItemsControl x:Name="DetailVerzie" Margin="0,12,0,0" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource FarbaBlokuDetailu}" CornerRadius="6" Padding="10,4,10,8" Margin="0,0,0,8">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Nadpis}" Style="{StaticResource NadpisKarty}" Margin="0,4,0,2" />
+                                            <TextBox Text="{Binding Kde, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" />
+                                            <ItemsControl ItemsSource="{Binding Riadky}" Margin="0,4,0,0" Focusable="False">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <DockPanel Margin="0,2,0,0">
+                                                            <TextBlock DockPanel.Dock="Left" Text="{Binding Popis}" Style="{StaticResource TichyText}" Width="78" />
+                                                            <TextBox Text="{Binding Hodnota, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" />
+                                                        </DockPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                     <ItemsControl x:Name="DetailRiadky" Margin="0,8,0,0">
                         <ItemsControl.ItemTemplate>
@@ -794,6 +875,57 @@ ID titul hneď potvrdí, ostatné ukážu návrhy.</TextBlock>
                                     <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7" />
                                     <TextBox Text="{Binding Hodnota, Mode=OneWay}" Style="{StaticResource TextNaKopirovanie}" />
                                 </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- all titles of the title's collections, small posters: a click opens the title (owner, 8. 11. 2026) -->
+                    <ItemsControl x:Name="DetailKolekcie" Visibility="Collapsed" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource FarbaKolekcie}" BorderBrush="{DynamicResource FarbaKolekcieOkraj}" BorderThickness="3,0,0,0"
+                                        CornerRadius="6" Padding="10,4,10,4" Margin="0,4,0,8">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource NadpisKarty}" Foreground="{DynamicResource FarbaKolekcieOkraj}" FontSize="15"
+                                                   Margin="0,4,0,6" TextWrapping="Wrap">
+                                            <Run Text="Kolekcia: " /><Run Text="{Binding Nazov, Mode=OneWay}" /><Run Text="{Binding Pocet, Mode=OneWay}" FontWeight="Normal" />
+                                        </TextBlock>
+                                        <ItemsControl ItemsSource="{Binding Diely}" Focusable="False">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button ToolTip="{Binding Popis}" Margin="0,0,8,8" Cursor="Hand" Click="DielKolekcie_Click">
+                                                        <Button.Template>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <StackPanel Width="72" Opacity="{Binding Priehladnost}">
+                                                                    <Border x:Name="Ram" Width="72" Height="108" CornerRadius="5" BorderThickness="2" BorderBrush="Transparent"
+                                                                            Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                                                        <Grid>
+                                                                            <TextBlock Text="{Binding Nazov}" FontSize="10" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" Margin="3" />
+                                                                            <Image Source="{Binding Obrazok, IsAsync=True}" Stretch="UniformToFill" />
+                                                                        </Grid>
+                                                                    </Border>
+                                                                    <TextBlock Text="{Binding Popis}" FontSize="11" TextWrapping="Wrap" MaxHeight="30" TextTrimming="CharacterEllipsis" Margin="0,3,0,0" />
+                                                                </StackPanel>
+                                                                <ControlTemplate.Triggers>
+                                                                    <DataTrigger Binding="{Binding Aktualny}" Value="True">
+                                                                        <Setter TargetName="Ram" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                                    </DataTrigger>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="Ram" Property="BorderBrush" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Button.Template>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

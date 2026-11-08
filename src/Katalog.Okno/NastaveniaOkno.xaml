@@ -38,6 +38,11 @@
             <ComboBoxItem Content="Svetlý" Tag="Light" />
             <ComboBoxItem Content="Tmavý" Tag="Dark" />
         </ComboBox>
+        <TextBlock Text="Podrobnosti titulu" Margin="0,10,0,4" />
+        <ComboBox x:Name="UmiestnenieDetailu">
+            <ComboBoxItem Content="Vľavo od plagátov" />
+            <ComboBoxItem Content="Vpravo od plagátov" />
+        </ComboBox>
 
         <TextBlock Text="Aktualizácie" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,8" />
         <CheckBox x:Name="AutomatickeAktualizacie" Content="Raz denne zistiť, či je nová verzia (na GitHube; nič o tebe sa neposiela)" />

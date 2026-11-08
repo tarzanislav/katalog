@@ -434,6 +434,9 @@ public partial class HlavneOkno
         DetailNahlad.Visibility = Visibility.Collapsed;
         PanelDetailuTitulu.Visibility = Visibility.Collapsed;
         DetailPlagat.Source = null;
+        DetailNadpis.Visibility = Visibility.Visible;
+        DetailKolekcie.Visibility = Visibility.Collapsed;
+        DetailKolekcie.ItemsSource = null;
         _detail = null;
         if (disk is null)
         {

@@ -19,6 +19,9 @@ public sealed class Nastavenia
     /// <summary>"System", "Light" or "Dark".</summary>
     public string Motiv { get; set; } = "System";
 
+    /// <summary>The detail of a title right of the library; false (default) = left of it.</summary>
+    public bool DetailVpravo { get; set; }
+
     public bool AutomatickeAktualizacie { get; set; } = true;
 
     public DateTime? PoslednaKontrolaAktualizaciiUtc { get; set; }

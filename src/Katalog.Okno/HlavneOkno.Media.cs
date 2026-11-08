@@ -213,6 +213,32 @@ public partial class HlavneOkno
             return;
         }
 
+        riadky.AddRange(TechnickeRiadky(udaje));
+
+        if (udaje.Nahlady.FirstOrDefault() is { } nahlad && _obrazky is { } obrazky)
+        {
+            try
+            {
+                var obrazok = new BitmapImage();
+                obrazok.BeginInit();
+                obrazok.CacheOption = BitmapCacheOption.OnLoad;
+                obrazok.UriSource = new Uri(obrazky.Cesta(nahlad.Meno));
+                obrazok.EndInit();
+                obrazok.Freeze();
+                DetailNahlad.Source = obrazok;
+                DetailNahlad.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex) when (ex is IOException or NotSupportedException or UriFormatException)
+            {
+                // a missing picture leaves the detail without it
+            }
+        }
+    }
+
+    /// <summary>Picture, length, sound and subtitles of a video read by ffprobe (also in the detail of a title).</summary>
+    internal static List<RiadokDetailu> TechnickeRiadky(TechnickeUdajeSuboru udaje)
+    {
+        var riadky = new List<RiadokDetailu>();
         var u = udaje.Udaje;
         if (u.Chyby is { } chyby)
         {
@@ -254,25 +280,7 @@ public partial class HlavneOkno
 
         var titulky = udaje.Stopy.Where(t => t.Druh == DruhStopy.Titulky).Select(PopisStopy).ToList();
         riadky.Add(new RiadokDetailu(titulky.Count <= 1 ? "Titulky" : $"Titulky ({titulky.Count})", titulky.Count == 0 ? "žiadne" : string.Join("\n", titulky)));
-
-        if (udaje.Nahlady.FirstOrDefault() is { } nahlad && _obrazky is { } obrazky)
-        {
-            try
-            {
-                var obrazok = new BitmapImage();
-                obrazok.BeginInit();
-                obrazok.CacheOption = BitmapCacheOption.OnLoad;
-                obrazok.UriSource = new Uri(obrazky.Cesta(nahlad.Meno));
-                obrazok.EndInit();
-                obrazok.Freeze();
-                DetailNahlad.Source = obrazok;
-                DetailNahlad.Visibility = Visibility.Visible;
-            }
-            catch (Exception ex) when (ex is IOException or NotSupportedException or UriFormatException)
-            {
-                // a missing picture leaves the detail without it
-            }
-        }
+        return riadky;
     }
 
     /// <summary>"čeština · DTS-HD MA 5.1 · predvolený" or "slovenčina · SRT · vynútené · externý súbor".</summary>

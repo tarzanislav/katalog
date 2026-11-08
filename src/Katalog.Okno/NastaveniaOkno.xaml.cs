@@ -57,6 +57,7 @@ public partial class NastaveniaOkno : Window
         ZoznamPrehravacov.ItemsSource = _volby;
         ZoznamPrehravacov.SelectedItem = _volby.FirstOrDefault(v => string.Equals(v.Prehravac.Program, aktualny.Program, StringComparison.OrdinalIgnoreCase)) ?? _volby[0];
         Motiv.SelectedItem = Motiv.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == nastavenia.Motiv) ?? Motiv.Items[0];
+        UmiestnenieDetailu.SelectedIndex = nastavenia.DetailVpravo ? 1 : 0;
         AutomatickeAktualizacie.IsChecked = nastavenia.AutomatickeAktualizacie;
     }
 
@@ -231,6 +232,7 @@ public partial class NastaveniaOkno : Window
         _nastavenia.CitatTechnickeUdaje = CitatTechnickeUdaje.IsChecked == true;
         _nastavenia.Prehravac = (ZoznamPrehravacov.SelectedItem as VolbaPrehravaca)?.Prehravac.Program ?? "";
         _nastavenia.Motiv = (Motiv.SelectedItem as ComboBoxItem)?.Tag as string ?? "System";
+        _nastavenia.DetailVpravo = UmiestnenieDetailu.SelectedIndex == 1;
         _nastavenia.AutomatickeAktualizacie = AutomatickeAktualizacie.IsChecked == true;
         App.NastavMotiv(_nastavenia.Motiv);
         DialogResult = true;

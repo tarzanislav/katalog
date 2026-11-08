@@ -8,12 +8,29 @@
             <FontFamily x:Key="Ikony">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
             <BooleanToVisibilityConverter x:Key="BoolNaViditelnost" />
 
+            <!-- the tints of the blocks of the main window (owner, 8. 11. 2026): see-through, so they suit the light and the
+                 dark theme alike – the menu bluish, the detail of a title warm, the library without a tint -->
+            <SolidColorBrush x:Key="FarbaMenu" Color="#1F2F6FD6" />
+            <SolidColorBrush x:Key="FarbaDetailu" Color="#1CE09A2E" />
+            <SolidColorBrush x:Key="FarbaBlokuDetailu" Color="#16808080" />
+            <!-- a collection as the lists of UNIVERSUM: a peach block with an orange edge and heading -->
+            <SolidColorBrush x:Key="FarbaKolekcie" Color="#24F08A3C" />
+            <SolidColorBrush x:Key="FarbaKolekcieOkraj" Color="#E8833A" />
+
             <!-- section names in the left panel (KNIŽNICA, DISKY, ZBIERKY) -->
             <Style x:Key="NadpisSekcie" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="11" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="Margin" Value="12,16,12,4" />
-                <Setter Property="Opacity" Value="0.7" />
+                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+            </Style>
+
+            <!-- a heading of a part of the title's card (Identifikátory, Kolekcia …) -->
+            <Style x:Key="NadpisKarty" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Margin" Value="0,12,0,4" />
+                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
             </Style>
 
             <Style x:Key="PolozkaNavigacie" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">

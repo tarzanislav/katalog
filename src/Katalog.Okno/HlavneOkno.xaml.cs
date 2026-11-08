@@ -22,12 +22,16 @@ public partial class HlavneOkno : Window
         InitializeComponent();
         // selected only now: during InitializeComponent the other list does not exist yet
         NavigaciaKniznica.SelectedIndex = 0;
+        UsporiadajStlpce();
         InicializujHladanie();
         Title = Produkt.Nazov;
         StavVerzie.Text = Produkt.Nazov + " " + Produkt.VerziaText;
         Loaded += async (_, _) => await PoNacitaniAsync();
         Closed += (_, _) => ZavriKniznicu();
     }
+
+    /// <summary>The settings of the program (the self-test switches the place of the detail).</summary>
+    internal Nastavenia Nastavenia => _nastavenia;
 
     /// <summary>The open library; null when it could not be opened.</summary>
     public Kniznica? Kniznica { get; private set; }
@@ -137,6 +141,7 @@ public partial class HlavneOkno : Window
         if (new NastaveniaOkno(_nastavenia, prehravace, _ffmpeg, TajomstvaProgramu, zdroje) { Owner = this }.ShowDialog() == true)
         {
             UlozNastavenia();
+            UsporiadajStlpce();
             await NajdiFfmpegAsync();
             await SpustiCakajuceUlohyAsync();
             _ = DoplnKnizniciuAsync();
