@@ -650,12 +650,17 @@ internal static class Samotest
 
         // a suggestion opens as titles and can be saved
         App.NastavMotiv("Light");
+        okno.NavigaciaZbierky.SelectedItem = null;
         okno.NavigaciaPlaylisty.IsSelected = true;
         await okno.ZobrazKnizniciuAsync();
         if (okno.PolozkySteny.FirstOrDefault(p => p.Navrh is not null) is { } navrh)
         {
             await okno.OtvorPolozkuAsync(navrh);
             Over(okno.PolozkySteny.Count == navrh.Navrh!.Titulov, $"návrh „{navrh.Nazov}“ ukáže svoje tituly");
+        }
+        else
+        {
+            Chyba("na stene playlistov nie je návrh");
         }
     }
 

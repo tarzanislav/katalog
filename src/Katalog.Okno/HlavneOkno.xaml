@@ -352,7 +352,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                         <ColumnDefinition Width="2*" MinWidth="180" MaxWidth="420" />
                         <ColumnDefinition Width="3*" />
                     </Grid.ColumnDefinitions>
-                    <Grid>
+                    <Grid VerticalAlignment="Top">
                         <TextBox x:Name="FilterKniznice" Padding="8,5" VerticalContentAlignment="Center" TextChanged="FilterKniznice_TextChanged"
                                  ToolTipService.ShowDuration="60000">
                             <TextBox.ToolTip>
