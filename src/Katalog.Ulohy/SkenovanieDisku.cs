@@ -28,7 +28,8 @@ public static class SkenovanieDisku
         Kniznica kniznica, long diskId, IUlozisko ulozisko, IProgress<PriebehSkenu>? priebeh, CancellationToken zrusenie)
     {
         var cas = Stopwatch.StartNew();
-        await using var citanie = await kniznica.OtvorCitanieAsync(zrusenie).ConfigureAwait(false);
+        // opened even when cancelled already: the scan then ends as cancelled, with its record
+        await using var citanie = await kniznica.OtvorCitanieAsync(CancellationToken.None).ConfigureAwait(false);
         var koren = KatalogyADisky.Koren(citanie, diskId) ?? throw new InvalidOperationException("Disk nie je v knižnici.");
         var predtym = KatalogyADisky.SuhrnDisku(citanie, diskId);
         var (velkost, volne) = ulozisko.Miesto();
