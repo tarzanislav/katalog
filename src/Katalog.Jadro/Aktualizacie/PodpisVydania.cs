@@ -14,7 +14,7 @@ public static class PodpisVydania
 {
     /// <summary>
     /// Public release key (SubjectPublicKeyInfo, Base64). Empty until the owner creates the key with
-    /// tools/New-ReleaseKey.ps1; while empty, KATALOG never installs an update itself and only opens the release page.
+    /// tools/Nastav-Vydania.ps1; while empty, KATALOG never installs an update itself and only opens the release page.
     /// </summary>
     public const string VerejnyKluc = "";
 

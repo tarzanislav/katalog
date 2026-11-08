@@ -26,8 +26,8 @@ Hotové:
 
 Čaká na vlastníka (pred prvým vydaním 0.1.0):
 
-- Vytvoriť kľúč vydaní (`tools/New-ReleaseKey.ps1`) a prostredie `release` s tajomstvom `KATALOG_RELEASE_KEY`
-  a schvaľovaním (Required reviewers).
+- Nastaviť vydania jedným skriptom `tools/Nastav-Vydania.ps1` (prostredie `release` so schvaľovaním
+  a tajomstvom `KATALOG_RELEASE_KEY`) a poslať verejný kľúč.
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
 
