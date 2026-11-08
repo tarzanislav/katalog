@@ -8,7 +8,10 @@ Hotové:
 
 - Riešenie `Katalog.slnx` s 10 projektmi; závislosti idú len smerom k jadru.
 - **Schéma knižnice v1** so všetkými tabuľkami dátového modelu (katalógy až zdravie diskov), väzbami, CHECK
-  obmedzeniami, spúšťačmi a fulltextovým indexom. Overená aj na milióne vymyslených súborov (hľadanie ~2 ms).
+  obmedzeniami, spúšťačmi a fulltextovým indexom.
+- **Výkon** (GitHub Actions, vymyslená knižnica s 1 miliónom súborov): hľadanie najviac 2,3 ms, knižnica 241 MB,
+  zápis prvých 100 000 súborov 12 s. Zápis sa s rastúcou knižnicou spomaľuje (ďalších 900 000 za 346 s) –
+  zrýchlenie hromadného zápisu je úloha etapy E1.
 - Otvorenie knižnice: migrácie len dopredu, **číslovaná záloha** pred migráciou (posledných 10), rýchla kontrola
   integrity, odmietnutie cudzieho súboru a knižnice novšieho programu.
 - **Jeden zapisovateľ** s dávkami a bodmi návratu: chybný zápis sa vráti sám, ostatné v dávke ostanú.
