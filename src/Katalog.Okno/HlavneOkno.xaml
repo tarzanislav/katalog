@@ -37,9 +37,9 @@ pripojene:ano        zmazane:aj | len
 Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                     </TextBox.ToolTip>
                 </TextBox>
-                <TextBlock x:Name="NapovedaHladania" Text="Hľadať súbory a priečinky, napr. šťastný film typ:video"
-                           Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                           Style="{StaticResource TichyText}" />
+                <TextBlock x:Name="NapovedaHladania" Text="Hľadať, napr. šťastný film typ:video"
+                           Margin="14,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.7"
+                           TextTrimming="CharacterEllipsis" />
             </Grid>
             <Button Grid.Column="1" x:Name="TlacidloFiltre" Content="Filtre" Margin="8,0,0,0" Padding="14,6" Click="Filtre_Click"
                     ToolTip="Typ, veľkosť, dátum, disk, katalóg – zapíšu sa do poľa hľadania" />
@@ -323,7 +323,7 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                     <Button x:Name="TlacidloPremenovatUlozene" Content="Premenovať…" Padding="14,5" Margin="8,0,0,0" Click="PremenovatUlozene_Click" />
                     <Button x:Name="TlacidloZmazatUlozene" Content="Zmazať" Padding="14,5" Margin="8,0,0,0" Click="ZmazatUlozene_Click" />
                 </WrapPanel>
-                <ListBox Grid.Row="3" x:Name="ZoznamUlozenych" MouseDoubleClick="SpustitUlozene_Click" SelectionChanged="ZoznamUlozenych_SelectionChanged">
+                <ListBox Grid.Row="3" x:Name="ZoznamUlozenych" Background="Transparent" BorderThickness="0" MouseDoubleClick="SpustitUlozene_Click" SelectionChanged="ZoznamUlozenych_SelectionChanged">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="2,4">

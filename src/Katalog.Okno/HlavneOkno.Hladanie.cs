@@ -251,13 +251,14 @@ public partial class HlavneOkno
 
     private void ZoznamVysledkov_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        const double nazov = 180, disk = 70, velkost = 90, okraj = 36;
-        var sirka = ZoznamVysledkov.ActualWidth - okraj;
-        var cesta = sirka >= nazov + disk + 260 + velkost ? 260 : sirka >= nazov + disk + 140 + velkost ? 140 : 0;
+        // the name gets the larger part of what the disk and size leave; the folder only when there is room for both
+        const double disk = 70, velkost = 90, okraj = 36;
+        var zvysok = Math.Max(160, ZoznamVysledkov.ActualWidth - okraj - disk - velkost);
+        var cesta = zvysok >= 340 ? Math.Floor(zvysok * 0.4) : 0;
         VysledokDisk.Width = disk;
         VysledokVelkost.Width = velkost;
         VysledokCesta.Width = cesta;
-        VysledokNazov.Width = Math.Max(nazov, sirka - disk - cesta - velkost);
+        VysledokNazov.Width = zvysok - cesta;
     }
 
     // ------------------------------------------------------------------ filters

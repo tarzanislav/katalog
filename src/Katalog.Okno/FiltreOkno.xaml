@@ -10,7 +10,7 @@
                    Text="Filtre sa zapíšu do poľa hľadania (napr. typ:video velkost:>4GB), takže ich vidíš, môžeš ich ručne upraviť aj uložiť ako hľadanie." />
         <Grid Margin="0,14,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="Auto" MinWidth="130" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />

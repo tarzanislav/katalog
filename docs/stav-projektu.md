@@ -52,9 +52,29 @@ Presunuté:
 - Trvalý zoznam úloh, ktorý po reštarte programu pokračuje v nedokončenom skene → E3 (fronta úloh pre technické
   údaje videa).
 
+## Etapa E2 – hľadanie a prehrávanie (8. 11. 2026, vetva vyvoj/etapa2)
+
+Hotové:
+
+- **Jeden dotazovací jazyk** (rozhodnutie A4) v jadre: slová, frázy, záporné slová a polia `pripona`, `typ`,
+  `velkost`, `zmenene`, `pridane`, `disk`, `katalog`, `pripojene`, `zmazane`. Čo nerozumie, ohlási a vynechá.
+  Návod je v [hladanie.md](hladanie.md).
+- **Hľadanie počas písania** v názvoch súborov a priečinkov všetkých diskov, aj nepripojených; slová idú cez
+  fulltextový index, polia ako podmienky s parametrami (nič z textu sa nestane príkazom SQL).
+- **Filtre** nie sú druhý spôsob hľadania: zapisujú polia do textu v poli hľadania.
+- **Uložené hľadania** v Zbierkach (spustiť, premenovať, zmazať).
+- **Prehrávanie**: predvolený prehrávač Windows alebo VLC, MPC-HC, MPC-BE, PotPlayer, mpv či iný program
+  (Nastavenia); viac súborov ako playlist, celý priečinok (napr. sezóna), priečinky Blu-ray a DVD. Keď disk nie je
+  pripojený, okno povie, ktorý pripojiť, a prehrávanie spustí samo po jeho pripojení.
+- **Výkon** pri 1 milióne súborov (GitHub Actions): samotné slová do 2,4 ms, slová s poľami do 99 ms, len polia
+  do 77 ms.
+- Okno Nastavenia (prehrávač, motív, aktualizácie); poznámky k vydaniu 0.1.0 pripravené.
+- Samotest: hľadanie z okna, prehratie súboru aj sezóny (bez spustenia prehrávača), filtre, uložené hľadania, snímky.
+
 Otvorené:
 
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
 
-Ďalšia etapa: **E2 – hľadanie a prehrávanie** (po nej prvá verzia 0.1.0).
+Ďalej: **vydanie 0.1.0** (len so súhlasom vlastníka), potom **E3 – technické údaje videa** (ffprobe: rozlíšenie,
+kodeky, zvuk a titulky s jazykmi, HDR, náhľady) s trvalou frontou úloh.

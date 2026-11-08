@@ -29,7 +29,8 @@ Jadro programu nezávisí od okien, databázy ani internetu; ostatné časti sa 
 | `Katalog.Zdravie` | Malý pomocný program na čítanie zdravia diskov s právami správcu |
 | `tests/Katalog.Testy` | Vlastný bežec testov, bez cudzieho testovacieho rámca |
 
-Podrobný návrh je v [docs/architektura.md](docs/architektura.md), stav práce v [docs/stav-projektu.md](docs/stav-projektu.md).
+Podrobný návrh je v [docs/architektura.md](docs/architektura.md), stav práce v [docs/stav-projektu.md](docs/stav-projektu.md),
+návod na hľadanie v [docs/hladanie.md](docs/hladanie.md).
 
 ## Zostavenie
 
