@@ -3,7 +3,7 @@ using Katalog.Jadro.Model;
 namespace Katalog.Jadro.Rozhrania;
 
 /// <summary>What a title search knows: the name as searched, an optional year and kind.</summary>
-public sealed record Hladanie(string Nazov, int? Rok = null, DruhTitulu? Druh = null);
+public sealed record HladanieTitulu(string Nazov, int? Rok = null, DruhTitulu? Druh = null);
 
 /// <summary>One candidate a source offers for a searched title (shown side by side for confirmation).</summary>
 /// <param name="Identifikator">The source's own identifier ("movie/603" for TMDB).</param>
@@ -47,7 +47,7 @@ public interface IZdrojUdajov
     /// <summary>True when the source is switched on and has what it needs (a key, an address).</summary>
     bool JeZapnuty { get; }
 
-    Task<IReadOnlyList<Kandidat>> HladajAsync(Hladanie hladanie, CancellationToken zrusenie);
+    Task<IReadOnlyList<Kandidat>> HladajAsync(HladanieTitulu hladanie, CancellationToken zrusenie);
 
     Task<UdajeTitulu?> NacitajAsync(string identifikator, CancellationToken zrusenie);
 
