@@ -64,6 +64,16 @@ public sealed class JadroTesty
     }
 
     [Test]
+    public void VerejnyKlucVydaniJeKlucP256()
+    {
+        Over.Pravda(PodpisVydania.JeNastaveny, "kľúč vydaní je nastavený");
+        using var kluc = ECDsa.Create();
+        kluc.ImportSubjectPublicKeyInfo(Convert.FromBase64String(PodpisVydania.VerejnyKluc), out var precitane);
+        Over.Rovne(91, precitane, "dĺžka kľúča");
+        Over.Rovne(256, kluc.KeySize, "veľkosť kľúča");
+    }
+
+    [Test]
     public void ZoznamSuctovIgnorujeKomentareAChybneRiadky()
     {
         var sucet = new string('b', 64);
@@ -94,7 +104,8 @@ public sealed class JadroTesty
         Over.Pravda(vydanie.Instalator is not null && vydanie.ZoznamSuctov is not null && vydanie.Podpis is not null, "všetky súbory vydania");
         Over.Pravda(vydanie.JeNovsieAko(new Version(0, 0, 0)), "novšie ako vývojová verzia");
         Over.Pravda(!vydanie.JeNovsieAko(new Version(0, 1, 0)), "nie novšie ako to isté");
-        Over.Pravda(!vydanie.DaSaNainstalovat, "bez verejného kľúča sa samo neinštaluje");
+        Over.Pravda(vydanie.DaSaNainstalovat, "podpísané vydanie so všetkými súbormi sa dá nainštalovať");
+        Over.Pravda(!(vydanie with { Podpis = null }).DaSaNainstalovat, "bez podpisu sa samo neinštaluje");
 
         Over.Rovne<Vydanie?>(null, Vydanie.Citaj(json.Replace("\"prerelease\": false", "\"prerelease\": true", StringComparison.Ordinal)), "predbežné vydanie");
         Over.Rovne<Vydanie?>(null, Vydanie.Citaj(json.Replace("v0.1.0\"", "v0.1\"", StringComparison.Ordinal)), "verzia nie je 1.2.3");

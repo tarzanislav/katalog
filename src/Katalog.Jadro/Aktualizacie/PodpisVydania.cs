@@ -13,10 +13,11 @@ namespace Katalog.Jadro.Aktualizacie;
 public static class PodpisVydania
 {
     /// <summary>
-    /// Public release key (SubjectPublicKeyInfo, Base64). Empty until the owner creates the key with
-    /// tools/Nastav-Vydania.ps1; while empty, KATALOG never installs an update itself and only opens the release page.
+    /// Public release key (SubjectPublicKeyInfo, Base64; ECDSA P-256), created by the owner on 8 November 2026 with
+    /// tools/Nastav-Vydania.ps1 on his own computer. The private key exists only as the secret KATALOG_RELEASE_KEY of the
+    /// GitHub environment "release". An empty value would switch self-installation off (only the release page opens).
     /// </summary>
-    public const string VerejnyKluc = "";
+    public const string VerejnyKluc = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEQUQrLWlfM5+34+hrp4cIi/1xOC+Ldof6VAFQBPorvFJqA3/0oZRu7OXotG9JcoME0kQm5ENlY3LNwQfa/pyDtA==";
 
     public static bool JeNastaveny => VerejnyKluc.Length > 0;
 

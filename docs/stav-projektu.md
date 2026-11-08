@@ -18,16 +18,15 @@ Hotové:
 - Jadro: kódy dátového modelu, triedy kvality (zhodné s UNIVERSUM), rozhrania zdrojov údajov a úložísk,
   rozpoznanie disku podľa zväzku (body zhody), poradie zdrojov a zámky polí.
 - **Aktualizácie**: kontrola vydaní raz denne, overenie podpisu vydania (ECDSA P-256) a súčtu inštalátora.
-  Verejný kľúč vydaní zatiaľ nie je nastavený, preto program sám nič neinštaluje, len otvorí stránku vydania.
+  Kľúč vydaní vytvoril vlastník 8. 11. 2026 na svojom počítači (`tools/Nastav-Vydania.ps1`); verejná časť je v programe,
+  súkromná len ako tajomstvo `KATALOG_RELEASE_KEY` prostredia `release` so schvaľovaním.
 - Hlavné okno s tromi stĺpcami, svetlý a tmavý motív, okno O programe, ikona.
 - Samotest (`Katalog.exe --samotest`) so snímkami okna; GitHub Actions: testy na Linuxe, výkonový test,
   zostavenie, samotest a inštalátor na Windows, vydanie s podpisom.
 - Vlastný bežec testov (bez cudzieho rámca); testy používajú len vymyslené názvy.
 
-Čaká na vlastníka (pred prvým vydaním 0.1.0):
+Otvorené:
 
-- Nastaviť vydania jedným skriptom `tools/Nastav-Vydania.ps1` (prostredie `release` so schvaľovaním
-  a tajomstvom `KATALOG_RELEASE_KEY`) a poslať verejný kľúč.
 - Definitívny názov programu (pracovný názov KATALOG je v kóde na jednom mieste: `Katalog.Jadro/Produkt.cs`
   a `Directory.Build.props`).
 
