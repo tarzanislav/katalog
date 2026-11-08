@@ -253,4 +253,12 @@ Pod každým návrhom z TMDB je **odkaz na jeho stránku** na overenie v prehlia
 označiť a skopírovať. **Iný plagát** sa dá vybrať už pri potvrdzovaní návrhu (plagáty titulu z TMDB – slovenské, české,
 anglické, bez textu) aj neskôr tlačidlom „Plagát…“ v detaile; vybraný plagát je zamknutý, zdroje ho neprepíšu.
 
+**Karta titulu** (vlastník 8. 11. 2026, podľa UNIVERSUM – Listy z HISTRA): detail stojí **vľavo od plagátov** a zaberá
+tretinu priestoru vedľa menu (v Nastaveniach → Vzhľad sa dá dať vpravo); stena má menšie plagáty. Karta: plagát, odkazy
+HISTRA / TMDB / IMDb / Trakt / ČSFD (hľadať), identifikátory v dvoch stĺpcoch, názov a originál s rokom, film/seriál
+s minutážou „2 h 16 min (136 min)“, hodnotenie, žáner, réžia, scenár, herci, dej; potom **každá verzia** s diskom
+a **údajmi súboru** (obraz – kodek, rozlíšenie, HDR, snímky/s; dĺžka a dátový tok; zvuk a titulky s jazykmi), najviac
+6 verzií. Dole **kolekcia** so všetkými titulmi (malé plagáty, klik otvorí titul). Bloky sú farebne odlíšené
+(menu modrasté, detail teplý, kolekcia broskyňová s oranžovým okrajom) – priesvitné, sedia na svetlý aj tmavý motív.
+
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.
