@@ -1,0 +1,176 @@
+02:33:33.778 Samotest KATALOG 0.0.102
+02:33:33.876 OK knižnica má schému v8
+02:33:33.876 OK kontrola integrity
+02:33:33.953 OK FFmpeg nainštalovaný s KATALOGOM, overený manifestom (Pribaleny)
+02:33:34.036 OK vymyslené video urobil FFmpeg KATALOGU
+02:33:34.042 OK identita zväzku (Interny, sériové číslo je)
+02:33:34.092 OK prvý sken: Hotova, PocetZmien { Pridane = 4, Zmenene = 0, Zmazane = 0 }, 7 priečinkov
+02:33:34.098 OK hľadanie bez diakritiky nájde súbor aj titul
+02:33:34.103 OK sken bez zmien nič nezapísal (PocetZmien { Pridane = 0, Zmenene = 0, Zmazane = 0 })
+02:33:34.107 OK zmazaný súbor sa označil (PocetZmien { Pridane = 0, Zmenene = 0, Zmazane = 1 })
+02:33:34.120 OK číslovaná záloha
+02:33:34.905 OK okno otvorilo knižnicu
+02:33:34.905 OK názov okna
+02:33:34.906 OK vymyslený disk je rozpoznaný ako pripojený podľa zväzku
+02:33:35.083 vykreslené pre hlavne-okno-svetle.png
+02:33:35.486 kreslím hlavne-okno-svetle.png
+02:33:35.532 snímka hlavne-okno-svetle.png
+02:33:35.638 vykreslené pre hlavne-okno-tmave.png
+02:33:36.039 kreslím hlavne-okno-tmave.png
+02:33:36.088 snímka hlavne-okno-tmave.png
+02:33:36.118 OK sken z okna: Hotova
+02:33:36.119 OK okno používa FFmpeg nainštalovaný s KATALOGOM (Pribaleny)
+02:33:36.333 OK technické údaje z okna: VysledokCitania { Stav = Hotova, Precitane = 2, Necitatelne = 1, Sprava =  }
+02:33:36.368 OK hľadanie podľa technických údajov a náhľad filmu
+02:33:36.368 OK vlastná čítačka MKV: podrobnosti Všeobecné, Video, Zvuk (Všeobecné, Video, Zvuk)
+02:33:36.373 OK podrobnosti ako text na kopírovanie
+02:33:36.669 vykreslené pre podrobnosti-suboru-svetle.png
+02:33:37.075 kreslím podrobnosti-suboru-svetle.png
+02:33:37.095 snímka podrobnosti-suboru-svetle.png
+02:33:37.385 vykreslené pre podrobnosti-suboru-tmave.png
+02:33:37.786 kreslím podrobnosti-suboru-tmave.png
+02:33:37.817 snímka podrobnosti-suboru-tmave.png
+02:33:37.828 OK poškodený súbor sa dá nájsť
+02:33:37.829 OK fronta úloh je po skene a čítaní prázdna
+02:33:39.509 vykreslené pre pridat-disk-svetle.png
+02:33:39.909 kreslím pridat-disk-svetle.png
+02:33:39.929 snímka pridat-disk-svetle.png
+02:33:40.052 OK hľadanie z okna bez diakritiky: priečinok a súbor (2)
+02:33:40.053 OK výsledky sú v strede okna
+02:33:40.298 vykreslené pre hladanie-svetle.png
+02:33:40.699 kreslím hladanie-svetle.png
+02:33:40.745 snímka hladanie-svetle.png
+02:33:40.758 OK prehratie súboru predvoleným prehrávačom (cesta na pripojenom disku)
+02:33:40.785 OK prehratie priečinka sezóny (zmazaná epizóda sa nehrá)
+02:33:40.799 OK filtre v dotaze: typ, pripojené, veľkosť, záporné slovo
+02:33:40.812 OK neznáme pole sa ohlási
+02:33:40.881 vykreslené pre filtre-svetle.png
+02:33:41.281 kreslím filtre-svetle.png
+02:33:41.299 snímka filtre-svetle.png
+02:33:41.309 OK prázdne pole hľadania zavrie výsledky
+02:33:41.358 OK uložené hľadania v okne
+02:33:41.429 vykreslené pre ulozene-hladania-tmave.png
+02:33:41.831 kreslím ulozene-hladania-tmave.png
+02:33:41.869 snímka ulozene-hladania-tmave.png
+02:33:41.963 vykreslené pre nastavenia-tmave.png
+02:33:42.365 kreslím nastavenia-tmave.png
+02:33:42.395 snímka nastavenia-tmave.png
+02:33:42.633 OK film s plagátom zo zdroja, potvrdený sám (názov a rok sedia)
+02:33:42.634 OK film bez roka čaká na potvrdenie
+02:33:42.716 OK detail filmu: dej, verzia, kolekcia
+02:33:42.717 OK karta titulu: odkazy TMDB a ČSFD
+02:33:42.717 OK karta titulu: verzia s údajmi súboru, kolekcia s oboma dielmi (zobrazený označený)
+02:33:42.717 OK minutáž
+02:33:42.802 vykreslené pre kniznica-plagaty-svetle.png
+02:33:43.204 kreslím kniznica-plagaty-svetle.png
+02:33:43.245 snímka kniznica-plagaty-svetle.png
+02:33:43.261 vykreslené pre kniznica-detail-vpravo-svetle.png
+02:33:43.662 kreslím kniznica-detail-vpravo-svetle.png
+02:33:43.697 snímka kniznica-detail-vpravo-svetle.png
+02:33:43.698 OK detail je otvorený, kým je vybraný titul
+02:33:43.700 OK bez vybraného titulu detail zmizne, plagáty na celú šírku
+02:33:43.709 vykreslené pre kniznica-bez-detailu-svetle.png
+02:33:44.111 kreslím kniznica-bez-detailu-svetle.png
+02:33:44.154 snímka kniznica-bez-detailu-svetle.png
+02:33:44.176 vykreslené pre kniznica-zoznam-svetle.png
+02:33:44.587 kreslím kniznica-zoznam-svetle.png
+02:33:44.615 snímka kniznica-zoznam-svetle.png
+02:33:44.688 OK seriál: 3 epizódy zo zdroja, mám 1 (druhá zmazaná)
+02:33:44.751 vykreslené pre kniznica-serial-tmave.png
+02:33:45.153 kreslím kniznica-serial-tmave.png
+02:33:45.201 snímka kniznica-serial-tmave.png
+02:33:45.217 OK prehratie seriálu z knižnice
+02:33:45.296 OK na potvrdenie: dva návrhy vedľa seba
+02:33:45.296 OK pole na hľadanie inak je vyplnené názvom: Vymyslený strážca
+02:33:45.297 OK návrhy TMDB majú odkaz na themoviedb.org
+02:33:45.354 vykreslené pre na-potvrdenie-svetle.png
+02:33:45.755 kreslím na-potvrdenie-svetle.png
+02:33:45.795 snímka na-potvrdenie-svetle.png
+02:33:45.812 OK po výbere nič nečaká na potvrdenie
+02:33:45.812 OK plagát vybraný pri potvrdení je zamknutý
+02:33:45.816 OK kolekcia: dva diely, mám jeden
+02:33:45.824 vykreslené pre kolekcie-svetle.png
+02:33:46.226 kreslím kolekcie-svetle.png
+02:33:46.267 snímka kolekcie-svetle.png
+02:33:46.268 OK hľadanie súborov podľa knižnice (kniznica:serial)
+02:33:46.269 OK chýbajúci diel kolekcie (mam:nie)
+02:33:46.394 vykreslené pre nastavenia-zdroje-tmave.png
+02:33:46.797 kreslím nastavenia-zdroje-tmave.png
+02:33:46.819 snímka nastavenia-zdroje-tmave.png
+02:33:46.900 OK iná verzia filmu (iná veľkosť, bez údajov) nie je duplicita
+02:33:47.028 OK duplicity: presná kópia filmu
+02:33:47.038 OK detail: tri verzie, dve z nich duplicita
+02:33:47.039 OK karta: duplicitné verzie označené: Duplicita | Verzia čaká na potvrdenie | Duplicita (čaká na potvrdenie)
+02:33:47.139 vykreslené pre duplicity-svetle.png
+02:33:47.546 kreslím duplicity-svetle.png
+02:33:47.598 snímka duplicity-svetle.png
+02:33:47.603 OK s jedným diskom nie je zálohovaný nič
+02:33:47.700 OK zdravie disku priradené podľa sériového čísla
+02:33:47.700 OK prehľad: tituly, len tu, zdravie
+02:33:47.708 prehľad diskov zobrazený
+02:33:47.715 vykreslené pre prehlad-diskov-svetle.png
+02:33:48.115 kreslím prehlad-diskov-svetle.png
+02:33:48.160 snímka prehlad-diskov-svetle.png
+02:33:48.224 OK štatistiky: 2 filmy, 1 seriál (1 epizóda) – spolu 0 hodín sledovania.
+02:33:48.260 vykreslené pre statistiky-tmave.png
+02:33:48.661 kreslím statistiky-tmave.png
+02:33:48.702 snímka statistiky-tmave.png
+02:33:48.712 OK štítok disku: číslo a QR kód
+02:33:48.845 OK náhľad: jedna strana, dva QR kódy
+02:33:48.902 vykreslené pre stitky-svetle.png
+02:33:49.313 kreslím stitky-svetle.png
+02:33:49.374 snímka stitky-svetle.png
+02:33:49.502 OK PDF štítkov (35 kB)
+02:33:49.588 OK tabuľka výsledkov hľadania (5 riadkov)
+02:33:49.603 OK export výsledkov .xlsx (3314 B)
+02:33:49.605 OK export výsledkov .csv (605 B)
+02:33:49.609 OK export výsledkov .html (3248 B)
+02:33:49.712 OK export výsledkov .pdf (81208 B)
+02:33:49.768 OK tabuľka titulov s diskami
+02:33:49.772 OK štítky titulov: disky ako nadpis
+02:33:49.781 OK tabuľka prehľadu diskov
+02:33:49.876 OK pozicane: súbory požičaného disku
+02:33:49.878 OK stitok: titul so štítkom
+02:33:49.883 OK zoznam požičaných
+02:33:49.897 vykreslené pre pozicane-svetle.png
+02:33:50.297 kreslím pozicane-svetle.png
+02:33:50.339 snímka pozicane-svetle.png
+02:33:50.393 OK štítky ako dlaždice
+02:33:50.409 OK detail titulu ukazuje štítky
+02:33:50.453 vykreslené pre stitky-titulu-tmave.png
+02:33:50.854 kreslím stitky-titulu-tmave.png
+02:33:50.903 snímka stitky-titulu-tmave.png
+02:33:50.952 OK export katalógu do súboru
+02:33:51.035 OK import toho istého katalógu: disk už v knižnici je
+02:33:51.049 OK náhodný playlist vylosoval jeden titul
+02:33:51.139 OK tri playlisty na stene
+02:33:51.140 OK návrhy playlistov: Nevidené filmy, To najlepšie, čo si nevidel
+02:33:51.163 vykreslené pre playlisty-svetle.png
+02:33:51.565 kreslím playlisty-svetle.png
+02:33:51.610 snímka playlisty-svetle.png
+02:33:51.617 OK ručný playlist v poradí pridania
+02:33:51.642 OK prehratie playlistu: epizóda seriálu, potom film
+02:33:51.645 OK M3U s cestami na pripojenom disku
+02:33:51.814 OK náhodný výber: dva rôzne tituly za sebou
+02:33:51.834 vykreslené pre playlist-tmave.png
+02:33:52.245 kreslím playlist-tmave.png
+02:33:52.299 snímka playlist-tmave.png
+02:33:52.389 OK návrh „Nevidené filmy“ ukáže svoje tituly
+02:33:52.394 WinSCP na tomto počítači: nenájdený (samotest používa vymyslený server)
+02:33:52.420 OK sken servera cez WinSCP: Hotova 
+02:33:52.446 OK súbory servera sa dajú nájsť
+02:33:52.447 OK film zo servera je v knižnici
+02:33:52.447 OK disk servera v knižnici
+02:33:52.448 OK server nie je „pripojený“ ako disk
+02:33:52.520 vykreslené pre server-svetle.png
+02:33:52.922 kreslím server-svetle.png
+02:33:52.962 snímka server-svetle.png
+02:33:53.013 OK webový katalóg: VysledokWebu { Titulov = 5, Plagatov = 3, Balikov = 1, Bajtov = 52971 }
+02:33:53.014 OK údaje webu len zašifrované
+02:33:53.014 OK web: tituly a disky po odšifrovaní
+02:33:53.015 OK web: stránka a plagáty
+02:33:53.097 vykreslené pre o-programe-tmave.png
+02:33:53.498 kreslím o-programe-tmave.png
+02:33:53.509 snímka o-programe-tmave.png
+02:33:53.553 OK okno pri zatvorení zavrelo knižnicu
+02:33:53.555 Samotest OK
