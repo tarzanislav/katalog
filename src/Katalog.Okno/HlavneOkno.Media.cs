@@ -98,16 +98,11 @@ public partial class HlavneOkno
             return null;
         }
 
-        if (_ffmpeg is not { } nastroje)
+        // without FFmpeg the own reader still reads MKV, MP4, AVI, TS, M2TS, VOB and MPG; only previews and other formats wait
+        var nastroje = _ffmpeg;
+        if (nastroje is null && pouzivatel)
         {
-            if (pouzivatel)
-            {
-                MessageBox.Show(this,
-                    "FFmpeg sa nenašiel – ani z UNIVERSUM, ani nainštalovaný s KATALOGOM. Vyber jeho priečinok v Nastaveniach " +
-                    "alebo KATALOG nainštaluj znova.", Produkt.Nazov, MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-
-            return null;
+            StavUloh.Text = "FFmpeg sa nenašiel – čítam vlastnou čítačkou (MKV, MP4, AVI, TS, M2TS, VOB, MPG), bez náhľadov a iných formátov.";
         }
 
         int zostava;
@@ -209,8 +204,8 @@ public partial class HlavneOkno
 
         if (udaje is null)
         {
-            riadky.Add(new RiadokDetailu("Technické údaje", _ffmpeg is null
-                ? "Ešte neprečítané – FFmpeg sa nenašiel (Nastavenia)."
+            riadky.Add(new RiadokDetailu("Technické údaje", _ffmpeg is null && !Katalog.Media.CitanieKontajnera.Pripony.Contains(polozka.Pripona)
+                ? "Ešte neprečítané – tento formát číta len FFmpeg, ktorý sa nenašiel (Nastavenia)."
                 : "Ešte neprečítané – prečítajú sa na pozadí, keď bude disk pripojený."));
             return;
         }

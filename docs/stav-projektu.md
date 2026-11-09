@@ -292,4 +292,18 @@ z rámca. Nové kodeky: **H.266/VVC, ProRes (profily), Theora, FFV1, AC-4, MPEG-
 PCM (bitová hĺbka, endian, float), WavPack, DVB a ARIB titulky**, v MP4 aj VP9 s farbami (vpcC), DTS Express a DTS:X
 profil 2. Bitová hĺbka zvuku sa ukazuje len pri bezstratových formátoch. Vyhľadávanie `kodek:` pozná aj h266 a prores.
 
+**Jedna čítačka pre všetky formáty** (vlastník 9. 11. 2026): formát sa pozná podľa obsahu (nie prípony) a číta ho jeden
+kód bez spúšťania programov – **MKV/WebM, MP4/MOV, AVI** (RIFF aj OpenDML; hlavičky avih/strl, prvý kus každej stopy,
+veľkosti z idx1, Xvid/DivX z VOL a user data), **TS/M2TS/MTS** (188, 192 a 204-bajtové pakety; PAT/PMT, jazyky
+a typy z deskriptorov, pri Blu-ray jazyky z **CLIPINF/*.clpi**, Dolby Vision z deskriptora DOVI; z troch okien súboru –
+začiatok 4 MB, stred a koniec po 1 MB – dĺžka z PTS/PCR a podiel stôp) a **VOB/MPG** (MPEG-1 aj MPEG-2 program
+stream, súkromný prúd DVD s AC-3, DTS, LPCM a titulkami). Elementárne prúdy: SPS H.264 (aj Constrained Baseline,
+orezanie, prekladanie, VUI s pomerom pixelov, farbami a snímkami) a HEVC (rozmery, VUI), sekvenčná hlavička MPEG-2
+(profil@úroveň, max. tok), VC-1, AAC ADTS, MPEG audio, Blu-ray a DVD LPCM, jadro DTS (kanály, tok, DTS-ES)
+a hlavička rozširujúceho prúdu DTS-HD (**skutočný počet kanálov, 24 bitov, vzorkovanie** Master Audio), TrueHD
+(kanály 8-kanálovej prezentácie, vzorkovanie), presný tok E-AC-3 z veľkosti rámca. Odhadnuté veľkosti a toky
+(TS, PS) sú označené „~“. ffprobe ostáva len pre formáty, ktoré čítačka nepozná (WMV, FLV, RealMedia …); **bez
+FFmpeg sa ostatné formáty prečítajú tiež** (len bez náhľadov). Na skúšobných súboroch z ffmpeg: TS, M2TS, AVI, VOB
+a MPG po zahriatí 0,2 – 20 ms na súbor.
+
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.

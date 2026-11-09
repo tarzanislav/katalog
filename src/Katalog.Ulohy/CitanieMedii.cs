@@ -32,7 +32,7 @@ public static class CitanieMedii
     /// <param name="korenDisku">Where the disk's root is now (its path when connected).</param>
     /// <param name="obrazky">Where previews go; null = no previews.</param>
     public static async Task<VysledokCitania> SpustiAsync(
-        Kniznica kniznica, long diskId, string korenDisku, Ffmpeg ffmpeg, UlozisteObrazkov? obrazky,
+        Kniznica kniznica, long diskId, string korenDisku, Ffmpeg? ffmpeg, UlozisteObrazkov? obrazky,
         IProgress<PriebehCitania>? priebeh, CancellationToken zrusenie)
     {
         int spolu, hotove;
@@ -116,15 +116,22 @@ public static class CitanieMedii
                         continue;
                     }
 
-                    // KATALOG's own reader first (MKV, MP4: only the head of the file), ffprobe for the rest
-                    var vlastnaCitacka = TechnickeUdaje.VlastnaCitacka.Contains(Path.GetExtension(cesta).TrimStart('.'));
-                    var vlastny = vlastnaCitacka ? CitanieKontajnera.Citaj(cesta) : null;
+                    // KATALOG's own reader first (by the content: MKV, MP4, AVI, TS, M2TS, VOB, MPG – the head and a few windows of
+                    // the file), ffprobe only for formats it does not know
+                    var vlastny = CitanieKontajnera.Citaj(cesta);
+                    if (vlastny is null && ffmpeg is null)
+                    {
+                        priebeh?.Report(new PriebehCitania(hotove, spolu));
+                        continue; // waits for FFmpeg
+                    }
+
                     var (udaje, stopy) = vlastny is not null
                         ? new VysledokFfprobe(vlastny.Udaje, vlastny.Stopy)
-                        : await ffmpeg.CitajAsync(cesta, zrusenie).ConfigureAwait(false);
-                    IReadOnlyList<SekciaMedia>? podrobnosti = vlastny?.Podrobnosti ?? (vlastnaCitacka ? [] : null);
+                        : await ffmpeg!.CitajAsync(cesta, zrusenie).ConfigureAwait(false);
+                    IReadOnlyList<SekciaMedia>? podrobnosti = vlastny?.Podrobnosti ??
+                        (TechnickeUdaje.VlastnaCitacka.Contains(Path.GetExtension(cesta).TrimStart('.')) ? [] : null);
                     var vsetkyStopy = stopy.Concat(ExterneTitulky(video, subory)).ToList();
-                    var nahlad = obrazky is not null && udaje is { Chyby: null, VideoKodek: not null, DlzkaMs: > 0 }
+                    var nahlad = ffmpeg is not null && obrazky is not null && udaje is { Chyby: null, VideoKodek: not null, DlzkaMs: > 0 }
                         ? await NahladAsync(ffmpeg, obrazky, cesta, udaje.DlzkaMs.Value, zrusenie).ConfigureAwait(false)
                         : null;
                     var zapisane = await kniznica.Zapis.ZapisAsync(s =>

@@ -32,7 +32,7 @@ internal sealed class SpravcaCitania(Kniznica kniznica, UlozisteObrazkov obrazky
     public bool Pozastavene(long diskId) => _pozastavene.Contains(diskId);
 
     /// <summary>Starts reading a disk (unless it already runs); <paramref name="pouzivatel"/> = the user asked for it.</summary>
-    public async Task<VysledokCitania?> SpustiAsync(long diskId, string nazovDisku, string koren, NastrojeFfmpeg nastroje, bool nahlady, bool pouzivatel)
+    public async Task<VysledokCitania?> SpustiAsync(long diskId, string nazovDisku, string koren, NastrojeFfmpeg? nastroje, bool nahlady, bool pouzivatel)
     {
         if (_beziace.ContainsKey(diskId) || (!pouzivatel && _pozastavene.Contains(diskId)))
         {
@@ -61,7 +61,8 @@ internal sealed class SpravcaCitania(Kniznica kniznica, UlozisteObrazkov obrazky
                 }
             });
             var vysledok = await Task.Run(() => CitanieMedii.SpustiAsync(
-                kniznica, diskId, koren, new Ffmpeg(nastroje), nahlady ? obrazky : null, priebeh, zrusenie.Token)).ConfigureAwait(true);
+                kniznica, diskId, koren, nastroje is null ? null : new Ffmpeg(nastroje), nahlady && nastroje is not null ? obrazky : null, priebeh,
+                zrusenie.Token)).ConfigureAwait(true);
 
             var odPouzivatela = _beziace.TryGetValue(diskId, out var bezi) && bezi.Pouzivatel;
             // stopped because the program closes: the job waits (Bezi → Caka when the library opens next time)

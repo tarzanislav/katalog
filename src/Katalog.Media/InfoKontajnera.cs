@@ -107,6 +107,18 @@ public sealed class InfoStopy
 
     public bool Sdh { get; set; }
 
+    /// <summary>The maximum bit rate the stream declares (MPEG-2 video).</summary>
+    public long? MaxTok { get; set; }
+
+    /// <summary>The PID of a transport stream, or the stream id of a program stream.</summary>
+    public int? IdToku { get; set; }
+
+    /// <summary>The size is estimated from parts of the file (TS, PS), not known exactly.</summary>
+    public bool Odhad { get; set; }
+
+    /// <summary>The data rate comes from the estimated size (not from the stream itself).</summary>
+    public bool OdhadToku { get; set; }
+
     /// <summary>The dialogue level of Dolby Digital (dialnorm, dB).</summary>
     public int? Dialogy { get; set; }
 
@@ -165,7 +177,18 @@ public static class PopisKontajnera
         var dlzka = info.DlzkaSekund ?? video?.DlzkaSekund ?? info.Stopy.Max(s => s.DlzkaSekund);
         long? celkovyTok = dlzka is > 0 ? (long)Math.Round(info.Velkost * 8 / dlzka.Value) : null;
         var udaje = new MedialneUdaje(
-            info.Format switch { "Matroska" => "mkv", "WebM" => "webm", "MPEG-4" => "mp4", "QuickTime" => "mov", var f => f.ToLowerInvariant() },
+            info.Format switch
+            {
+                "Matroska" => "mkv",
+                "WebM" => "webm",
+                "MPEG-4" => "mp4",
+                "QuickTime" => "mov",
+                "AVI" => "avi",
+                "BDAV (M2TS)" => "m2ts",
+                "MPEG-TS" => "mpegts",
+                "MPEG-PS" => "mpeg",
+                var f => f.ToLowerInvariant(),
+            },
             dlzka is { } d ? (long)Math.Round(d * 1000) : null,
             celkovyTok,
             video?.Kodek,
@@ -218,7 +241,7 @@ public static class PopisKontajnera
             var meno = druh switch { DruhStopy.Video => "Video", DruhStopy.Zvuk => "Zvuk", _ => "Titulky" };
             var nazov = celkom.GetValueOrDefault(druh) > 1 ? $"{meno} #{pocty[druh]}" : meno;
             var p = new List<PolozkaMedia>();
-            Pridaj(p, "ID", s.Id.ToString(CultureInfo.InvariantCulture));
+            Pridaj(p, "ID", s.IdToku is { } pid ? $"{s.Id} (0x{pid.ToString("X", CultureInfo.InvariantCulture)})" : s.Id.ToString(CultureInfo.InvariantCulture));
             Pridaj(p, "Formát", s.Format);
             Pridaj(p, "Formát/Info", s.FormatInfo);
             Pridaj(p, "Obchodný názov", s.ObchodnyNazov);
@@ -230,7 +253,8 @@ public static class PopisKontajnera
                 Pridaj(p, "Režim dátového toku", s.KonstantnyTok switch { true => "konštantný", false => "premenlivý", _ => null });
             }
 
-            Pridaj(p, "Dátový tok", Tok(s.DatovyTok));
+            Pridaj(p, "Dátový tok", Tok(s.DatovyTok) is { } t ? (s.OdhadToku ? "~" + t : t) : null);
+            Pridaj(p, "Maximálny dátový tok", Tok(s.MaxTok));
             if (druh == DruhStopy.Video)
             {
                 Pridaj(p, "Šírka", s.Sirka is { } w ? w.ToString("N0", Sk) + " pixelov" : null);
@@ -275,7 +299,7 @@ public static class PopisKontajnera
             }
 
             Pridaj(p, "Veľkosť streamu", s.VelkostStreamu is { } v
-                ? Velkost(v) + (info.Velkost > 0 ? $" ({Math.Round(100.0 * v / info.Velkost).ToString(CultureInfo.InvariantCulture)} %)" : "")
+                ? (s.Odhad ? "~" : "") + Velkost(v) + (info.Velkost > 0 ? $" ({Math.Round(100.0 * v / info.Velkost).ToString(CultureInfo.InvariantCulture)} %)" : "")
                 : null);
             Pridaj(p, "Názov", s.Nazov);
             Pridaj(p, "Jazyk", s.Jazyk is { } j ? Jazyky.Nazov(j) : null);

@@ -78,6 +78,7 @@ public static class AnalyzaRamcov
 
             lfe = r.Bit();
             dialnorm = (int)r.Bity(5);
+            s.Vzorkovanie ??= fscod switch { 0 => 48000, 1 => 44100, 2 => 32000, _ => null };
             if (fscod != 3 && frmsizecod / 2 < TokyAc3.Length)
             {
                 s.DatovyTok = TokyAc3[frmsizecod / 2] * 1000L;
@@ -88,22 +89,36 @@ public static class AnalyzaRamcov
         {
             // E-AC-3: strmtyp, substreamid, frmsiz, fscod, numblkscod, acmod, lfeon, bsid, dialnorm, compre …
             var strmtyp = (int)r.Bity(2);
-            r.Preskoc(3 + 11);
+            r.Preskoc(3);
+            var velkostRamca = ((int)r.Bity(11) + 1) * 2;
             var fscod = (int)r.Bity(2);
             var bloky = 6;
+            var frekvencia = fscod switch { 0 => 48000, 1 => 44100, 2 => 32000, _ => 0 };
             if (fscod == 3)
             {
-                r.Preskoc(2);
+                frekvencia = (int)r.Bity(2) switch { 0 => 24000, 1 => 22050, 2 => 16000, _ => 0 };
             }
             else
             {
                 bloky = (int)r.Bity(2) switch { 0 => 1, 1 => 2, 2 => 3, _ => 6 };
             }
 
+            // E-AC-3 of a constant size: the rate of the independent substream from its frame size
+            if (frekvencia > 0 && strmtyp != 1)
+            {
+                s.DatovyTok = (long)Math.Round(velkostRamca * 8.0 * frekvencia / (256.0 * bloky));
+                s.KonstantnyTok = true;
+                s.OdhadToku = false;
+            }
+
             acmod = (int)r.Bity(3);
             lfe = r.Bit();
             r.Preskoc(5);
             dialnorm = (int)r.Bity(5);
+            if (frekvencia > 0)
+            {
+                s.Vzorkovanie ??= frekvencia;
+            }
             if (r.Bit() == 1)
             {
                 r.Preskoc(8);
@@ -301,6 +316,20 @@ public static class AnalyzaRamcov
             return;
         }
 
+        // format info: sampling rate, then the 6- and 8-channel presentations
+        var frekvencia = data[i + 4] >> 4;
+        s.Vzorkovanie ??= frekvencia switch { 0 => 48000, 1 => 96000, 2 => 192000, 8 => 44100, 9 => 88200, 10 => 176400, _ => null };
+        var r = new CitacBitov(data.Slice(i + 5, 3).ToArray());
+        r.Preskoc(2 + 2);
+        var sest = (int)r.Bity(5);
+        r.Preskoc(2);
+        var osem = (int)r.Bity(13);
+        var kanaly = KanalyTrueHd(osem != 0 ? osem : sest, osem != 0 ? 13 : 5);
+        if (kanaly > 0)
+        {
+            s.Kanaly ??= kanaly;
+        }
+
         var substreamov = data[i + 16] >> 4;
         var info = data[i + 17];
         if (substreamov == 4 && (info & 0x80) != 0)
@@ -314,7 +343,159 @@ public static class AnalyzaRamcov
         s.KonstantnyTok = false;
     }
 
+    /// <summary>The channels of a TrueHD channel assignment (pairs and single speakers, LFE included).</summary>
+    private static int KanalyTrueHd(int priradenie, int bitov)
+    {
+        int[] pocty = [2, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1];
+        var sucet = 0;
+        for (var b = 0; b < bitov; b++)
+        {
+            if ((priradenie & (1 << b)) != 0)
+            {
+                sucet += pocty[b];
+            }
+        }
+
+        return sucet;
+    }
+
     // ---------------------------------------------------------------- DTS
+
+    private static readonly int[] KanalyDts = [1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 6, 6, 6, 7, 8, 8];
+
+    private static readonly int[] FrekvencieDts = [0, 8000, 16000, 32000, 0, 0, 11025, 22050, 44100, 0, 0, 12000, 24000, 48000, 0, 0];
+
+    private static readonly int[] TokyDts =
+        [32, 56, 64, 96, 112, 128, 192, 224, 256, 320, 384, 448, 512, 576, 640, 768, 960, 1024, 1152, 1280, 1344, 1408, 1411, 1472, 1536];
+
+    private static readonly int[] FrekvencieExss = [8000, 16000, 32000, 64000, 128000, 22050, 44100, 88200, 176400, 352800, 12000, 24000, 48000, 96000, 192000, 384000];
+
+    /// <summary>The DTS core frame (sync 7FFE8001): channels, LFE, sample rate, bit rate, DTS-ES.</summary>
+    private static void JadroDts(ReadOnlySpan<byte> data, InfoStopy s)
+    {
+        var i = Najdi(data, [0x7F, 0xFE, 0x80, 0x01]);
+        if (i < 0 || data.Length - i < 15)
+        {
+            return;
+        }
+
+        var r = new CitacBitov(data.Slice(i + 4, 11).ToArray());
+        r.Preskoc(1 + 5 + 1 + 7 + 14);
+        var amode = (int)r.Bity(6);
+        var frekvencia = (int)r.Bity(4);
+        var tok = (int)r.Bity(5);
+        r.Preskoc(5);
+        var rozsirenie = (int)r.Bity(3);
+        var maRozsirenie = r.Bit() == 1;
+        r.Preskoc(1);
+        var lfe = (int)r.Bity(2);
+        if (amode < KanalyDts.Length)
+        {
+            s.Kanaly ??= KanalyDts[amode] + (lfe is 1 or 2 ? 1 : 0);
+        }
+
+        if (FrekvencieDts[frekvencia] > 0)
+        {
+            s.Vzorkovanie ??= FrekvencieDts[frekvencia];
+        }
+
+        if (tok < TokyDts.Length && s.Kodek == "dts")
+        {
+            s.DatovyTok ??= TokyDts[tok] * 1000L;
+            s.KonstantnyTok ??= true;
+        }
+
+        if (maRozsirenie && rozsirenie is 0 or 6 && s.Kodek == "dts")
+        {
+            (s.Format, s.ObchodnyNazov) = ("DTS ES", "DTS-ES");
+        }
+    }
+
+    /// <summary>
+    /// The header of the extension substream and its first asset: the full number of channels, bit depth and sample rate
+    /// of DTS-HD (the core says only 5.1 / 48 kHz of a 7.1 / 24-bit Master Audio).
+    /// </summary>
+    private static void HlavickaExss(ReadOnlySpan<byte> exss, InfoStopy s)
+    {
+        var r = new CitacBitov(exss[4..Math.Min(exss.Length, 600)].ToArray());
+        r.Preskoc(8);
+        var index = (int)r.Bity(2);
+        var dlhaHlavicka = r.Bit() == 1;
+        r.Preskoc(dlhaHlavicka ? 12 : 8);
+        r.Preskoc(dlhaHlavicka ? 20 : 16);
+        if (r.Bit() == 0)
+        {
+            return; // without static fields the asset says nothing more
+        }
+
+        r.Preskoc(2 + 3);
+        if (r.Bit() == 1)
+        {
+            r.Preskoc(36);
+        }
+
+        var prezentacii = (int)r.Bity(3) + 1;
+        var aktiv = (int)r.Bity(3) + 1;
+        var masky = new int[prezentacii];
+        for (var p = 0; p < prezentacii; p++)
+        {
+            masky[p] = (int)r.Bity(index + 1);
+        }
+
+        for (var p = 0; p < prezentacii; p++)
+        {
+            for (var ss = 0; ss <= index; ss++)
+            {
+                if ((masky[p] & (1 << ss)) != 0)
+                {
+                    r.Preskoc(8);
+                }
+            }
+        }
+
+        if (r.Bit() == 1)
+        {
+            r.Preskoc(2);
+            var bitovMasky = ((int)r.Bity(2) + 1) << 2;
+            var konfiguracii = (int)r.Bity(2) + 1;
+            r.Preskoc(bitovMasky * konfiguracii);
+        }
+
+        for (var a = 0; a < aktiv; a++)
+        {
+            r.Preskoc(dlhaHlavicka ? 20 : 16);
+        }
+
+        // the first asset descriptor
+        r.Preskoc(9 + 3);
+        if (r.Bit() == 1)
+        {
+            r.Preskoc(4);
+        }
+
+        if (r.Bit() == 1)
+        {
+            r.Preskoc(24);
+        }
+
+        if (r.Bit() == 1)
+        {
+            r.Preskoc(((int)r.Bity(10) + 1) * 8);
+        }
+
+        var bity = (int)r.Bity(5) + 1;
+        var frekvencia = (int)r.Bity(4);
+        var kanaly = (int)r.Bity(8) + 1;
+        if (r.Koniec || kanaly > 32 || bity is < 8 or > 32)
+        {
+            return;
+        }
+
+        s.Kanaly = kanaly;
+        s.RozlozenieKanalov = null;
+        s.BitovaHlbka = bity;
+        s.Vzorkovanie = FrekvencieExss[frekvencia];
+    }
 
     /// <summary>
     /// DTS: the extension substream (0x64582025) with XLL is Master Audio, with XBR High Resolution, with LBR Express;
@@ -327,6 +508,7 @@ public static class AnalyzaRamcov
             s.Format = "DTS 96/24";
         }
 
+        JadroDts(ramec, s);
         var i = Najdi(ramec, [0x64, 0x58, 0x20, 0x25]);
         if (i < 0)
         {
@@ -334,6 +516,11 @@ public static class AnalyzaRamcov
         }
 
         var rozsirenie = ramec[i..];
+        if (rozsirenie.Length > 16)
+        {
+            HlavickaExss(rozsirenie, s);
+        }
+
         if (Najdi(rozsirenie, [0x41, 0xA2, 0x95, 0x47]) >= 0)
         {
             var x = Najdi(rozsirenie, [0x02, 0x00, 0x08, 0x50]) >= 0;
@@ -384,19 +571,28 @@ public static class AnalyzaRamcov
                 return;
             }
 
-            var nal = ramec.Slice(pos, (int)dlzka);
-            var typ = (nal[0] >> 1) & 0x3F;
-            if (typ is 39 or 40 && Hdr10Plus(CitacBitov.BezEmulacie(nal[2..])))
-            {
-                s.Hdr10Plus = true;
-            }
-            else if (typ == 62 && s.Hdr != Hdr.DolbyVision)
-            {
-                s.Hdr = Hdr.DolbyVision;
-                s.HdrPopis ??= "Dolby Vision (RPU v obraze)";
-            }
-
+            NalHevc(ramec.Slice(pos, (int)dlzka), s);
             pos += (int)dlzka;
+        }
+    }
+
+    /// <summary>One NAL unit of HEVC: an SEI with HDR10+, or an RPU of Dolby Vision.</summary>
+    internal static void NalHevc(ReadOnlySpan<byte> nal, InfoStopy s)
+    {
+        if (nal.Length < 3)
+        {
+            return;
+        }
+
+        var typ = (nal[0] >> 1) & 0x3F;
+        if (typ is 39 or 40 && Hdr10Plus(CitacBitov.BezEmulacie(nal[2..])))
+        {
+            s.Hdr10Plus = true;
+        }
+        else if (typ == 62 && s.Hdr != Hdr.DolbyVision)
+        {
+            s.Hdr = Hdr.DolbyVision;
+            s.HdrPopis ??= "Dolby Vision (RPU v obraze)";
         }
     }
 

@@ -151,7 +151,7 @@ internal static class KodekyVidea
         r.Preskoc(4); // sps_video_parameter_set_id
         var maxSub = (int)r.Bity(3);
         r.Preskoc(1);
-        ProfilTierLevel(r, maxSub);
+        ProfilTierLevel(r, maxSub, stopa);
         r.Ue(); // sps_seq_parameter_set_id
         var chroma = r.Ue();
         if (chroma == 3)
@@ -162,16 +162,23 @@ internal static class KodekyVidea
         if (chroma is >= 0 and <= 3)
         {
             stopa.Podvzorkovanie = Chroma((int)chroma);
+            stopa.FarebnyPriestor ??= "YUV";
         }
 
-        r.Ue();
-        r.Ue(); // width, height
+        var sirka = r.Ue();
+        var vyska = r.Ue();
         if (r.Bit() == 1)
         {
-            r.Ue();
-            r.Ue();
-            r.Ue();
-            r.Ue();
+            // conformance window in chroma units
+            var (jx, jy) = chroma switch { 1 => (2, 2), 2 => (2, 1), _ => (1, 1) };
+            sirka -= jx * (r.Ue() + r.Ue());
+            vyska -= jy * (r.Ue() + r.Ue());
+        }
+
+        if (sirka is > 0 and < 65536 && vyska is > 0 and < 65536)
+        {
+            stopa.Sirka ??= (int)sirka;
+            stopa.Vyska ??= (int)vyska;
         }
 
         var hlbka = r.Ue();
@@ -243,11 +250,7 @@ internal static class KodekyVidea
         }
 
         // VUI
-        if (r.Bit() == 1 && r.Bity(8) == 255)
-        {
-            r.Preskoc(32);
-        }
-
+        PomerPixelov(r, stopa);
         if (r.Bit() == 1)
         {
             r.Preskoc(1);
@@ -262,17 +265,211 @@ internal static class KodekyVidea
                 Farby(stopa, (int)r.Bity(8), (int)r.Bity(8), (int)r.Bity(8));
             }
         }
+
+        if (r.Bit() == 1)
+        {
+            r.Ue();
+            r.Ue(); // chroma sample location
+        }
+
+        r.Preskoc(1); // neutral_chroma
+        var polia = r.Bit() == 1; // field_seq: interlaced as fields
+        r.Preskoc(1);
+        if (polia)
+        {
+            stopa.Prekladane ??= true;
+        }
+
+        if (r.Bit() == 1)
+        {
+            r.Ue();
+            r.Ue();
+            r.Ue();
+            r.Ue(); // default display window
+        }
+
+        if (r.Bit() == 1)
+        {
+            var tik = r.Bity(32);
+            var mierka = r.Bity(32);
+            if (tik > 0 && mierka > 0 && stopa.Snimky is null)
+            {
+                stopa.Snimky = mierka / (double)tik;
+            }
+        }
+
+        stopa.Prekladane ??= false;
     }
 
-    private static void ProfilTierLevel(CitacBitov r, int maxSub)
+    /// <summary>aspect_ratio_info of a VUI (H.264, HEVC): the display aspect from the sample aspect ratio.</summary>
+    private static void PomerPixelov(CitacBitov r, InfoStopy stopa)
     {
-        r.Preskoc(96); // general profile space … general_level_idc
-        var profil = new bool[maxSub];
-        var level = new bool[maxSub];
+        if (r.Bit() == 0)
+        {
+            return;
+        }
+
+        var idc = (int)r.Bity(8);
+        (long w, long h) sar = idc switch
+        {
+            1 => (1, 1), 2 => (12, 11), 3 => (10, 11), 4 => (16, 11), 5 => (40, 33), 6 => (24, 11), 7 => (20, 11), 8 => (32, 11),
+            9 => (80, 33), 10 => (18, 11), 11 => (15, 11), 12 => (64, 33), 13 => (160, 99), 14 => (4, 3), 15 => (3, 2), 16 => (2, 1),
+            255 => (r.Bity(16), r.Bity(16)),
+            _ => (0, 0),
+        };
+        if (sar.w > 0 && sar.h > 0 && stopa.Sirka is > 0 && stopa.Vyska is > 0)
+        {
+            stopa.PomerStran = stopa.Sirka.Value * (double)sar.w / (stopa.Vyska.Value * (double)sar.h);
+        }
+    }
+
+    /// <summary>
+    /// The sequence parameter set of H.264 (Annex B, emulation bytes in): profile and level, chroma, bit depth, picture
+    /// size without cropping, frame or field coding, and from the VUI the aspect, colours and frame rate.
+    /// </summary>
+    internal static void SpsAvc(ReadOnlySpan<byte> nal, InfoStopy stopa)
+    {
+        if (nal.Length < 5)
+        {
+            return;
+        }
+
+        var r = new CitacBitov(CitacBitov.BezEmulacie(nal[1..]));
+        var profil = (int)r.Bity(8);
+        var obmedzenia = (int)r.Bity(8);
+        var level = (int)r.Bity(8);
+        stopa.Profil ??= (profil == 66 && (obmedzenia & 0x40) != 0 ? "Constrained Baseline" : ProfilAvc(profil)) + "@L" + Level(level / 10.0);
+        r.Ue();
+        var chroma = 1L;
+        var hlbka = 0L;
+        if (profil is 100 or 110 or 122 or 244 or 44 or 83 or 86 or 118 or 128 or 138 or 139 or 134 or 135)
+        {
+            chroma = r.Ue();
+            if (chroma == 3)
+            {
+                r.Preskoc(1);
+            }
+
+            hlbka = r.Ue();
+            r.Ue();
+            r.Preskoc(1);
+            if (r.Bit() == 1)
+            {
+                for (var i = 0; i < (chroma != 3 ? 8 : 12); i++)
+                {
+                    if (r.Bit() == 1)
+                    {
+                        long posledna = 8, dalsia = 8;
+                        for (var j = 0; j < (i < 6 ? 16 : 64) && dalsia != 0; j++)
+                        {
+                            dalsia = (posledna + r.Se() + 256) % 256;
+                            posledna = dalsia == 0 ? posledna : dalsia;
+                        }
+                    }
+                }
+            }
+        }
+
+        stopa.FarebnyPriestor ??= "YUV";
+        stopa.Podvzorkovanie ??= chroma is >= 0 and <= 3 ? Chroma((int)chroma) : null;
+        stopa.BitovaHlbka ??= hlbka is >= 0 and <= 6 ? (int)hlbka + 8 : 8;
+        r.Ue(); // log2_max_frame_num
+        var poc = r.Ue();
+        if (poc == 0)
+        {
+            r.Ue();
+        }
+        else if (poc == 1)
+        {
+            r.Preskoc(1);
+            r.Se();
+            r.Se();
+            var cyklus = r.Ue();
+            for (var i = 0; i < cyklus && !r.Koniec; i++)
+            {
+                r.Se();
+            }
+        }
+
+        r.Ue();
+        r.Preskoc(1);
+        var sirkaMb = r.Ue() + 1;
+        var vyskaMap = r.Ue() + 1;
+        var lenSnimky = r.Bit() == 1;
+        if (!lenSnimky)
+        {
+            r.Preskoc(1);
+        }
+
+        r.Preskoc(1);
+        long sirka = sirkaMb * 16, vyska = (lenSnimky ? 1 : 2) * vyskaMap * 16;
+        if (r.Bit() == 1)
+        {
+            var (jx, jy) = chroma switch { 1 => (2, 2), 2 => (2, 1), _ => (1, 1) };
+            jy *= lenSnimky ? 1 : 2;
+            sirka -= jx * (r.Ue() + r.Ue());
+            vyska -= jy * (r.Ue() + r.Ue());
+        }
+
+        if (sirka is > 0 and < 65536 && vyska is > 0 and < 65536)
+        {
+            stopa.Sirka ??= (int)sirka;
+            stopa.Vyska ??= (int)vyska;
+        }
+
+        stopa.Prekladane ??= !lenSnimky;
+        if (r.Bit() == 0)
+        {
+            return;
+        }
+
+        PomerPixelov(r, stopa);
+        if (r.Bit() == 1)
+        {
+            r.Preskoc(1);
+        }
+
+        if (r.Bit() == 1)
+        {
+            r.Preskoc(3);
+            stopa.FarebnyRozsah = r.Bit() == 1 ? "Full" : "Limited";
+            if (r.Bit() == 1)
+            {
+                Farby(stopa, (int)r.Bity(8), (int)r.Bity(8), (int)r.Bity(8));
+            }
+        }
+
+        if (r.Bit() == 1)
+        {
+            r.Ue();
+            r.Ue();
+        }
+
+        if (r.Bit() == 1)
+        {
+            var tik = r.Bity(32);
+            var mierka = r.Bity(32);
+            if (tik > 0 && mierka > 0 && stopa.Snimky is null)
+            {
+                stopa.Snimky = mierka / (2.0 * tik);
+            }
+        }
+    }
+
+    private static void ProfilTierLevel(CitacBitov r, int maxSub, InfoStopy stopa)
+    {
+        r.Preskoc(2);
+        var tier = r.Bit();
+        var profil = (int)r.Bity(5);
+        r.Preskoc(32 + 48);
+        var level = (int)r.Bity(8);
+        stopa.Profil ??= $"{ProfilHevc(profil)}@L{Level(level / 30.0)}@{(tier == 1 ? "High" : "Main")}";
+        var profily = new bool[maxSub];
+        var levely = new bool[maxSub];
         for (var i = 0; i < maxSub; i++)
         {
-            profil[i] = r.Bit() == 1;
-            level[i] = r.Bit() == 1;
+            profily[i] = r.Bit() == 1;
+            levely[i] = r.Bit() == 1;
         }
 
         if (maxSub > 0)
@@ -282,7 +479,7 @@ internal static class KodekyVidea
 
         for (var i = 0; i < maxSub; i++)
         {
-            r.Preskoc((profil[i] ? 88 : 0) + (level[i] ? 8 : 0));
+            r.Preskoc((profily[i] ? 88 : 0) + (levely[i] ? 8 : 0));
         }
     }
 
@@ -375,7 +572,13 @@ internal static class KodekyVidea
         var sps = avcc[5] & 0x1F;
         for (var n = 0; n < sps && i + 2 <= avcc.Length; n++)
         {
-            i += 2 + ((avcc[i] << 8) | avcc[i + 1]);
+            var dlzka = (avcc[i] << 8) | avcc[i + 1];
+            if (n == 0 && i + 2 + dlzka <= avcc.Length)
+            {
+                SpsAvc(avcc.Slice(i + 2, dlzka), stopa);
+            }
+
+            i += 2 + dlzka;
         }
 
         if (i >= avcc.Length)
