@@ -90,10 +90,12 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                 <ColumnDefinition x:Name="StlpecB" Width="2*" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" BorderThickness="0,1,1,0" Background="{DynamicResource FarbaMenu}"
-                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+            <!-- the menu in two pastel blocks (owner, 9. 11. 2026): the library and collections, then the disks at the bottom -->
+            <Border Grid.Column="0" BorderThickness="0,1,1,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
+                    <StackPanel Margin="8,8,8,8">
+                        <Border x:Name="BlokMenu" Background="{DynamicResource FarbaMenu}" CornerRadius="8" Padding="0,0,0,6">
+                        <StackPanel>
                         <TextBlock Text="KNIŽNICA" Style="{StaticResource NadpisSekcie}" />
                         <ListBox x:Name="NavigaciaKniznica" BorderThickness="0" Background="Transparent"
                                  SelectionChanged="Navigacia_SelectionChanged">
@@ -102,72 +104,6 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                             <ListBoxItem x:Name="NavigaciaNaPotvrdenie" Content="Na potvrdenie" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaZelane" Content="Zoznam želaní" Style="{StaticResource PolozkaNavigacie}" />
                         </ListBox>
-
-                        <Grid Margin="0,0,8,0">
-                            <TextBlock Text="DISKY" Style="{StaticResource NadpisSekcie}" />
-                            <Button x:Name="TlacidloPridatDisk" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="8,2"
-                                    Margin="0,0,0,2" Click="PridatDisk_Click" ToolTip="Pridať disk alebo priečinok do katalógu">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE710;" FontFamily="{StaticResource Ikony}" FontSize="11" VerticalAlignment="Center" />
-                                    <TextBlock Text="Pridať disk" Margin="6,0,0,0" FontSize="12" />
-                                </StackPanel>
-                            </Button>
-                        </Grid>
-                        <TextBlock x:Name="ZiadnyDisk" Text="Zatiaľ žiadny disk. Pridaj prvý tlačidlom „Pridať disk“."
-                                   Margin="12,2,12,4" Style="{StaticResource TichyText}" />
-                        <TreeView x:Name="StromDiskov" BorderThickness="0" Background="Transparent" Margin="4,0,4,0"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                  SelectedItemChanged="StromDiskov_SelectedItemChanged"
-                                  PreviewMouseRightButtonDown="StromDiskov_PreviewMouseRightButtonDown">
-                            <TreeView.ItemContainerStyle>
-                                <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
-                                    <Setter Property="IsExpanded" Value="{Binding Otvoreny, Mode=TwoWay}" />
-                                    <Setter Property="IsSelected" Value="{Binding Vybraty, Mode=TwoWay}" />
-                                </Style>
-                            </TreeView.ItemContainerStyle>
-                            <TreeView.ItemTemplate>
-                                <HierarchicalDataTemplate ItemsSource="{Binding Deti}">
-                                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                                        <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center"
-                                                   Margin="0,0,8,0" />
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Nazov}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"
-                                                       Visibility="{Binding MaPopis, Converter={StaticResource BoolNaViditelnost}}" />
-                                        </StackPanel>
-                                        <Ellipse Width="8" Height="8" Fill="#2EA043" Margin="8,0,0,0" VerticalAlignment="Center"
-                                                 ToolTip="Disk je pripojený"
-                                                 Visibility="{Binding Pripojeny, Converter={StaticResource BoolNaViditelnost}}" />
-                                    </StackPanel>
-                                </HierarchicalDataTemplate>
-                            </TreeView.ItemTemplate>
-                            <TreeView.ContextMenu>
-                                <ContextMenu x:Name="PonukaStromu" Opened="PonukaStromu_Opened">
-                                    <MenuItem x:Name="PonukaPrehrat" Header="Prehrať" Click="PrehratZoStromu_Click"
-                                              ToolTip="Blu-ray alebo DVD v priečinku, inak videá priečinka ako playlist" />
-                                    <Separator />
-                                    <MenuItem x:Name="PonukaAktualizovat" Header="Aktualizovať disk" Click="AktualizovatDisk_Click" />
-                                    <MenuItem x:Name="PonukaCitat" Header="Prečítať technické údaje videí" Click="CitatTechnickeUdaje_Click"
-                                              ToolTip="Rozlíšenie, kodeky, zvuk a titulky s jazykmi, HDR a náhľad – pre videá, ktoré ich ešte nemajú" />
-                                    <MenuItem x:Name="PonukaOtvorit" Header="Otvoriť v Prieskumníkovi" Click="OtvoritVPrieskumnikovi_Click" />
-                                    <MenuItem x:Name="PonukaUpravit" Header="Upraviť disk…" Click="UpravitDisk_Click" />
-                                    <MenuItem x:Name="PonukaOdstranit" Header="Odstrániť disk z knižnice…" Click="OdstranitDisk_Click" />
-                                    <Separator />
-                                    <MenuItem x:Name="PonukaStitky" Header="Tlačiť štítky…" Click="StitkyZoStromu_Click"
-                                              ToolTip="Štítok s QR kódom na disk (pri katalógu na všetky jeho disky)" />
-                                    <MenuItem x:Name="PonukaPozicat" Header="Požičať disk…" Click="PozicatDisk_Click" />
-                                    <Separator />
-                                    <MenuItem Header="Pridať disk…" Click="PridatDisk_Click" />
-                                    <MenuItem Header="Nový katalóg…" Click="NovyKatalog_Click" />
-                                    <MenuItem x:Name="PonukaPremenovatKatalog" Header="Premenovať katalóg…" Click="PremenovatKatalog_Click" />
-                                    <MenuItem x:Name="PonukaZmazatKatalog" Header="Zmazať katalóg…" Click="ZmazatKatalog_Click" />
-                                    <MenuItem x:Name="PonukaExportovatKatalog" Header="Exportovať katalóg…" Click="ExportovatKatalog_Click"
-                                              ToolTip="Katalóg do samostatného súboru: disky, súbory a tituly na nich (napr. pre iný počítač)" />
-                                    <MenuItem Header="Importovať katalóg…" Click="ImportovatKatalog_Click"
-                                              ToolTip="Katalógy zo súboru knižnice; disky, ktoré knižnica už má, sa vynechajú" />
-                                </ContextMenu>
-                            </TreeView.ContextMenu>
-                        </TreeView>
 
                         <TextBlock Text="ZBIERKY" Style="{StaticResource NadpisSekcie}" />
                         <ListBox x:Name="NavigaciaZbierky" BorderThickness="0" Background="Transparent"
@@ -183,6 +119,78 @@ Enter hľadá hneď, Esc hľadanie zruší.</TextBlock>
                             <ListBoxItem x:Name="NavigaciaPrehlad" Content="Prehľad diskov" Style="{StaticResource PolozkaNavigacie}" />
                             <ListBoxItem x:Name="NavigaciaStatistiky" Content="Štatistiky" Style="{StaticResource PolozkaNavigacie}" />
                         </ListBox>
+                        </StackPanel>
+                        </Border>
+
+                        <Border x:Name="BlokDiskov" Background="{DynamicResource FarbaDiskov}" CornerRadius="8" Padding="0,0,0,8" Margin="0,10,0,0">
+                        <StackPanel>
+                            <Grid Margin="0,0,8,0">
+                                <TextBlock Text="DISKY" Style="{StaticResource NadpisSekcie}" />
+                                <Button x:Name="TlacidloPridatDisk" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="8,2"
+                                        Margin="0,0,0,2" Click="PridatDisk_Click" ToolTip="Pridať disk alebo priečinok do katalógu">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE710;" FontFamily="{StaticResource Ikony}" FontSize="11" VerticalAlignment="Center" />
+                                        <TextBlock Text="Pridať disk" Margin="6,0,0,0" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                            <TextBlock x:Name="ZiadnyDisk" Text="Zatiaľ žiadny disk. Pridaj prvý tlačidlom „Pridať disk“."
+                                       Margin="12,2,12,4" Style="{StaticResource TichyText}" />
+                            <TreeView x:Name="StromDiskov" BorderThickness="0" Background="Transparent" Margin="4,0,4,0"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                      SelectedItemChanged="StromDiskov_SelectedItemChanged"
+                                      PreviewMouseRightButtonDown="StromDiskov_PreviewMouseRightButtonDown">
+                                <TreeView.ItemContainerStyle>
+                                    <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                        <Setter Property="IsExpanded" Value="{Binding Otvoreny, Mode=TwoWay}" />
+                                        <Setter Property="IsSelected" Value="{Binding Vybraty, Mode=TwoWay}" />
+                                    </Style>
+                                </TreeView.ItemContainerStyle>
+                                <TreeView.ItemTemplate>
+                                    <HierarchicalDataTemplate ItemsSource="{Binding Deti}">
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="{Binding Ikona}" FontFamily="{StaticResource Ikony}" VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Nazov}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Popis}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"
+                                                           Visibility="{Binding MaPopis, Converter={StaticResource BoolNaViditelnost}}" />
+                                            </StackPanel>
+                                            <Ellipse Width="8" Height="8" Fill="#2EA043" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                     ToolTip="Disk je pripojený"
+                                                     Visibility="{Binding Pripojeny, Converter={StaticResource BoolNaViditelnost}}" />
+                                        </StackPanel>
+                                    </HierarchicalDataTemplate>
+                                </TreeView.ItemTemplate>
+                                <TreeView.ContextMenu>
+                                    <ContextMenu x:Name="PonukaStromu" Opened="PonukaStromu_Opened">
+                                        <MenuItem x:Name="PonukaPrehrat" Header="Prehrať" Click="PrehratZoStromu_Click"
+                                                  ToolTip="Blu-ray alebo DVD v priečinku, inak videá priečinka ako playlist" />
+                                        <Separator />
+                                        <MenuItem x:Name="PonukaAktualizovat" Header="Aktualizovať disk" Click="AktualizovatDisk_Click" />
+                                        <MenuItem x:Name="PonukaCitat" Header="Prečítať technické údaje videí" Click="CitatTechnickeUdaje_Click"
+                                                  ToolTip="Rozlíšenie, kodeky, zvuk a titulky s jazykmi, HDR a náhľad – pre videá, ktoré ich ešte nemajú" />
+                                        <MenuItem x:Name="PonukaOtvorit" Header="Otvoriť v Prieskumníkovi" Click="OtvoritVPrieskumnikovi_Click" />
+                                        <MenuItem x:Name="PonukaUpravit" Header="Upraviť disk…" Click="UpravitDisk_Click" />
+                                        <MenuItem x:Name="PonukaOdstranit" Header="Odstrániť disk z knižnice…" Click="OdstranitDisk_Click" />
+                                        <Separator />
+                                        <MenuItem x:Name="PonukaStitky" Header="Tlačiť štítky…" Click="StitkyZoStromu_Click"
+                                                  ToolTip="Štítok s QR kódom na disk (pri katalógu na všetky jeho disky)" />
+                                        <MenuItem x:Name="PonukaPozicat" Header="Požičať disk…" Click="PozicatDisk_Click" />
+                                        <Separator />
+                                        <MenuItem Header="Pridať disk…" Click="PridatDisk_Click" />
+                                        <MenuItem Header="Nový katalóg…" Click="NovyKatalog_Click" />
+                                        <MenuItem x:Name="PonukaPremenovatKatalog" Header="Premenovať katalóg…" Click="PremenovatKatalog_Click" />
+                                        <MenuItem x:Name="PonukaZmazatKatalog" Header="Zmazať katalóg…" Click="ZmazatKatalog_Click" />
+                                        <MenuItem x:Name="PonukaExportovatKatalog" Header="Exportovať katalóg…" Click="ExportovatKatalog_Click"
+                                                  ToolTip="Katalóg do samostatného súboru: disky, súbory a tituly na nich (napr. pre iný počítač)" />
+                                        <MenuItem Header="Importovať katalóg…" Click="ImportovatKatalog_Click"
+                                                  ToolTip="Katalógy zo súboru knižnice; disky, ktoré knižnica už má, sa vynechajú" />
+                                    </ContextMenu>
+                                </TreeView.ContextMenu>
+                            </TreeView>
+                        </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

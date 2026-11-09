@@ -10,7 +10,9 @@
 
             <!-- the tints of the blocks of the main window (owner, 8. 11. 2026): see-through, so they suit the light and the
                  dark theme alike – the menu bluish, the detail of a title warm, the library without a tint -->
-            <SolidColorBrush x:Key="FarbaMenu" Color="#1F2F6FD6" />
+            <!-- pastel tints over the window's background: light pastel in the light theme, a quiet tint in the dark one -->
+            <SolidColorBrush x:Key="FarbaMenu" Color="#262F6FD6" />
+            <SolidColorBrush x:Key="FarbaDiskov" Color="#2E3BAE7A" />
             <SolidColorBrush x:Key="FarbaDetailu" Color="#1CE09A2E" />
             <SolidColorBrush x:Key="FarbaBlokuDetailu" Color="#16808080" />
             <!-- a collection as the lists of UNIVERSUM: a peach block with an orange edge and heading -->
@@ -21,7 +23,7 @@
             <Style x:Key="NadpisSekcie" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="11" />
                 <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Margin" Value="12,16,12,4" />
+                <Setter Property="Margin" Value="12,12,12,4" />
                 <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
             </Style>
 

@@ -255,7 +255,8 @@ anglické, bez textu) aj neskôr tlačidlom „Plagát…“ v detaile; vybraný
 
 **Karta titulu** (vlastník 8. 11. 2026, podľa UNIVERSUM – Listy z HISTRA): detail stojí **vľavo od plagátov** a zaberá
 tretinu priestoru vedľa menu (v Nastaveniach → Vzhľad sa dá dať vpravo); stena má menšie plagáty. Bez vybraného titulu
-či súboru sa detail skryje a plagáty sú na celú šírku (vlastník 9. 11. 2026); zatvára sa tlačidlom ✕ alebo Esc. Karta: plagát, odkazy
+či súboru sa detail skryje a plagáty sú na celú šírku (vlastník 9. 11. 2026); zatvára sa tlačidlom ✕ alebo Esc. Menu
+je v dvoch pastelových blokoch: Knižnica so Zbierkami (modrastý) a pod nimi Disky (zelenkastý). Karta: plagát, odkazy
 HISTRA / TMDB / IMDb / Trakt / ČSFD (hľadať), identifikátory v dvoch stĺpcoch, názov a originál s rokom, film/seriál
 s minutážou „2 h 16 min (136 min)“, hodnotenie, žáner, réžia, scenár, herci, dej; potom **každá verzia** s diskom
 a **údajmi súboru** (obraz – kodek, rozlíšenie, HDR, snímky/s; dĺžka a dátový tok; zvuk a titulky s jazykmi), najviac
