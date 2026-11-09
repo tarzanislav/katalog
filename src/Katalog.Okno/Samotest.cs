@@ -349,6 +349,10 @@ internal static class Samotest
         await SnimkaAsync(okno, "kniznica-detail-vpravo-svetle.png");
         okno.Nastavenia.DetailVpravo = false;
         okno.UsporiadajStlpce();
+        Over(okno.DetailJeOtvoreny, "detail je otvorený, kým je vybraný titul");
+        okno.ZavrietDetail();
+        Over(!okno.DetailJeOtvoreny && okno.PanelDetailu.Visibility == Visibility.Collapsed, "bez vybraného titulu detail zmizne, plagáty na celú šírku");
+        await SnimkaAsync(okno, "kniznica-bez-detailu-svetle.png");
         okno.ZobrazenieZoznam.IsChecked = true;
         await SnimkaAsync(okno, "kniznica-zoznam-svetle.png");
         okno.ZobrazeniePlagaty.IsChecked = true;

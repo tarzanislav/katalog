@@ -23,6 +23,16 @@ public partial class HlavneOkno : Window
         // selected only now: during InitializeComponent the other list does not exist yet
         NavigaciaKniznica.SelectedIndex = 0;
         UsporiadajStlpce();
+        KeyDown += (_, e) =>
+        {
+            // Esc closes the detail (unless a text field uses it)
+            if (e.Key == System.Windows.Input.Key.Escape && DetailJeOtvoreny && !e.Handled &&
+                System.Windows.Input.Keyboard.FocusedElement is not System.Windows.Controls.TextBox)
+            {
+                ZavrietDetail();
+                e.Handled = true;
+            }
+        };
         InicializujHladanie();
         Title = Produkt.Nazov;
         StavVerzie.Text = Produkt.Nazov + " " + Produkt.VerziaText;

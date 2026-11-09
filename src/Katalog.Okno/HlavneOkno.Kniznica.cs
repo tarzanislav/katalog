@@ -539,6 +539,7 @@ public partial class HlavneOkno
     private void ZobrazDetailSkupiny(PolozkaSteny polozka)
     {
         ZobrazDetail(null);
+        DetailOtvoreny(true);
         DetailNadpis.Text = polozka.Nazov;
         DetailPrazdny.Visibility = Visibility.Collapsed;
         var riadky = new List<RiadokDetailu> { new("Obsah", polozka.Podnadpis) };
@@ -634,6 +635,7 @@ public partial class HlavneOkno
         var t = d.Polozka;
         DetailNahlad.Visibility = Visibility.Collapsed;
         DetailPrazdny.Visibility = Visibility.Collapsed;
+        DetailOtvoreny(true);
         PanelDetailuTitulu.Visibility = Visibility.Visible;
         DetailNadpis.Text = t.Nazov;
         DetailPlagat.Source = t.Plagat is { } p && _obrazky is { } o && File.Exists(o.Cesta(p)) ? NacitajObrazok(o.Cesta(p)) : null;

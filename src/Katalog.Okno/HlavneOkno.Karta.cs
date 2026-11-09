@@ -22,15 +22,47 @@ public partial class HlavneOkno
     private IReadOnlyDictionary<long, TechnickeUdajeSuboru> _detailTechnicke = new Dictionary<long, TechnickeUdajeSuboru>();
 
     /// <summary>The detail on the left of the library (default) or on its right; it takes a third of the space.</summary>
+    /// <remarks>Without a chosen title or file the detail is hidden and the library takes the whole width (owner, 9. 11. 2026).</remarks>
     internal void UsporiadajStlpce()
     {
         var vpravo = _nastavenia.DetailVpravo;
+        PanelDetailu.Visibility = _detailOtvoreny ? Visibility.Visible : Visibility.Collapsed;
         Grid.SetColumn(PanelDetailu, vpravo ? 2 : 1);
-        Grid.SetColumn(PanelStredu, vpravo ? 1 : 2);
+        Grid.SetColumn(PanelStredu, _detailOtvoreny ? (vpravo ? 1 : 2) : 1);
+        Grid.SetColumnSpan(PanelStredu, _detailOtvoreny ? 1 : 2);
         StlpecA.Width = new GridLength(vpravo ? 2 : 1, GridUnitType.Star);
         StlpecB.Width = new GridLength(vpravo ? 1 : 2, GridUnitType.Star);
         PanelDetailu.BorderThickness = vpravo ? new Thickness(1, 1, 0, 0) : new Thickness(0, 1, 1, 0);
     }
+
+    private bool _detailOtvoreny;
+
+    /// <summary>The detail shows something (a title, a file, a disk …) or nothing: then the library spreads over it.</summary>
+    private void DetailOtvoreny(bool otvoreny)
+    {
+        if (_detailOtvoreny != otvoreny)
+        {
+            _detailOtvoreny = otvoreny;
+            UsporiadajStlpce();
+        }
+    }
+
+    /// <summary>Whether the detail panel is shown now (the self-test checks it).</summary>
+    internal bool DetailJeOtvoreny => _detailOtvoreny;
+
+    /// <summary>Closes the detail: nothing chosen on the wall, the posters over the whole width.</summary>
+    internal void ZavrietDetail()
+    {
+        foreach (var p in _polozkySteny.Where(p => p.Vybrana))
+        {
+            p.Vybrana = false;
+        }
+
+        _vybranyTitul = null;
+        ZobrazDetail(null);
+    }
+
+    private void ZavrietDetail_Click(object sender, RoutedEventArgs e) => ZavrietDetail();
 
     /// <summary>What the card needs besides the detail: the parts of the collections and the files of the versions.</summary>
     private static (IReadOnlyList<(KolekciaKniznice, IReadOnlyList<PolozkaKniznice>)> Kolekcie, Dictionary<long, TechnickeUdajeSuboru> Technicke)

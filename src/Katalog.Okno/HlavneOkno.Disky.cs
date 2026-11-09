@@ -445,8 +445,11 @@ public partial class HlavneOkno
             DetailNadpis.Text = "Detail titulu";
             DetailPrazdny.Visibility = Visibility.Visible;
             DetailRiadky.ItemsSource = null;
+            DetailOtvoreny(false);
             return;
         }
+
+        DetailOtvoreny(true);
 
         var riadky = new List<RiadokDetailu>();
         var pripojeny = _stav?.Cesta(disk.Id);
