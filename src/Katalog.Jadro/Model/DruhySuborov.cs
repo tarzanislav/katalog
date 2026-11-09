@@ -19,6 +19,7 @@ public static class DruhySuborov
         [DruhSuboru.Video] =
         [
             "mkv", "mp4", "m4v", "avi", "ts", "m2ts", "mts", "mov", "wmv", "mpg", "mpeg", "vob", "webm", "flv", "ogv", "divx", "3gp", "iso",
+            "asf", "rm", "rmvb", "ogm", "f4v", "m2t", "mk3d",
         ],
         [DruhSuboru.Titulky] = ["srt", "ass", "ssa", "sub", "idx", "sup", "vtt"],
         [DruhSuboru.Zvuk] = ["mp3", "flac", "aac", "ac3", "eac3", "dts", "thd", "m4a", "ogg", "opus", "wav", "wma", "mka"],

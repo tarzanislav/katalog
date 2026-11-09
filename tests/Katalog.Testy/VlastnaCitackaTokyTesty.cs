@@ -113,9 +113,51 @@ public sealed class VlastnaCitackaTokyTesty
         Over.Pravda(lpcm is { Kanaly: 6, Vzorkovanie: 48000, BitovaHlbka: 24 }, "Blu-ray LPCM 5.1 24 bitov");
 
         byte[] asf = [0x30, 0x26, 0xB2, 0x75, 0x8E, 0x66, 0xCF, 0x11, 0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C];
-        Over.Rovne(CitanieKontajnera.FormatSuboru.Neznamy, CitanieKontajnera.Format(asf), "ASF/WMV nepozná");
+        Over.Rovne(CitanieKontajnera.FormatSuboru.WindowsMedia, CitanieKontajnera.Format(asf), "ASF/WMV podľa GUID hlavičky");
+        Over.Rovne(CitanieKontajnera.FormatSuboru.Neznamy, CitanieKontajnera.Format("RIFF\0\0\0\0WAVEfmt \0\0\0\0"u8), "WAV nie je video");
         Over.Pravda(Katalog.Data.TechnickeUdaje.VlastnaCitacka.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(CitanieKontajnera.Pripony),
             "knižnica a čítačka poznajú tie isté prípony");
+    }
+
+    /// <summary>Damaged files – cut anywhere, bytes changed at random – never make a reader throw.</summary>
+    [Test]
+    public void PoskodeneSuboryNespadnu()
+    {
+        var nahoda = new Random(20261109);
+        var vzory = new[]
+        {
+            Ts(192, Pmt(0x1011, (0x24, 0x1011, []), (0x86, 0x1100, [])), (0x1011, Pes(0xE0, 0, Mpeg2)), (0x1100, Pes(0xBD, 0, Ac3))),
+            Ps(Pes(0xE0, 0, Mpeg2), Pes(0xBD, 0, [0x80, 1, 0, 1, .. Ac3])),
+            Avi(),
+        };
+        var pokusov = 0;
+        foreach (var vzor in vzory)
+        {
+            for (var n = 0; n < 400; n++)
+            {
+                var data = vzor[..nahoda.Next(1, vzor.Length + 1)];
+                for (var k = nahoda.Next(0, 6); k > 0; k--)
+                {
+                    data[nahoda.Next(data.Length)] = (byte)nahoda.Next(256);
+                }
+
+                foreach (Func<Stream, InfoSuboru?> citaj in new Func<Stream, InfoSuboru?>[]
+                         {
+                             CitanieTs.Citaj, CitaniePs.Citaj, CitanieAvi.Citaj, CitanieMatroska.Citaj, CitanieMp4.Citaj, CitanieAsf.Citaj, CitanieFlv.Citaj,
+                             CitanieRm.Citaj, CitanieOgg.Citaj,
+                         })
+                {
+                    if (citaj(new MemoryStream(data)) is { Stopy.Count: > 0 } info)
+                    {
+                        _ = PopisKontajnera.Vytvor(info);
+                    }
+
+                    pokusov++;
+                }
+            }
+        }
+
+        Over.Rovne(3 * 400 * 9, pokusov, "všetky pokusy prebehli bez výnimky");
     }
 
     /// <summary>Real files written by ffmpeg (GitHub Actions installs it on Linux), each checked against what it was told to write.</summary>
@@ -166,6 +208,43 @@ public sealed class VlastnaCitackaTokyTesty
         if (File.Exists(ts))
         {
             Over.Pravda(CitanieKontajnera.Citaj(ts)!.Stopy.Single(s => s.Druh == DruhStopy.Zvuk) is { Jazyk: "sk", Kanaly: 6 }, "TS: jazyk a 5.1");
+        }
+
+        // Windows Media, Flash Video, RealMedia and Ogg with the codecs ffmpeg has of its own
+        const string Maly = "-f lavfi -i testsrc2=size=640x360:rate=25 -t 6";
+        var wmv = Vyrob("vymyslený.wmv", $"{Maly} {Zvuk} -map 0 -map 1 -c:v wmv2 -c:a wmav2 -metadata:s:a:0 language=cze");
+        var flv = Vyrob("vymyslený.flv", $"{Maly} {Zvuk} -map 0 -map 1 -c:v flv1 -c:a aac");
+        var rm = Vyrob("vymyslený.rm", $"{Maly} -f lavfi -i sine=sample_rate=8000 -t 6 -map 0 -map 1 -c:v rv20 -c:a real_144");
+        var ogg = Vyrob("vymyslený.ogg", $"{Zvuk} -c:a flac -metadata:s:a:0 language=slk");
+        foreach (var (cesta, kontajner, video, audio) in new[]
+                 {
+                     (wmv, "asf", "wmv2", "wmav2"), (flv, "flv", "flv1", "aac"), (rm, "rm", "rv20", "ra_144"), (ogg, "ogg", (string?)null, "flac"),
+                 })
+        {
+            if (!File.Exists(cesta))
+            {
+                Console.WriteLine($"{Path.GetFileName(cesta)}: ffmpeg ho nevyrobil – vynechaný");
+                continue;
+            }
+
+            var v = CitanieKontajnera.Citaj(cesta);
+            Over.Pravda(v is not null && v.Udaje.Kontajner == kontajner && v.Udaje.VideoKodek == video, $"{kontajner}: kontajner a video {video} ({v?.Udaje})");
+            Over.Pravda(v!.Udaje.DlzkaMs is > 5500 and < 6600, $"{kontajner}: dĺžka okolo 6 s ({v.Udaje.DlzkaMs} ms)");
+            Over.Pravda(v.Stopy.Any(s => s.Druh == DruhStopy.Zvuk && s.Kodek == audio), $"{kontajner}: zvuk {audio} ({string.Join(", ", v.Stopy.Select(s => s.Kodek))})");
+            if (video is not null)
+            {
+                Over.Pravda(v.Udaje is { Sirka: 640, Vyska: 360 }, $"{kontajner}: 640×360");
+            }
+        }
+
+        if (File.Exists(wmv))
+        {
+            Over.Rovne("cs", CitanieKontajnera.Citaj(wmv)!.Stopy.Single(s => s.Druh == DruhStopy.Zvuk).Jazyk, "WMV: jazyk zo zoznamu jazykov");
+        }
+
+        if (File.Exists(ogg))
+        {
+            Over.Pravda(CitanieOgg.Citaj(ogg)!.Stopy.Single() is { Jazyk: "sk", Vzorkovanie: 48000, BitovaHlbka: 16 }, "Ogg FLAC: jazyk z komentára");
         }
     }
 

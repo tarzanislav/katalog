@@ -306,4 +306,14 @@ a hlavička rozširujúceho prúdu DTS-HD (**skutočný počet kanálov, 24 bito
 FFmpeg sa ostatné formáty prečítajú tiež** (len bez náhľadov). Na skúšobných súboroch z ffmpeg: TS, M2TS, AVI, VOB
 a MPG po zahriatí 0,2 – 20 ms na súbor.
 
+**Všetky formáty v jednej čítačke** (vlastník 9. 11. 2026): pribudli **Windows Media** (WMV, ASF – objekt hlavičky:
+vlastnosti súboru, prúdov, toky prúdov, jazyky z rozšírenia hlavičky, názov, kodér; WMV 7/8/9, VC-1, WMA 1/2/Pro/
+Lossless), **Flash Video** (FLV aj rozšírené s HEVC/AV1/VP9 – metadáta AMF0, konfigurácia avcC/hvcC, AAC, MP3, dĺžka
+z posledného tagu), **RealMedia** (RM, RMVB – PROP, MDPR, RealVideo 1–4/HD, RealAudio Cook/ATRAC/AAC/AC-3/14.4/28.8)
+a **Ogg** (OGV, OGM, OGG – Theora, Vorbis, Opus, FLAC, Speex, video a zvuk OGM, jazyk a názov z komentárov, dĺžka
+z granúl). Formát sa pozná podľa prvých bajtov; ffprobe ostáva len pre súbory, ktoré čítačka nepozná alebo nevie
+prečítať. Hodnoty mimo rozumného rozsahu (poškodený súbor) sa zahodia. Odolnosť: 5 700 náhodne poškodených a odrezaných
+skutočných súborov všetkých formátov a test s 10 800 pokusmi v CI – žiadna výnimka. Rýchlosť: 11 súborov rôznych
+formátov spolu 39 ms, ffprobe 505 ms (Linux; na Windows je spúšťanie programu ešte pomalšie).
+
 Všetky etapy E0 – E9 sú hotové. **1.0.0** vyjde po skúške vlastníka na jeho počítači (skutočné disky, tlačiareň, server cez WinSCP) – rozhodnutie vlastníka 8. 11. 2026; dovtedy 0.8.0.

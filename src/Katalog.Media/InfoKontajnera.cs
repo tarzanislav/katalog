@@ -173,9 +173,27 @@ public static class PopisKontajnera
 
     public static VysledokKontajnera Vytvor(InfoSuboru info)
     {
+        Ocisti(info);
         var video = info.Stopy.FirstOrDefault(s => s.JeVideo);
         var dlzka = info.DlzkaSekund ?? video?.DlzkaSekund ?? info.Stopy.Max(s => s.DlzkaSekund);
         long? celkovyTok = dlzka is > 0 ? (long)Math.Round(info.Velkost * 8 / dlzka.Value) : null;
+
+        // one video without its own rate: what the other streams leave of the whole (a container without per-stream rates)
+        if (video is { DatovyTok: null } && celkovyTok is { } celkom && info.Stopy.Count(s => s.JeVideo) == 1 &&
+            info.Stopy.Where(s => s != video && s.Druh is DruhStopy.Zvuk).All(s => s.DatovyTok is not null))
+        {
+            var zvysok = (long)(celkom * 0.98) - info.Stopy.Where(s => s != video && s.Druh is DruhStopy.Zvuk).Sum(s => s.DatovyTok ?? 0);
+            if (zvysok > 0)
+            {
+                video.DatovyTok = zvysok;
+                video.OdhadToku = true;
+                if (dlzka is > 0 && video.VelkostStreamu is null)
+                {
+                    video.VelkostStreamu = (long)(zvysok / 8.0 * dlzka.Value);
+                    video.Odhad = true;
+                }
+            }
+        }
         var udaje = new MedialneUdaje(
             info.Format switch
             {
@@ -187,6 +205,10 @@ public static class PopisKontajnera
                 "BDAV (M2TS)" => "m2ts",
                 "MPEG-TS" => "mpegts",
                 "MPEG-PS" => "mpeg",
+                "Windows Media" => "asf",
+                "Flash Video" => "flv",
+                "RealMedia" => "rm",
+                "Ogg" => "ogg",
                 var f => f.ToLowerInvariant(),
             },
             dlzka is { } d ? (long)Math.Round(d * 1000) : null,
@@ -214,6 +236,31 @@ public static class PopisKontajnera
         }
 
         return new VysledokKontajnera(udaje, stopy, Sekcie(info, dlzka, celkovyTok, video));
+    }
+
+    /// <summary>
+    /// Values out of any sensible range (a damaged file) are dropped, not shown: lengths up to ten days, picture sizes,
+    /// rates, channels, sample rates and bit depths within what any real file has.
+    /// </summary>
+    private static void Ocisti(InfoSuboru info)
+    {
+        static double? Dlzka(double? d) => d is { } x && double.IsFinite(x) && x is > 0 and < 864_000 ? x : null;
+        info.DlzkaSekund = Dlzka(info.DlzkaSekund);
+        foreach (var s in info.Stopy)
+        {
+            s.DlzkaSekund = Dlzka(s.DlzkaSekund);
+            s.Snimky = s.Snimky is { } f && double.IsFinite(f) && f is > 0 and < 1000 ? f : null;
+            s.Sirka = s.Sirka is > 0 and < 65536 ? s.Sirka : null;
+            s.Vyska = s.Vyska is > 0 and < 65536 ? s.Vyska : null;
+            s.PomerStran = s.PomerStran is { } r && double.IsFinite(r) && r is > 0.1 and < 10 ? r : null;
+            s.DatovyTok = s.DatovyTok is > 0 and < 100_000_000_000 ? s.DatovyTok : null;
+            s.MaxTok = s.MaxTok is > 0 and < 100_000_000_000 ? s.MaxTok : null;
+            s.VelkostStreamu = s.VelkostStreamu is >= 0 && s.VelkostStreamu <= Math.Max(info.Velkost, 1) * 2 ? s.VelkostStreamu : null;
+            s.Kanaly = s.Kanaly is > 0 and <= 64 ? s.Kanaly : null;
+            s.Vzorkovanie = s.Vzorkovanie is { } v && double.IsFinite(v) && v is > 0 and < 1_000_000 ? v : null;
+            s.BitovaHlbka = s.BitovaHlbka is > 0 and <= 64 ? s.BitovaHlbka : null;
+            s.PocetSnimok = s.PocetSnimok is >= 0 ? s.PocetSnimok : null;
+        }
     }
 
     private static List<SekciaMedia> Sekcie(InfoSuboru info, double? dlzka, long? celkovyTok, InfoStopy? video)

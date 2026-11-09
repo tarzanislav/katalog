@@ -27,7 +27,8 @@ public static class TechnickeUdaje
     /// <summary>The extensions KATALOG's own reader knows (Matroska, MP4): their details are read without ffprobe.</summary>
     public static readonly IReadOnlySet<string> VlastnaCitacka = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "mkv", "mk3d", "webm", "mp4", "m4v", "mov", "avi", "divx", "ts", "m2ts", "mts", "m2t", "trp", "tp", "vob", "mpg", "mpeg", "m2v", "m2p",
+        "mkv", "mk3d", "webm", "mp4", "m4v", "mov", "3gp", "f4v", "avi", "divx", "ts", "m2ts", "mts", "m2t", "trp", "tp", "vob", "mpg", "mpeg",
+        "m2v", "m2p", "wmv", "asf", "flv", "rm", "rmvb", "ogv", "ogm",
     };
 
     private static readonly string Vlastne = string.Join(", ", VlastnaCitacka.Select(p => "'" + p + "'"));
